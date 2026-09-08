@@ -202,7 +202,7 @@ function CategoryPageContent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
           
           {/* Department Filter Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none flex-nowrap sm:flex-wrap">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none no-scrollbar flex-nowrap sm:flex-wrap">
             {[
               { id: 'all', label: `ALL ${categoryName.toUpperCase()}` },
               { id: 'women', label: 'FOR HER' },
@@ -331,7 +331,7 @@ function CategoryPageContent() {
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
+            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none no-scrollbar flex-nowrap sm:flex-wrap">
               {/* ALL HOUSES CIRCLE */}
               <button
                 onClick={() => setSelectedBrand('all')}
