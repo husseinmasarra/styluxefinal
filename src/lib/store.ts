@@ -7,6 +7,20 @@ import {
   INITIAL_MENU_ITEMS, INITIAL_PRODUCTS, INITIAL_CUSTOMERS, INITIAL_STAFF,
   INITIAL_SUPPLIERS, INITIAL_INVOICES, INITIAL_ORDERS, INITIAL_COUPONS
 } from './seed';
+import {
+  fetchSupabaseCloudData,
+  cloudSaveProduct,
+  cloudDeleteProduct,
+  cloudSaveCategory,
+  cloudDeleteCategory,
+  cloudSaveCard,
+  cloudDeleteCard,
+  cloudSaveBrand,
+  cloudDeleteBrand,
+  cloudSaveSettings,
+  cloudSaveOrder,
+  getSupabaseClient
+} from './supabase';
 
 const STORAGE_KEYS = {
   SETTINGS: 'styluxe_settings_v1',
@@ -26,7 +40,7 @@ const STORAGE_KEYS = {
 };
 
 const DATA_VERSION_KEY = 'styluxe_app_version';
-const CURRENT_DATA_VERSION = 'v2.2_realtime_sync';
+const CURRENT_DATA_VERSION = 'v3.0_supabase_cloud';
 
 // Automated migration and cache-buster to keep all phones & visitors in sync with latest changes
 function checkAndMigrateVersion(): void {
@@ -45,6 +59,60 @@ function checkAndMigrateVersion(): void {
     }
   } catch (err) {
     console.error('Migration check error:', err);
+  }
+}
+
+let hasInitCloudSync = false;
+export async function initCloudSync(): Promise<void> {
+  if (typeof window === 'undefined' || hasInitCloudSync) return;
+  hasInitCloudSync = true;
+
+  try {
+    const cloud = await fetchSupabaseCloudData();
+    if (cloud.hasData) {
+      if (cloud.products !== undefined) {
+        localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(cloud.products));
+      }
+      if (cloud.categories !== undefined) {
+        localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(cloud.categories));
+      }
+      if (cloud.brands !== undefined) {
+        localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(cloud.brands));
+      }
+      if (cloud.cards !== undefined) {
+        localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(cloud.cards));
+      }
+      if (cloud.menuItems !== undefined) {
+        localStorage.setItem(STORAGE_KEYS.MENU, JSON.stringify(cloud.menuItems));
+      }
+      if (cloud.settings !== undefined) {
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(cloud.settings));
+      }
+      window.dispatchEvent(new Event('styluxe_data_updated'));
+    }
+
+    try {
+      const client = getSupabaseClient();
+      client
+        .channel('public-store-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public' }, async () => {
+          const fresh = await fetchSupabaseCloudData();
+          if (fresh.hasData) {
+            if (fresh.products !== undefined) localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(fresh.products));
+            if (fresh.categories !== undefined) localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(fresh.categories));
+            if (fresh.brands !== undefined) localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(fresh.brands));
+            if (fresh.cards !== undefined) localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(fresh.cards));
+            if (fresh.menuItems !== undefined) localStorage.setItem(STORAGE_KEYS.MENU, JSON.stringify(fresh.menuItems));
+            if (fresh.settings !== undefined) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(fresh.settings));
+            window.dispatchEvent(new Event('styluxe_data_updated'));
+          }
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime channel error:', e);
+    }
+  } catch (err) {
+    console.warn('Cloud sync error:', err);
   }
 }
 
@@ -81,6 +149,7 @@ export const DataService = {
     const current = this.getSettings();
     const updated = { ...current, ...settings };
     setStorageItem(STORAGE_KEYS.SETTINGS, updated);
+    cloudSaveSettings(updated);
     return updated;
   },
 
@@ -99,11 +168,13 @@ export const DataService = {
       updated = [brand, ...brands];
     }
     setStorageItem(STORAGE_KEYS.BRANDS, updated);
+    cloudSaveBrand(brand);
     return updated;
   },
   deleteBrand(id: string): Brand[] {
     const updated = this.getBrands().filter(b => b.id !== id);
     setStorageItem(STORAGE_KEYS.BRANDS, updated);
+    cloudDeleteBrand(id);
     return updated;
   },
 
@@ -122,11 +193,13 @@ export const DataService = {
       updated = [...categories, cat];
     }
     setStorageItem(STORAGE_KEYS.CATEGORIES, updated);
+    cloudSaveCategory(cat);
     return updated;
   },
   deleteCategory(id: string): Category[] {
     const updated = this.getCategories().filter(c => c.id !== id);
     setStorageItem(STORAGE_KEYS.CATEGORIES, updated);
+    cloudDeleteCategory(id);
     return updated;
   },
 
@@ -145,11 +218,13 @@ export const DataService = {
       updated = [...cards, card];
     }
     setStorageItem(STORAGE_KEYS.CARDS, updated);
+    cloudSaveCard(card);
     return updated;
   },
   deleteCard(id: string): HomepageCard[] {
     const updated = this.getCards().filter(c => c.id !== id);
     setStorageItem(STORAGE_KEYS.CARDS, updated);
+    cloudDeleteCard(id);
     return updated;
   },
 
@@ -180,11 +255,13 @@ export const DataService = {
       updated = [product, ...products];
     }
     setStorageItem(STORAGE_KEYS.PRODUCTS, updated);
+    cloudSaveProduct(product);
     return updated;
   },
   deleteProduct(id: string): Product[] {
     const updated = this.getProducts().filter(p => p.id !== id);
     setStorageItem(STORAGE_KEYS.PRODUCTS, updated);
+    cloudDeleteProduct(id);
     return updated;
   },
 
@@ -196,6 +273,7 @@ export const DataService = {
     const orders = this.getOrders();
     const updated = [order, ...orders];
     setStorageItem(STORAGE_KEYS.ORDERS, updated);
+    cloudSaveOrder(order);
 
     // Deduct stock for ordered items
     const products = this.getProducts();

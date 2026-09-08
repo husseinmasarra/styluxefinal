@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, StoreSettings } from './types';
-import { DataService } from './store';
+import { DataService, initCloudSync } from './store';
 import { INITIAL_SETTINGS } from './seed';
 
 export interface CartItem {
@@ -47,6 +47,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Sync state on load & events
   useEffect(() => {
+    // Initialize Supabase Cloud synchronization
+    initCloudSync();
+
     const loadedSettings = DataService.getSettings();
     setSettings(loadedSettings);
     setCurrencyState(loadedSettings.activeCurrency || 'USD');
