@@ -51,6 +51,39 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var v = localStorage.getItem('styluxe_app_version');
+                  if (v !== 'v5.0_clean_database_sync') {
+                    localStorage.clear();
+                    localStorage.setItem('styluxe_app_version', 'v5.0_clean_database_sync');
+                    localStorage.setItem('styluxe_products_v1', '[]');
+                    localStorage.setItem('styluxe_categories_v1', '[]');
+                    localStorage.setItem('styluxe_cards_v1', '[]');
+                  }
+                  if ('caches' in window) {
+                    caches.keys().then(function(names) {
+                      for (var name of names) caches.delete(name);
+                    });
+                  }
+                  if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function(regs) {
+                      for (var r of regs) r.unregister();
+                    });
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="bg-white text-zinc-950 min-h-screen flex flex-col antialiased">
         <CartProvider>
           <Header />

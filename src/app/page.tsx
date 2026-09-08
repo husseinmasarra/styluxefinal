@@ -7,6 +7,7 @@ import { DataService, isProductMatchingCategory } from '@/lib/store';
 import { Product, Category, HomepageCard } from '@/lib/types';
 import { ProductCard } from '@/components/storefront/ProductCard';
 import { useCart } from '@/lib/CartContext';
+import { fetchSupabaseCloudData } from '@/lib/supabase';
 
 export default function HomePage() {
   const { currency, settings } = useCart();
@@ -21,6 +22,25 @@ export default function HomePage() {
     setAllProducts(DataService.getProducts());
     setCategories(DataService.getCategories());
     setHomepageCards(DataService.getCards());
+
+    // Immediate direct live sync from Supabase cloud
+    fetchSupabaseCloudData().then(cloud => {
+      if (cloud.hasData) {
+        if (cloud.products !== undefined) {
+          setAllProducts(cloud.products);
+          localStorage.setItem('styluxe_products_v1', JSON.stringify(cloud.products));
+        }
+        if (cloud.categories !== undefined) {
+          setCategories(cloud.categories);
+          localStorage.setItem('styluxe_categories_v1', JSON.stringify(cloud.categories));
+        }
+        if (cloud.cards !== undefined) {
+          setHomepageCards(cloud.cards);
+          localStorage.setItem('styluxe_cards_v1', JSON.stringify(cloud.cards));
+        }
+      }
+    });
+
     const handleUpdate = () => {
       setAllProducts(DataService.getProducts());
       setCategories(DataService.getCategories());

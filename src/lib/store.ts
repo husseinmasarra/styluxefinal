@@ -40,7 +40,7 @@ const STORAGE_KEYS = {
 };
 
 const DATA_VERSION_KEY = 'styluxe_app_version';
-const CURRENT_DATA_VERSION = 'v3.0_supabase_cloud';
+const CURRENT_DATA_VERSION = 'v5.0_clean_database_sync';
 
 // Automated migration and cache-buster to keep all phones & visitors in sync with latest changes
 function checkAndMigrateVersion(): void {
@@ -49,13 +49,11 @@ function checkAndMigrateVersion(): void {
     const saved = localStorage.getItem(DATA_VERSION_KEY);
     if (saved !== CURRENT_DATA_VERSION) {
       // Clear old outdated cache on client devices so latest updates take effect immediately
-      localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
-      localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
-      localStorage.removeItem(STORAGE_KEYS.CARDS);
-      localStorage.removeItem(STORAGE_KEYS.MENU);
-      localStorage.removeItem(STORAGE_KEYS.SETTINGS);
-      localStorage.removeItem(STORAGE_KEYS.BRANDS);
+      localStorage.clear();
       localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
+      localStorage.setItem(STORAGE_KEYS.PRODUCTS, '[]');
+      localStorage.setItem(STORAGE_KEYS.CATEGORIES, '[]');
+      localStorage.setItem(STORAGE_KEYS.CARDS, '[]');
     }
   } catch (err) {
     console.error('Migration check error:', err);
