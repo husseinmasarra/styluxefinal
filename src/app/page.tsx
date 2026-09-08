@@ -128,25 +128,25 @@ export default function HomePage() {
         <div className="relative z-10 w-full max-w-3xl text-left text-white px-5 sm:px-12 lg:px-20 py-8 sm:py-12 space-y-3 sm:space-y-4">
           
           {/* Subtitle Tag matching screenshot: NEW ARRIVALS / COLLECTION 2026 */}
-          <span className="text-[11px] sm:text-sm font-black tracking-[0.25em] text-white uppercase block drop-shadow-sm">
+          <span className="font-sans text-xs sm:text-sm font-bold tracking-[0.22em] text-white uppercase block drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
             {settings.heroSubtitle || 'NEW ARRIVALS / COLLECTION 2026'}
           </span>
 
-          {/* Main Title matching screenshot: REDEFINING \n LUXURY (BODONI MODA SERIF) */}
-          <h1 className="font-serif text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[0.04em] text-white uppercase leading-[1.05] drop-shadow-2xl">
+          {/* Main Title matching screenshot: REDEFINING \n LUXURY (CINZEL SERIF) */}
+          <h1 className="font-serif text-3xl xs:text-4xl sm:text-6xl md:text-7xl font-bold tracking-[0.15em] text-white uppercase leading-[1.1] drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]">
             REDEFINING<br />LUXURY
           </h1>
 
           {/* Description Paragraph matching screenshot */}
-          <p className="text-xs sm:text-base font-bold text-zinc-100 max-w-xl leading-relaxed drop-shadow-md pt-0.5">
+          <p className="font-sans text-[13px] sm:text-base font-medium text-white/95 max-w-xl leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] pt-0.5">
             {settings.heroDescription || 'Clean silhouettes, oversized fits, and permanent fabrications designed to elevate your daily archives.'}
           </p>
 
-          {/* Left-Aligned Text Link WITH BODONI MODA LUXURY SERIF FONT */}
+          {/* Left-Aligned Text Link WITH CINZEL LUXURY SERIF FONT */}
           <div className="pt-2 sm:pt-4">
             <Link 
               href={`/shop?department=${selectedDept}`} 
-              className="inline-block font-serif text-sm sm:text-xl md:text-2xl font-black tracking-[0.2em] sm:tracking-[0.25em] uppercase text-white hover:text-amber-300 transition-all border-b-2 border-white hover:border-amber-300 pb-1 drop-shadow-md"
+              className="inline-block font-serif text-sm sm:text-lg md:text-xl font-bold tracking-[0.2em] uppercase text-white hover:text-amber-300 transition-all border-b-2 border-white hover:border-amber-300 pb-1 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
             >
               SHOP {selectedDept.toUpperCase()} &rarr;
             </Link>
@@ -154,14 +154,14 @@ export default function HomePage() {
 
         </div>
 
-        {/* Hero Department Switcher Links WITH BODONI MODA LUXURY SERIF FONT */}
+        {/* Hero Department Switcher Links WITH CINZEL LUXURY SERIF FONT */}
         <div className="absolute bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-6 sm:gap-14 w-full px-4">
           <button 
             onClick={() => setSelectedDept('women')} 
-            className={`font-serif text-base sm:text-2xl tracking-[0.18em] sm:tracking-[0.2em] uppercase transition-all pb-1 ${
+            className={`font-serif text-sm sm:text-xl tracking-[0.18em] sm:tracking-[0.2em] uppercase transition-all pb-1 ${
               selectedDept === 'women' 
-                ? 'text-white font-black border-b-2 border-white scale-105 sm:scale-110 drop-shadow-lg' 
-                : 'text-zinc-400 font-extrabold hover:text-white hover:scale-105'
+                ? 'text-white font-bold border-b-2 border-white scale-105 sm:scale-110 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]' 
+                : 'text-zinc-300 font-semibold hover:text-white hover:scale-105 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]'
             }`}
           >
             FOR HER
@@ -169,10 +169,10 @@ export default function HomePage() {
 
           <button 
             onClick={() => setSelectedDept('men')} 
-            className={`font-serif text-base sm:text-2xl tracking-[0.18em] sm:tracking-[0.2em] uppercase transition-all pb-1 ${
+            className={`font-serif text-sm sm:text-xl tracking-[0.18em] sm:tracking-[0.2em] uppercase transition-all pb-1 ${
               selectedDept === 'men' 
-                ? 'text-white font-black border-b-2 border-white scale-105 sm:scale-110 drop-shadow-lg' 
-                : 'text-zinc-400 font-extrabold hover:text-white hover:scale-105'
+                ? 'text-white font-bold border-b-2 border-white scale-105 sm:scale-110 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]' 
+                : 'text-zinc-300 font-semibold hover:text-white hover:scale-105 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]'
             }`}
           >
             FOR HIM
