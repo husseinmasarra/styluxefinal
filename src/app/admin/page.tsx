@@ -200,11 +200,28 @@ export default function AdminPage() {
               <span className="group-hover:translate-x-1 transition-transform">→</span>
             </button>
 
-            {/* SECURITY BADGE & RETURN LINK */}
+            {/* SECURITY BADGE & DEVELOPER CONTACT & RETURN LINK */}
             <div className="pt-4 border-t border-zinc-100 flex flex-col items-center gap-3">
               <span className="text-[10px] font-extrabold tracking-[0.2em] text-zinc-400 uppercase flex items-center gap-1.5">
                 <Lock size={12} /> 256-BIT ENCRYPTED BOUTIQUE SECURITY
               </span>
+
+              {/* DEVELOPER / IT SUPPORT BADGE */}
+              <div className="w-full p-3 bg-zinc-50 border border-zinc-200 text-center rounded-none">
+                <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase block tracking-wider">
+                  الدعم الفني والاتصال بالمبرمج
+                </span>
+                <a
+                  href="https://wa.me/96181713408?text=Hi%20Developer,%20regarding%20Styluxe%20Admin"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 mt-1.5 text-xs font-mono font-bold text-zinc-900 hover:text-amber-600 transition-colors"
+                >
+                  <span>+961 81 713 408</span>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-emerald-600 text-white rounded-sm font-sans font-bold">واتساب</span>
+                </a>
+              </div>
+
               <Link 
                 href="/" 
                 className="text-xs font-extrabold text-zinc-500 hover:text-zinc-950 uppercase tracking-[0.15em] transition-colors"
@@ -273,15 +290,33 @@ export default function AdminPage() {
           </nav>
         </div>
 
-        {/* Bottom Logout Button */}
-        <div className="p-6 border-t border-zinc-900">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 text-[13px] font-normal text-zinc-400 hover:text-red-400 transition-colors text-left"
-          >
-            <LogOut size={16} strokeWidth={1.5} />
-            <span>Sign Out</span>
-          </button>
+        {/* Sidebar Footer: Developer Contact & Logout Button */}
+        <div>
+          <div className="px-5 py-3 border-t border-zinc-900 bg-zinc-900/30">
+            <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1 flex items-center justify-between">
+              <span>الاتصال بالمبرمج</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            </div>
+            <a
+              href="https://wa.me/96181713408?text=Hi%20Developer,%20support%20request%20from%20Styluxe%20Admin"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 hover:text-amber-300 transition-colors"
+            >
+              <span>+961 81 713 408</span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-emerald-700/60 text-emerald-200 rounded border border-emerald-600/40 font-sans">واتساب</span>
+            </a>
+          </div>
+
+          <div className="p-5 border-t border-zinc-900">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 text-[13px] font-normal text-zinc-400 hover:text-red-400 transition-colors text-left"
+            >
+              <LogOut size={16} strokeWidth={1.5} />
+              <span>Sign Out</span>
+            </button>
+          </div>
         </div>
 
       </aside>
