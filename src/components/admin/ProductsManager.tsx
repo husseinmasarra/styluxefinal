@@ -144,7 +144,7 @@ export function ProductsManager() {
       id: `brand-${Date.now()}`,
       name: quickBrandName.trim().toUpperCase(),
       slug: quickBrandName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      logoUrl: quickBrandLogo || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=400',
+      logoUrl: quickBrandLogo.trim() || '',
       isFeatured: true
     };
 

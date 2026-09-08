@@ -76,7 +76,7 @@ export function BrandsManager() {
       id: editingBrand ? editingBrand.id : `brand-${Date.now()}`,
       name: brandName.trim(),
       slug: brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      logoUrl: logoUrl || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800',
+      logoUrl: logoUrl.trim() || '',
       isFeatured: true
     };
 

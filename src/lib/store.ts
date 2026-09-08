@@ -42,18 +42,13 @@ const STORAGE_KEYS = {
 const DATA_VERSION_KEY = 'styluxe_app_version';
 const CURRENT_DATA_VERSION = 'v5.0_clean_database_sync';
 
-// Automated migration and cache-buster to keep all phones & visitors in sync with latest changes
+// Automated migration check - SAFE & NON-DESTRUCTIVE (NEVER WIPES USER DATA)
 function checkAndMigrateVersion(): void {
   if (typeof window === 'undefined') return;
   try {
     const saved = localStorage.getItem(DATA_VERSION_KEY);
     if (saved !== CURRENT_DATA_VERSION) {
-      // Clear old outdated cache on client devices so latest updates take effect immediately
-      localStorage.clear();
       localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
-      localStorage.setItem(STORAGE_KEYS.PRODUCTS, '[]');
-      localStorage.setItem(STORAGE_KEYS.CATEGORIES, '[]');
-      localStorage.setItem(STORAGE_KEYS.CARDS, '[]');
     }
   } catch (err) {
     console.error('Migration check error:', err);
@@ -68,46 +63,39 @@ export async function initCloudSync(): Promise<void> {
   try {
     const cloud = await fetchSupabaseCloudData();
     if (cloud.hasData) {
-      if (cloud.products !== undefined) {
+      // STRICT DATA PROTECTION: Only seed from cloud if local storage has NO saved data yet!
+      // This guarantees that the user's manual edits are 100% sacred and never overwritten!
+      const localProducts = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+      if (cloud.products !== undefined && (!localProducts || localProducts === '[]')) {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(cloud.products));
       }
-      if (cloud.categories !== undefined) {
+
+      const localCategories = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+      if (cloud.categories !== undefined && (!localCategories || localCategories === '[]')) {
         localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(cloud.categories));
       }
-      if (cloud.brands !== undefined) {
+
+      const localBrands = localStorage.getItem(STORAGE_KEYS.BRANDS);
+      if (cloud.brands !== undefined && (!localBrands || localBrands === '[]')) {
         localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(cloud.brands));
       }
-      if (cloud.cards !== undefined) {
+
+      const localCards = localStorage.getItem(STORAGE_KEYS.CARDS);
+      if (cloud.cards !== undefined && (!localCards || localCards === '[]')) {
         localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(cloud.cards));
       }
-      if (cloud.menuItems !== undefined) {
+
+      const localMenu = localStorage.getItem(STORAGE_KEYS.MENU);
+      if (cloud.menuItems !== undefined && (!localMenu || localMenu === '[]')) {
         localStorage.setItem(STORAGE_KEYS.MENU, JSON.stringify(cloud.menuItems));
       }
-      if (cloud.settings !== undefined) {
+
+      const localSettings = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (cloud.settings !== undefined && !localSettings) {
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(cloud.settings));
       }
-      window.dispatchEvent(new Event('styluxe_data_updated'));
-    }
 
-    try {
-      const client = getSupabaseClient();
-      client
-        .channel('public-store-realtime')
-        .on('postgres_changes', { event: '*', schema: 'public' }, async () => {
-          const fresh = await fetchSupabaseCloudData();
-          if (fresh.hasData) {
-            if (fresh.products !== undefined) localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(fresh.products));
-            if (fresh.categories !== undefined) localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(fresh.categories));
-            if (fresh.brands !== undefined) localStorage.setItem(STORAGE_KEYS.BRANDS, JSON.stringify(fresh.brands));
-            if (fresh.cards !== undefined) localStorage.setItem(STORAGE_KEYS.CARDS, JSON.stringify(fresh.cards));
-            if (fresh.menuItems !== undefined) localStorage.setItem(STORAGE_KEYS.MENU, JSON.stringify(fresh.menuItems));
-            if (fresh.settings !== undefined) localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(fresh.settings));
-            window.dispatchEvent(new Event('styluxe_data_updated'));
-          }
-        })
-        .subscribe();
-    } catch (e) {
-      console.warn('Realtime channel error:', e);
+      window.dispatchEvent(new Event('styluxe_data_updated'));
     }
   } catch (err) {
     console.warn('Cloud sync error:', err);
