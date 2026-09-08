@@ -119,17 +119,6 @@ export function Footer() {
                   100% AUTHENTICITY GUARANTEE
                 </Link>
               </li>
-              <li className="pt-3 border-t border-zinc-850">
-                <span className="text-[10px] text-zinc-500 block font-mono">DEVELOPER / الاتصال بالمبرمج</span>
-                <a
-                  href="https://wa.me/96181713408"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 transition-colors font-mono font-bold text-xs uppercase"
-                >
-                  <span>CONTACT DEVELOPER</span>
-                </a>
-              </li>
             </ul>
           </div>
 
