@@ -23,6 +23,8 @@ import { CouponsManager } from '@/components/admin/CouponsManager';
 import { SettingsManager } from '@/components/admin/SettingsManager';
 import { useCart } from '@/lib/CartContext';
 import { DataService } from '@/lib/store';
+import { StaffMember } from '@/lib/types';
+import { getStaffAllowedTabs } from '@/lib/permissions';
 
 type AdminTab =
   | 'pos'
@@ -49,6 +51,7 @@ export default function AdminPage() {
   const [passwordInput, setPasswordInput] = useState<string>('');
   const [loginError, setLoginError] = useState<string>('');
   const [loggedInUsername, setLoggedInUsername] = useState<string>('');
+  const [currentStaff, setCurrentStaff] = useState<StaffMember | null>(null);
 
   useEffect(() => {
     // Check session storage
@@ -57,9 +60,26 @@ export default function AdminPage() {
       if (savedUser) {
         setIsAuthenticated(true);
         setLoggedInUsername(savedUser);
+        const staffList = DataService.getStaff();
+        const member = staffList.find(s => s.username.toLowerCase() === savedUser.toLowerCase()) || null;
+        setCurrentStaff(member);
       }
     }
   }, []);
+
+  const allowedTabIds = React.useMemo(() => {
+    if (!isAuthenticated) return [];
+    return getStaffAllowedTabs(currentStaff);
+  }, [isAuthenticated, currentStaff]);
+
+  // Strictly enforce: activeTab is ALWAYS within the staff member's permitted tabs
+  useEffect(() => {
+    if (isAuthenticated && allowedTabIds.length > 0) {
+      if (!allowedTabIds.includes(activeTab)) {
+        setActiveTab(allowedTabIds[0] as AdminTab);
+      }
+    }
+  }, [isAuthenticated, allowedTabIds, activeTab]);
 
   const handleLoginWithUsername = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +118,14 @@ export default function AdminPage() {
     if (cleanPassword === expectedPassword || cleanPassword === fallbackMasterPassword || cleanPassword === '123' || cleanPassword === 'admin123') {
       setIsAuthenticated(true);
       setLoggedInUsername(staffMember.username);
+      setCurrentStaff(staffMember);
+
+      // Auto-route employee to their first authorized tab
+      const allowed = getStaffAllowedTabs(staffMember);
+      if (allowed.length > 0) {
+        setActiveTab(allowed[0] as AdminTab);
+      }
+
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('styluxe_auth_username', staffMember.username);
       }
@@ -109,6 +137,7 @@ export default function AdminPage() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     setLoggedInUsername('');
+    setCurrentStaff(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('styluxe_auth_username');
     }
@@ -251,31 +280,38 @@ export default function AdminPage() {
                 {(settings.storeName || "STYLUXE").replace(/\s+/g, '')}
               </h1>
             </Link>
-            <div className="flex items-center justify-center gap-1.5 text-[11px] font-medium tracking-wide text-zinc-400">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px] font-medium tracking-wide text-zinc-400">
               <User size={12} />
               <span>@{loggedInUsername || 'admin'}</span>
+              {currentStaff && (
+                <span className="text-[9px] px-2 py-0.5 bg-zinc-900 text-amber-400 rounded-full font-mono uppercase font-bold border border-zinc-800">
+                  {currentStaff.role}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Navigation Menu Links */}
+          {/* Navigation Menu Links (strictly restricted to staff member's permitted tabs) */}
           <nav className="p-3 flex flex-col space-y-0.5">
-            {tabsConfig.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as AdminTab)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-normal transition-all text-left rounded-md ${
-                    isActive
-                      ? 'bg-white text-zinc-950 font-medium shadow-xs'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-900 font-normal'
-                  }`}
-                >
-                  <Icon size={16} strokeWidth={1.5} />
-                  <span>{tab.label}</span>
-                </button>
-              );
+            {tabsConfig
+              .filter(tab => allowedTabIds.includes(tab.id))
+              .map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as AdminTab)}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-normal transition-all text-left rounded-md ${
+                      isActive
+                        ? 'bg-white text-zinc-950 font-medium shadow-xs'
+                        : 'text-zinc-400 hover:text-white hover:bg-zinc-900 font-normal'
+                    }`}
+                  >
+                    <Icon size={16} strokeWidth={1.5} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
             })}
 
             {/* Direct View Storefront Link */}
@@ -321,21 +357,43 @@ export default function AdminPage() {
 
       </aside>
 
-      {/* MAIN WORKSPACE */}
+      {/* MAIN WORKSPACE (STRICT ROLE PERMISSION GUARD) */}
       <main className="flex-1 bg-white p-8 sm:p-12 overflow-y-auto min-h-screen">
-        {activeTab === 'pos' && <PosTerminal onBackToDashboard={() => setActiveTab('overview')} />}
-        {activeTab === 'orders' && <OrdersManager />}
-        {activeTab === 'products' && <ProductsManager />}
-        {activeTab === 'coupons' && <CouponsManager />}
-        {activeTab === 'overview' && <OverviewDashboard />}
-        {activeTab === 'categories' && <CategoriesManager />}
-        {activeTab === 'cards' && <HomepageCardsManager />}
-        {activeTab === 'brands' && <BrandsManager />}
-        {activeTab === 'menu' && <MenuBuilder />}
-        {activeTab === 'customers' && <CustomersManager />}
-        {activeTab === 'staff' && <StaffManager />}
-        {activeTab === 'suppliers' && <SuppliersInvoicesManager />}
-        {activeTab === 'settings' && <SettingsManager />}
+        {!allowedTabIds.includes(activeTab) ? (
+          <div className="max-w-md mx-auto my-20 p-8 text-center bg-zinc-50 border border-zinc-200 rounded-xl space-y-4">
+            <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+              <Lock size={24} />
+            </div>
+            <h2 className="font-serif text-xl font-bold text-zinc-950 uppercase">قسم غير مصرح به</h2>
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              تم حصر صلاحيات هذا الحساب وفقاً لاختصاصك المحدد من قِبل إدارة المتجر.
+            </p>
+            {allowedTabIds[0] && (
+              <button
+                onClick={() => setActiveTab(allowedTabIds[0] as AdminTab)}
+                className="px-6 py-2.5 bg-zinc-950 hover:bg-black text-white text-xs font-bold uppercase rounded shadow"
+              >
+                الانتقال إلى قسمك المسموح
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            {activeTab === 'pos' && <PosTerminal onBackToDashboard={() => setActiveTab(allowedTabIds.includes('overview') ? 'overview' : (allowedTabIds[0] as AdminTab))} />}
+            {activeTab === 'orders' && <OrdersManager />}
+            {activeTab === 'products' && <ProductsManager />}
+            {activeTab === 'coupons' && <CouponsManager />}
+            {activeTab === 'overview' && <OverviewDashboard />}
+            {activeTab === 'categories' && <CategoriesManager />}
+            {activeTab === 'cards' && <HomepageCardsManager />}
+            {activeTab === 'brands' && <BrandsManager />}
+            {activeTab === 'menu' && <MenuBuilder />}
+            {activeTab === 'customers' && <CustomersManager />}
+            {activeTab === 'staff' && <StaffManager />}
+            {activeTab === 'suppliers' && <SuppliersInvoicesManager />}
+            {activeTab === 'settings' && <SettingsManager />}
+          </>
+        )}
       </main>
 
     </div>
