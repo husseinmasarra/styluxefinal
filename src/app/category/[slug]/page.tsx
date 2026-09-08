@@ -317,21 +317,39 @@ function CategoryPageContent() {
 
         {/* Brand Swatches Bar (If available in this category) */}
         {availableBrandsInCategory.length > 0 && (
-          <div className="space-y-2 pt-1">
-            <span className="text-[10px] font-black tracking-[0.25em] text-zinc-400 uppercase block">
-              FILTER BY DESIGNER HOUSE
-            </span>
+          <div className="space-y-3 pt-1 border-b border-zinc-100 pb-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black tracking-[0.25em] text-zinc-400 uppercase block">
+                FILTER BY DESIGNER HOUSE
+              </span>
+              {selectedBrand !== 'all' && (
+                <button
+                  onClick={() => setSelectedBrand('all')}
+                  className="text-[10px] font-bold text-red-600 uppercase hover:underline cursor-pointer"
+                >
+                  Reset Brand Filter
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
+              {/* ALL HOUSES CIRCLE */}
               <button
                 onClick={() => setSelectedBrand('all')}
-                className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider shrink-0 transition-all border ${
-                  selectedBrand === 'all'
-                    ? 'bg-zinc-950 text-white border-zinc-950 shadow-sm'
-                    : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-950'
-                }`}
+                className="flex items-center justify-center shrink-0 transition-all cursor-pointer group"
+                title="All Houses"
               >
-                ALL HOUSES
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 flex items-center justify-center transition-all shadow-sm ${
+                  selectedBrand === 'all'
+                    ? 'border-zinc-950 ring-4 ring-amber-500/40 scale-105 shadow-md bg-zinc-950 text-white'
+                    : 'border-zinc-200 bg-white text-zinc-800 hover:border-zinc-950 hover:scale-105'
+                }`}>
+                  <span className={`text-[11px] font-black uppercase tracking-wider ${selectedBrand === 'all' ? 'text-white' : 'text-zinc-950'}`}>
+                    ALL
+                  </span>
+                </div>
               </button>
+
+              {/* BRAND LOGO ONLY CIRCLES */}
               {availableBrandsInCategory.map(brand => {
                 const isSel = selectedBrand === brand.slug || selectedBrand === brand.id;
                 const bCount = deptFiltered.filter(p => p.brandId === brand.id || p.brandName?.toLowerCase() === brand.name.toLowerCase()).length;
@@ -340,16 +358,26 @@ function CategoryPageContent() {
                   <button
                     key={brand.id}
                     onClick={() => setSelectedBrand(isSel ? 'all' : (brand.slug || brand.id))}
-                    className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider shrink-0 transition-all border flex items-center gap-2 ${
-                      isSel
-                        ? 'bg-zinc-950 text-white border-zinc-950 shadow-sm'
-                        : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-950'
-                    }`}
+                    className="flex items-center justify-center shrink-0 transition-all cursor-pointer group"
+                    title={`${brand.name} (${bCount} Products)`}
                   >
-                    {brand.logoUrl && (
-                      <img src={brand.logoUrl} alt={brand.name} className="w-4 h-4 object-contain rounded-full bg-white" />
-                    )}
-                    <span>{brand.name}</span>
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 flex items-center justify-center p-2.5 bg-white transition-all shadow-sm overflow-hidden ${
+                      isSel
+                        ? 'border-zinc-950 ring-4 ring-amber-500/40 scale-105 shadow-md'
+                        : 'border-zinc-200 hover:border-zinc-950 hover:scale-105'
+                    }`}>
+                      {brand.logoUrl ? (
+                        <img 
+                          src={brand.logoUrl} 
+                          alt={brand.name} 
+                          className="w-full h-full object-contain p-0.5" 
+                        />
+                      ) : (
+                        <span className="text-[10px] font-black uppercase text-zinc-950 text-center leading-tight">
+                          {brand.name}
+                        </span>
+                      )}
+                    </div>
                   </button>
                 );
               })}
