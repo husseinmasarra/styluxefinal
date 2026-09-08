@@ -156,15 +156,38 @@ export function SettingsManager() {
           </p>
         </div>
 
-        <button
-          onClick={() => handleSaveAll()}
-          className={`px-8 py-4 rounded text-sm font-black tracking-[0.25em] uppercase flex items-center gap-2.5 transition-all shadow-md shrink-0 ${
-            isSaved ? 'bg-emerald-600 text-white' : 'bg-zinc-950 text-white hover:bg-zinc-800'
-          }`}
-        >
-          {isSaved ? <Check size={18} /> : <Save size={18} />}
-          <span>{isSaved ? 'SETTINGS SAVED!' : 'SAVE ALL SETTINGS'}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={handleExportBackup}
+            className="px-6 py-4 border-2 border-zinc-950 bg-white hover:bg-zinc-100 text-zinc-950 rounded text-xs font-black tracking-[0.2em] uppercase flex items-center gap-2 transition-all cursor-pointer shadow-sm"
+            title="Download full database JSON backup"
+          >
+            <Download size={16} />
+            <span>EXPORT BACKUP</span>
+          </button>
+
+          <label className="px-6 py-4 border-2 border-zinc-300 hover:border-zinc-950 bg-zinc-50 text-zinc-900 rounded text-xs font-black tracking-[0.2em] uppercase flex items-center gap-2 transition-all cursor-pointer shadow-sm">
+            <Upload size={16} />
+            <span>RESTORE BACKUP</span>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportBackup}
+              className="hidden"
+            />
+          </label>
+
+          <button
+            onClick={() => handleSaveAll()}
+            className={`px-8 py-4 rounded text-sm font-black tracking-[0.25em] uppercase flex items-center gap-2.5 transition-all shadow-md shrink-0 ${
+              isSaved ? 'bg-emerald-600 text-white' : 'bg-zinc-950 text-white hover:bg-zinc-800'
+            }`}
+          >
+            {isSaved ? <Check size={18} /> : <Save size={18} />}
+            <span>{isSaved ? 'SETTINGS SAVED!' : 'SAVE ALL SETTINGS'}</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. PER-DEPARTMENT WHATSAPP & INSTAGRAM SETTINGS (20% ENLARGED FONTS) */}

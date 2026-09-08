@@ -208,8 +208,8 @@ export interface StaffMember {
   name: string;
   username: string;
   password?: string;
-  role: 'admin' | 'manager' | 'cashier';
-  permissions: string[];
+  role: 'admin' | 'manager' | 'cashier' | string;
+  permissions: string[] | string;
   status: 'ACTIVE' | 'INACTIVE';
 }
 
