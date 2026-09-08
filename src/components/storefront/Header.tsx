@@ -224,7 +224,7 @@ export function Header() {
                 setActiveL2(null);
                 setIsPradaDrawerOpen(true);
               }}
-              className="flex items-center gap-2 text-sm font-normal text-zinc-900 hover:opacity-70 transition-opacity cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-normal text-zinc-900 hover:opacity-70 transition-opacity cursor-pointer"
               title="Open Navigation Menu"
             >
               <Menu size={18} strokeWidth={1.5} />
@@ -234,13 +234,13 @@ export function Header() {
 
           {/* Center Brand Logo (MATCHING PRADA SERIF LUXURY) */}
           <div className="brand-logo">
-            <Link href="/" className="text-zinc-950 font-serif tracking-[0.22em] text-2xl sm:text-3xl font-bold">
+            <Link href="/" className="text-zinc-950 font-serif tracking-[0.16em] sm:tracking-[0.22em] text-xl sm:text-2xl md:text-3xl font-bold">
               STYLUXE
             </Link>
           </div>
 
           {/* Right Utilities (MATCHING PRADA MINIMAL LUXURY) */}
-          <div className="nav-utilities flex items-center gap-5 sm:gap-7">
+          <div className="nav-utilities flex items-center gap-2.5 sm:gap-5 md:gap-7">
             
             {/* Size Guide Trigger */}
             <button
@@ -310,11 +310,11 @@ export function Header() {
           <div className="relative h-full flex flex-row overflow-x-auto overflow-y-hidden shadow-2xl z-10 bg-white">
             
             {/* ==================== COLUMN 1: MAIN NAVIGATION (LEVEL 1) ==================== */}
-            <div className="w-64 sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight">
+            <div className={`w-[85vw] max-w-[320px] sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight ${activeL1 ? 'hidden sm:flex' : 'flex'}`}>
               
               <div className="flex-shrink-0">
                 {/* Top Header Row: ✕ Close and 🔍 Search side by side */}
-                <div className="px-8 py-7 flex items-center gap-7 bg-white border-b border-zinc-100">
+                <div className="px-6 sm:px-8 py-6 sm:py-7 flex items-center gap-7 bg-white border-b border-zinc-100">
                   <button 
                     onClick={() => setIsPradaDrawerOpen(false)}
                     className="flex items-center gap-2 text-sm font-normal text-zinc-900 hover:opacity-70 transition-opacity cursor-pointer"
@@ -353,7 +353,7 @@ export function Header() {
                             handleNavigateItem(item);
                           }
                         }}
-                        className={`flex items-center justify-between px-8 py-3.5 cursor-pointer select-none transition-colors ${
+                        className={`flex items-center justify-between px-6 sm:px-8 py-3.5 cursor-pointer select-none transition-colors ${
                           isActive ? 'bg-zinc-50 text-zinc-950 font-medium' : 'hover:bg-zinc-50 text-zinc-900'
                         }`}
                       >
@@ -376,7 +376,7 @@ export function Header() {
               </div>
 
               {/* Bottom Footer Section: Contact us */}
-              <div className="p-8 border-t border-zinc-100 bg-white flex-shrink-0">
+              <div className="p-6 sm:p-8 border-t border-zinc-100 bg-white flex-shrink-0">
                 <a 
                   href={`https://wa.me/${settings.whatsappNumber || '96170123456'}`}
                   target="_blank"
@@ -398,7 +398,7 @@ export function Header() {
               if (l2Items.length === 0) return null;
 
               return (
-                <div className="w-64 sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight">
+                <div className={`w-[85vw] max-w-[320px] sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight ${activeL2 ? 'hidden sm:flex' : 'flex'}`}>
                   
                   <div className="flex-shrink-0">
                     {/* Column 2 Header */}
@@ -479,7 +479,7 @@ export function Header() {
               if (l3Items.length === 0) return null;
 
               return (
-                <div className="w-64 sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight">
+                <div className="w-[85vw] max-w-[320px] sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight">
                   
                   <div className="flex-shrink-0">
                     {/* Column 3 Header */}

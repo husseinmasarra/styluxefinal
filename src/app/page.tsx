@@ -125,28 +125,28 @@ export default function HomePage() {
         )}
 
         {/* Hero Content Overlay (LEFT ALIGNED 100% MATCHING SCREENSHOT) */}
-        <div className="relative z-10 w-full max-w-3xl text-left text-white px-8 sm:px-16 lg:px-20 py-12 space-y-4">
+        <div className="relative z-10 w-full max-w-3xl text-left text-white px-5 sm:px-12 lg:px-20 py-8 sm:py-12 space-y-3 sm:space-y-4">
           
           {/* Subtitle Tag matching screenshot: NEW ARRIVALS / COLLECTION 2026 */}
-          <span className="text-xs sm:text-sm font-black tracking-[0.25em] text-white uppercase block drop-shadow-sm">
+          <span className="text-[11px] sm:text-sm font-black tracking-[0.25em] text-white uppercase block drop-shadow-sm">
             {settings.heroSubtitle || 'NEW ARRIVALS / COLLECTION 2026'}
           </span>
 
           {/* Main Title matching screenshot: REDEFINING \n LUXURY (BODONI MODA SERIF) */}
-          <h1 className="font-serif text-5xl sm:text-7xl lg:text-8xl font-black tracking-[0.04em] text-white uppercase leading-[1.02] drop-shadow-2xl">
+          <h1 className="font-serif text-3xl xs:text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-[0.04em] text-white uppercase leading-[1.05] drop-shadow-2xl">
             REDEFINING<br />LUXURY
           </h1>
 
           {/* Description Paragraph matching screenshot */}
-          <p className="text-sm sm:text-base font-bold text-zinc-100 max-w-xl leading-relaxed drop-shadow-md pt-1">
+          <p className="text-xs sm:text-base font-bold text-zinc-100 max-w-xl leading-relaxed drop-shadow-md pt-0.5">
             {settings.heroDescription || 'Clean silhouettes, oversized fits, and permanent fabrications designed to elevate your daily archives.'}
           </p>
 
           {/* Left-Aligned Text Link WITH BODONI MODA LUXURY SERIF FONT */}
-          <div className="pt-4">
+          <div className="pt-2 sm:pt-4">
             <Link 
               href={`/shop?department=${selectedDept}`} 
-              className="inline-block font-serif text-lg sm:text-2xl font-black tracking-[0.25em] uppercase text-white hover:text-amber-300 transition-all border-b-2 border-white hover:border-amber-300 pb-1 drop-shadow-md"
+              className="inline-block font-serif text-sm sm:text-xl md:text-2xl font-black tracking-[0.2em] sm:tracking-[0.25em] uppercase text-white hover:text-amber-300 transition-all border-b-2 border-white hover:border-amber-300 pb-1 drop-shadow-md"
             >
               SHOP {selectedDept.toUpperCase()} &rarr;
             </Link>
@@ -155,12 +155,12 @@ export default function HomePage() {
         </div>
 
         {/* Hero Department Switcher Links WITH BODONI MODA LUXURY SERIF FONT */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-8 sm:gap-14 w-full px-4">
+        <div className="absolute bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-6 sm:gap-14 w-full px-4">
           <button 
             onClick={() => setSelectedDept('women')} 
-            className={`font-serif text-lg sm:text-2xl tracking-[0.2em] uppercase transition-all pb-1.5 ${
+            className={`font-serif text-base sm:text-2xl tracking-[0.18em] sm:tracking-[0.2em] uppercase transition-all pb-1 ${
               selectedDept === 'women' 
-                ? 'text-white font-black border-b-2 border-white scale-110 drop-shadow-lg' 
+                ? 'text-white font-black border-b-2 border-white scale-105 sm:scale-110 drop-shadow-lg' 
                 : 'text-zinc-400 font-extrabold hover:text-white hover:scale-105'
             }`}
           >
@@ -169,9 +169,9 @@ export default function HomePage() {
 
           <button 
             onClick={() => setSelectedDept('men')} 
-            className={`font-serif text-lg sm:text-2xl tracking-[0.2em] uppercase transition-all pb-1.5 ${
+            className={`font-serif text-base sm:text-2xl tracking-[0.18em] sm:tracking-[0.2em] uppercase transition-all pb-1 ${
               selectedDept === 'men' 
-                ? 'text-white font-black border-b-2 border-white scale-110 drop-shadow-lg' 
+                ? 'text-white font-black border-b-2 border-white scale-105 sm:scale-110 drop-shadow-lg' 
                 : 'text-zinc-400 font-extrabold hover:text-white hover:scale-105'
             }`}
           >
@@ -228,21 +228,30 @@ export default function HomePage() {
               {/* EXACT PRADA 4-COLUMN HORIZONTAL GRID MATCHING SCREENSHOT 100% */}
               {deptCats.length > 0 && (
                 <div className="border border-zinc-200 bg-white overflow-hidden shadow-2xs">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-zinc-200">
-                    {deptCats.map(cat => {
+                  <div className="grid grid-cols-2 lg:grid-cols-4">
+                    {deptCats.map((cat, idx) => {
                       const catImage = cat.imageUrl || "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80";
                       const catSlug = cat.slug || encodeURIComponent(cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
                       const formattedTitle = formatPradaCategoryTitle(cat.name, selectedDept);
+
+                      const isLastColMobile = idx % 2 === 1;
+                      const isLastRowMobile = idx >= deptCats.length - (deptCats.length % 2 === 0 ? 2 : 1);
+                      const isLastColDesktop = idx === deptCats.length - 1;
 
                       return (
                         <Link
                           key={cat.id}
                           href={`/category/${catSlug}?department=${selectedDept}`}
-                          className="group flex flex-col bg-white overflow-hidden transition-colors hover:bg-zinc-50/60"
+                          className={`group flex flex-col bg-white overflow-hidden transition-colors hover:bg-zinc-50/60
+                            ${!isLastColMobile ? 'border-r border-zinc-200' : ''}
+                            ${!isLastRowMobile ? 'border-b border-zinc-200' : ''}
+                            lg:border-b-0
+                            ${!isLastColDesktop ? 'lg:border-r lg:border-zinc-200' : 'lg:border-r-0'}
+                          `}
                           title={`Explore ${formattedTitle}`}
                         >
                           {/* PRADA STUDIO BACKGROUND WITH CRISP OBJECT-CONTAIN / COVER */}
-                          <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-4 sm:p-8">
+                          <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-3 sm:p-6 lg:p-8">
                             <img 
                               src={catImage} 
                               alt={cat.name} 
@@ -251,7 +260,7 @@ export default function HomePage() {
                           </div>
 
                           {/* PRADA CLEAN BOLD TITLE BELOW IMAGE */}
-                          <div className="py-4 sm:py-5 px-3 bg-white text-center border-t border-zinc-100 flex items-center justify-center min-h-[56px]">
+                          <div className="py-3 sm:py-5 px-2 sm:px-3 bg-white text-center border-t border-zinc-100 flex items-center justify-center min-h-[46px] sm:min-h-[56px]">
                             <span className="text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline">
                               {formattedTitle}
                             </span>
@@ -276,19 +285,28 @@ export default function HomePage() {
                   </div>
 
                   <div className="border border-zinc-200 bg-white overflow-hidden shadow-2xs">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-zinc-200">
-                      {allSubCats.map(sub => {
+                    <div className="grid grid-cols-2 lg:grid-cols-4">
+                      {allSubCats.map((sub, idx) => {
                         const subImage = sub.imageUrl || "https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80";
                         const subSlug = sub.slug || encodeURIComponent(sub.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+
+                        const isLastColMobile = idx % 2 === 1;
+                        const isLastRowMobile = idx >= allSubCats.length - (allSubCats.length % 2 === 0 ? 2 : 1);
+                        const isLastColDesktop = idx === allSubCats.length - 1;
 
                         return (
                           <Link
                             key={sub.id}
                             href={`/category/${subSlug}?department=${selectedDept}`}
-                            className="group flex flex-col bg-white overflow-hidden transition-colors hover:bg-zinc-50/60"
+                            className={`group flex flex-col bg-white overflow-hidden transition-colors hover:bg-zinc-50/60
+                              ${!isLastColMobile ? 'border-r border-zinc-200' : ''}
+                              ${!isLastRowMobile ? 'border-b border-zinc-200' : ''}
+                              lg:border-b-0
+                              ${!isLastColDesktop ? 'lg:border-r lg:border-zinc-200' : 'lg:border-r-0'}
+                            `}
                             title={`Explore ${sub.name}`}
                           >
-                            <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-4 sm:p-8">
+                            <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-3 sm:p-6 lg:p-8">
                               <img 
                                 src={subImage} 
                                 alt={sub.name} 
@@ -296,7 +314,7 @@ export default function HomePage() {
                               />
                             </div>
 
-                            <div className="py-4 sm:py-5 px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[56px]">
+                            <div className="py-3 sm:py-5 px-2 sm:px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[46px] sm:min-h-[56px]">
                               <span className="text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline">
                                 {sub.name}
                               </span>
@@ -385,7 +403,7 @@ export default function HomePage() {
                           NO PRODUCTS RECORDED IN THIS CATEGORY YET.
                         </div>
                       ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2.5 sm:gap-x-6 gap-y-6 sm:gap-y-10">
                           {filteredList.map(product => (
                             <ProductCard key={product.id} product={product} />
                           ))}
@@ -438,7 +456,7 @@ export default function HomePage() {
                               <ArrowRight size={14} />
                             </Link>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2.5 sm:gap-x-6 gap-y-6 sm:gap-y-10">
                             {group.products.map(product => (
                               <ProductCard key={product.id} product={product} />
                             ))}
@@ -453,7 +471,7 @@ export default function HomePage() {
                               MORE SELECTIONS
                             </h3>
                           </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-2.5 sm:gap-x-6 gap-y-6 sm:gap-y-10">
                             {orphanProducts.map(product => (
                               <ProductCard key={product.id} product={product} />
                             ))}

@@ -207,7 +207,7 @@ function CategoryPageContent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
           
           {/* Department Filter Tabs */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full scrollbar-none flex-nowrap sm:flex-wrap">
             {[
               { id: 'all', label: `ALL ${categoryName.toUpperCase()}` },
               { id: 'women', label: 'FOR HER' },
@@ -219,7 +219,7 @@ function CategoryPageContent() {
                   setSelectedDept(tab.id as any);
                   setSelectedBrand('all');
                 }}
-                className={`px-5 py-2.5 text-xs font-extrabold uppercase tracking-widest rounded-full transition-all ${
+                className={`px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-xs font-extrabold uppercase tracking-widest rounded-full transition-all shrink-0 ${
                   selectedDept === tab.id
                     ? 'bg-zinc-950 text-white shadow-sm scale-105'
                     : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
@@ -233,7 +233,7 @@ function CategoryPageContent() {
           {/* Quick Back to Boutique link */}
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-950 transition-colors"
+            className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-950 transition-colors shrink-0"
           >
             <ArrowLeft size={14} />
             <span>BACK TO HOME</span>
@@ -242,101 +242,83 @@ function CategoryPageContent() {
         </div>
 
         {/* Sub-Categories Luxury Showcase: Prada 4-Column Divided Grid Layout */}
-        {category?.subCategories && category.subCategories.length > 0 && (
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black tracking-[0.25em] text-zinc-900 uppercase">
-                EXPLORE COLLECTIONS
-              </span>
-              {selectedSubCategory !== 'all' && (
-                <button
-                  onClick={() => setSelectedSubCategory('all')}
-                  className="text-[11px] font-bold tracking-wider text-zinc-500 hover:text-zinc-950 underline uppercase transition-colors"
-                >
-                  SHOW ALL ({categoryName})
-                </button>
-              )}
-            </div>
+        {category?.subCategories && category.subCategories.length > 0 && (() => {
+          const allSubItems = [
+            { id: 'all', name: `ALL ${categoryName}`, isAll: true, imageUrl: categoryImage, count: deptFiltered.length },
+            ...category.subCategories.map(s => ({
+              ...s,
+              isAll: false,
+              count: deptFiltered.filter(p => isProductMatchingCategory(p.category, s.name)).length
+            }))
+          ];
 
-            <div className="border border-zinc-200 bg-white overflow-hidden shadow-2xs">
-              <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-zinc-200">
-                {/* ALL CATEGORY ITEM */}
-                <div
-                  onClick={() => setSelectedSubCategory('all')}
-                  className={`group flex flex-col bg-white overflow-hidden cursor-pointer transition-colors ${
-                    selectedSubCategory === 'all'
-                      ? 'bg-zinc-100/70'
-                      : 'hover:bg-zinc-50/60'
-                  }`}
-                >
-                  <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-4 sm:p-6">
-                    <img
-                      src={categoryImage}
-                      alt="All"
-                      className="w-full h-full object-contain sm:object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out"
-                    />
-                    {selectedSubCategory === 'all' && (
-                      <div className="absolute top-3 right-3 bg-zinc-950 text-white text-[9px] font-black uppercase px-2 py-0.5 tracking-wider">
-                        Active
+          return (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black tracking-[0.25em] text-zinc-900 uppercase">
+                  EXPLORE COLLECTIONS
+                </span>
+                {selectedSubCategory !== 'all' && (
+                  <button
+                    onClick={() => setSelectedSubCategory('all')}
+                    className="text-[11px] font-bold tracking-wider text-zinc-500 hover:text-zinc-950 underline uppercase transition-colors"
+                  >
+                    SHOW ALL ({categoryName})
+                  </button>
+                )}
+              </div>
+
+              <div className="border border-zinc-200 bg-white overflow-hidden shadow-2xs">
+                <div className="grid grid-cols-2 lg:grid-cols-4">
+                  {allSubItems.map((item, idx) => {
+                    const isSel = item.isAll ? selectedSubCategory === 'all' : selectedSubCategory === item.name;
+                    const isLastColMobile = idx % 2 === 1;
+                    const isLastRowMobile = idx >= allSubItems.length - (allSubItems.length % 2 === 0 ? 2 : 1);
+                    const isLastColDesktop = idx === allSubItems.length - 1;
+
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => setSelectedSubCategory(item.isAll ? 'all' : (isSel ? 'all' : item.name))}
+                        className={`group flex flex-col bg-white overflow-hidden cursor-pointer transition-colors ${
+                          isSel ? 'bg-zinc-100/70' : 'hover:bg-zinc-50/60'
+                        }
+                          ${!isLastColMobile ? 'border-r border-zinc-200' : ''}
+                          ${!isLastRowMobile ? 'border-b border-zinc-200' : ''}
+                          lg:border-b-0
+                          ${!isLastColDesktop ? 'lg:border-r lg:border-zinc-200' : 'lg:border-r-0'}
+                        `}
+                      >
+                        <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-3 sm:p-6">
+                          <img
+                            src={item.imageUrl || categoryImage || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=600'}
+                            alt={item.name}
+                            className="w-full h-full object-contain sm:object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out"
+                          />
+                          {isSel && (
+                            <div className="absolute top-2.5 right-2.5 bg-zinc-950 text-white text-[8px] sm:text-[9px] font-black uppercase px-2 py-0.5 tracking-wider shadow-sm">
+                              Active
+                            </div>
+                          )}
+                        </div>
+                        <div className="py-3 sm:py-4 px-2 sm:px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[48px] sm:min-h-[58px]">
+                          <span className={`text-[11px] sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline ${
+                            isSel ? 'underline' : ''
+                          }`}>
+                            {item.name}
+                          </span>
+                          <span className="text-[9px] sm:text-[10px] text-zinc-400 font-bold tracking-widest uppercase mt-0.5">
+                            {item.count} PIECES
+                          </span>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div className="py-4 px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[58px]">
-                    <span className={`text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline ${
-                      selectedSubCategory === 'all' ? 'underline' : ''
-                    }`}>
-                      ALL {categoryName}
-                    </span>
-                    <span className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase mt-0.5">
-                      {deptFiltered.length} PIECES
-                    </span>
-                  </div>
+                    );
+                  })}
                 </div>
-
-                {/* INDIVIDUAL SUB-CATEGORIES */}
-                {category.subCategories.map(sub => {
-                  const isSel = selectedSubCategory === sub.name;
-                  const subProdsCount = deptFiltered.filter(p => isProductMatchingCategory(p.category, sub.name)).length;
-
-                  return (
-                    <div
-                      key={sub.id}
-                      onClick={() => setSelectedSubCategory(isSel ? 'all' : sub.name)}
-                      className={`group flex flex-col bg-white overflow-hidden cursor-pointer transition-colors ${
-                        isSel
-                          ? 'bg-zinc-100/70'
-                          : 'hover:bg-zinc-50/60'
-                      }`}
-                    >
-                      <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-4 sm:p-6">
-                        <img
-                          src={sub.imageUrl || categoryImage || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=600'}
-                          alt={sub.name}
-                          className="w-full h-full object-contain sm:object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out"
-                        />
-                        {isSel && (
-                          <div className="absolute top-3 right-3 bg-zinc-950 text-white text-[9px] font-black uppercase px-2 py-0.5 tracking-wider">
-                            Active
-                          </div>
-                        )}
-                      </div>
-                      <div className="py-4 px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[58px]">
-                        <span className={`text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline ${
-                          isSel ? 'underline' : ''
-                        }`}>
-                          {sub.name}
-                        </span>
-                        <span className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase mt-0.5">
-                          {subProdsCount} PIECES
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Brand Swatches Bar (If available in this category) */}
         {availableBrandsInCategory.length > 0 && (
@@ -471,7 +453,7 @@ function CategoryPageContent() {
             </div>
           </div>
         ) : (
-          <div className={`grid gap-x-6 gap-y-12 ${
+          <div className={`grid gap-x-2.5 sm:gap-x-6 gap-y-6 sm:gap-y-12 ${
             gridCols === 2
               ? 'grid-cols-1 sm:grid-cols-2'
               : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'

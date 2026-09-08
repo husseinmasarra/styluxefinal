@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { CartProvider } from "@/lib/CartContext";
 import { Header } from "@/components/storefront/Header";
@@ -6,6 +6,13 @@ import { Footer } from "@/components/storefront/Footer";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { ToastNotification } from "@/components/storefront/ToastNotification";
 import { SizeGuideModal } from "@/components/storefront/SizeGuideModal";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#ffffff",
+};
 
 export const metadata: Metadata = {
   title: {

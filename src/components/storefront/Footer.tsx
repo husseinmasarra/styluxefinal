@@ -25,7 +25,7 @@ export function Footer() {
         {/* 1. TOP BRAND HEADER IN SOLID BLACK - FULL WIDTH BALANCED */}
         <div className="text-center space-y-4 pb-8 border-b border-zinc-900">
           <Link href="/" className="inline-block">
-            <h2 className="font-serif text-3xl sm:text-5xl font-extrabold tracking-[0.35em] text-white uppercase whitespace-nowrap">
+            <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-[0.22em] sm:tracking-[0.35em] text-white uppercase">
               {(settings.storeName || "STYLUXE").replace(/\s+/g, '')}
             </h2>
           </Link>
