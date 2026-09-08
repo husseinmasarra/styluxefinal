@@ -106,21 +106,21 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Product Info */}
       <div className="product-info space-y-1 pt-3">
-        {/* Line 1: BRAND NAME (DEFAULTS TO STYLUXE IF UNSET MATCHING SCREENSHOT) */}
-        <span className="product-brand font-black tracking-widest text-zinc-950 uppercase text-xs block">
+        {/* Line 1: BRAND NAME (13px, bold, 0.12em tracking) */}
+        <span className="product-brand font-bold tracking-[0.12em] text-zinc-950 uppercase text-[13px] block">
           {product.brandName && product.brandName.trim() !== '' ? product.brandName : 'STYLUXE'}
         </span>
 
-        {/* Line 2: PRODUCT TITLE */}
+        {/* Line 2: PRODUCT TITLE (14px, 500 medium, 0.02em tracking) */}
         <Link href={`/product/${product.id}`} onClick={handleProductClick} scroll={true}>
-          <h3 className="product-name font-medium tracking-wide text-zinc-800 hover:text-zinc-950 uppercase text-xs line-clamp-1">
+          <h3 className="product-name font-medium tracking-[0.02em] text-zinc-800 hover:text-zinc-950 uppercase text-[14px] line-clamp-1">
             {product.title}
           </h3>
         </Link>
 
-        {/* Line 3: PRICE */}
+        {/* Line 3: PRICE (13px, 600 semibold) */}
         <div className="flex items-center gap-2 pt-0.5">
-          <span className="text-xs font-black text-zinc-950">
+          <span className="text-[13px] font-semibold text-zinc-950">
             {formatCurrency(product.salePrice || product.price, currency, settings.lbpRate, settings.eurRate)}
           </span>
           {product.salePrice && (

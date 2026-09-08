@@ -224,41 +224,41 @@ export function Header() {
                 setActiveL2(null);
                 setIsPradaDrawerOpen(true);
               }}
-              className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-zinc-900 hover:text-black transition-colors cursor-pointer uppercase tracking-wider"
+              className="flex items-center gap-1.5 text-[12px] font-semibold text-zinc-900 hover:text-black transition-colors cursor-pointer uppercase tracking-[0.1em]"
               title="Open Navigation Menu"
             >
-              <Menu size={18} strokeWidth={2} />
-              <span className="tracking-widest">MENU</span>
+              <Menu size={16} strokeWidth={1.8} />
+              <span className="tracking-[0.1em]">MENU</span>
             </button>
 
             <button 
               onClick={() => setIsSearchOpen(true)}
-              className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-zinc-900 hover:text-black transition-colors cursor-pointer uppercase tracking-wider"
+              className="flex items-center gap-1.5 text-[12px] font-semibold text-zinc-900 hover:text-black transition-colors cursor-pointer uppercase tracking-[0.1em]"
               title="Search Catalog"
             >
-              <Search size={16} strokeWidth={2} />
-              <span className="tracking-widest hidden xs:inline-block sm:inline-block">SEARCH</span>
+              <Search size={15} strokeWidth={1.8} />
+              <span className="tracking-[0.1em] hidden xs:inline-block sm:inline-block">SEARCH</span>
             </button>
           </div>
 
           {/* Center Brand Logo: STYLUXE */}
           <div className="brand-logo flex items-center justify-center">
             <Link href="/" className="flex items-center justify-center py-1 group" title="STYLUXE">
-              <span className="font-serif text-2xl sm:text-3xl md:text-4xl font-black tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
+              <span className="font-serif text-[22px] sm:text-[24px] font-semibold tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
                 STYLUXE
               </span>
             </Link>
           </div>
 
           {/* Right Utilities: CONTACT US, Settings, Account, Cart Bag */}
-          <div className="nav-utilities flex items-center gap-3 sm:gap-5 md:gap-6">
+          <div className="nav-utilities flex items-center gap-3.5 sm:gap-5 md:gap-6">
             
             {/* Contact Us Link matching reference screenshot */}
             <a 
               href={`https://wa.me/${(settings.whatsappNumber || '96170123456').replace(/[^\d]/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:inline-block text-xs font-black text-zinc-900 hover:text-black uppercase tracking-widest transition-colors"
+              className="hidden md:inline-block text-[12px] font-semibold text-zinc-900 hover:text-black uppercase tracking-[0.1em] transition-colors"
             >
               CONTACT US
             </a>

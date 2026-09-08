@@ -24,8 +24,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "Inter", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
-        serif: ["Georgia", "Cambria", "Times New Roman", "serif"],
+        sans: ["'Montserrat'", "sans-serif"],
+        serif: ["'Cinzel'", "serif"],
+        heading: ["'Cinzel'", "serif"],
+        body: ["'Montserrat'", "sans-serif"],
       },
       letterSpacing: {
         prada: "0.25em",
