@@ -45,6 +45,16 @@ export const metadata: Metadata = {
     description: "Curated authentic designer apparel, footwear, and accessories.",
     images: ["https://images.unsplash.com/photo-1544441893-675973e31985?w=1200&auto=format&fit=crop&q=85"],
   },
+  icons: {
+    icon: [
+      { url: '/logo.jpg?v=2', type: 'image/jpeg' },
+      { url: '/favicon.ico?v=2' },
+    ],
+    shortcut: ['/logo.jpg?v=2'],
+    apple: [
+      { url: '/logo.jpg?v=2', sizes: '180x180', type: 'image/jpeg' },
+    ],
+  },
   robots: {
     index: true,
     follow: true,
@@ -59,6 +69,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" type="image/jpeg" href="/logo.jpg?v=2" />
+        <link rel="shortcut icon" href="/logo.jpg?v=2" />
+        <link rel="apple-touch-icon" href="/logo.jpg?v=2" />
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />

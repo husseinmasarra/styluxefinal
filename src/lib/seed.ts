@@ -3,7 +3,7 @@ import { Product, Brand, Category, HomepageCard, MenuItem, Order, Customer, Staf
 export const INITIAL_SETTINGS: StoreSettings = {
   "storeName": "STYLUXE",
   "tagline": "Redefining Luxury International Brands",
-  "logoUrl": "https://images.unsplash.com/photo-1544441893-675973e31985?w=200&auto=format&fit=crop&q=80",
+  "logoUrl": "/logo.jpg",
   "phone": "81713408",
   "email": "",
   "address": "aramon - main streer - kaser haidar ",

@@ -24,10 +24,12 @@ export function Footer() {
         
         {/* 1. TOP BRAND HEADER IN SOLID BLACK - FULL WIDTH BALANCED */}
         <div className="text-center space-y-4 pb-8 border-b border-zinc-900">
-          <Link href="/" className="inline-block">
-            <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-[0.22em] sm:tracking-[0.35em] text-white uppercase">
-              {(settings.storeName || "STYLUXE").replace(/\s+/g, '')}
-            </h2>
+          <Link href="/" className="inline-flex flex-col items-center justify-center group" title="STYLUXE">
+            <img 
+              src="/logo.jpg" 
+              alt="STYLUXE" 
+              className="h-14 sm:h-18 w-auto mx-auto invert object-contain transition-transform duration-300 group-hover:scale-105" 
+            />
           </Link>
           <p className="text-xs sm:text-sm font-medium text-zinc-400 max-w-2xl mx-auto tracking-wider uppercase leading-relaxed">
             Lebanon's premier luxury fashion boutique. Curated authentic designer apparel, footwear, and accessories from global fashion houses.

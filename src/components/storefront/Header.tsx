@@ -233,9 +233,13 @@ export function Header() {
           </div>
 
           {/* Center Brand Logo (MATCHING PRADA SERIF LUXURY) */}
-          <div className="brand-logo">
-            <Link href="/" className="text-zinc-950 font-serif tracking-[0.16em] sm:tracking-[0.22em] text-xl sm:text-2xl md:text-3xl font-bold">
-              STYLUXE
+          <div className="brand-logo flex items-center justify-center">
+            <Link href="/" className="flex items-center justify-center py-1 group" title="STYLUXE Luxury">
+              <img 
+                src="/logo.jpg" 
+                alt="STYLUXE" 
+                className="h-10 sm:h-12 md:h-14 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" 
+              />
             </Link>
           </div>
 
