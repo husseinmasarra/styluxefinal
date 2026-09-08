@@ -10,6 +10,23 @@ export function Footer() {
   const { settings } = useCart();
   const [mounted, setMounted] = React.useState(false);
 
+  // Secret 3-clicks/taps tracker on Copyright to access /admin
+  const copyrightClicksRef = React.useRef<number>(0);
+  const copyrightTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleSecretCopyrightClick = () => {
+    copyrightClicksRef.current += 1;
+    if (copyrightClicksRef.current >= 3) {
+      window.location.href = '/admin';
+      copyrightClicksRef.current = 0;
+      return;
+    }
+    if (copyrightTimerRef.current) clearTimeout(copyrightTimerRef.current);
+    copyrightTimerRef.current = setTimeout(() => {
+      copyrightClicksRef.current = 0;
+    }, 1200);
+  };
+
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -155,12 +172,8 @@ export function Footer() {
         {/* 3. BOTTOM COPYRIGHT BAR IN SOLID BLACK - WITH SECRET TRIPLE-CLICK ACCESS TO ADMIN */}
         <div className="border-t border-zinc-900 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500 uppercase tracking-widest select-none">
           <p 
-            onClick={(e) => {
-              if (e.detail === 3) {
-                window.location.href = '/admin';
-              }
-            }}
-            className="cursor-default"
+            onClick={handleSecretCopyrightClick}
+            className="cursor-default select-none"
             title="STYLUXE Boutique"
           >
             © 2026 {(settings.storeName || "STYLUXE").replace(/\s+/g, '')} BOUTIQUE. ALL RIGHTS RESERVED.

@@ -26,6 +26,24 @@ export function Header() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
 
+  // Secret 5-clicks tracker on Logo to access /admin
+  const logoClicksRef = React.useRef<number>(0);
+  const logoTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const handleSecretLogoClick = (e: React.MouseEvent) => {
+    logoClicksRef.current += 1;
+    if (logoClicksRef.current >= 5) {
+      e.preventDefault();
+      router.push('/admin');
+      logoClicksRef.current = 0;
+      return;
+    }
+    if (logoTimerRef.current) clearTimeout(logoTimerRef.current);
+    logoTimerRef.current = setTimeout(() => {
+      logoClicksRef.current = 0;
+    }, 1500);
+  };
+
   useEffect(() => {
     setCategories(DataService.getCategories());
     setMenuItems(DataService.getMenuItems());
@@ -242,16 +260,21 @@ export function Header() {
             </button>
           </div>
 
-          {/* Center Brand Logo: STYLUXE */}
+          {/* Center Brand Logo: STYLUXE (Secret 5-click access to /admin) */}
           <div className="brand-logo flex items-center justify-center">
-            <Link href="/" className="flex items-center justify-center py-1 group" title="STYLUXE">
+            <Link 
+              href="/" 
+              onClick={handleSecretLogoClick}
+              className="flex items-center justify-center py-1 group cursor-pointer" 
+              title="STYLUXE"
+            >
               <span className="font-serif text-[22px] sm:text-[24px] font-semibold tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
                 STYLUXE
               </span>
             </Link>
           </div>
 
-          {/* Right Utilities: CONTACT US, Settings, Account, Cart Bag */}
+          {/* Right Utilities: CONTACT US, Account, Cart Bag */}
           <div className="nav-utilities flex items-center gap-3.5 sm:gap-5 md:gap-6">
             
             {/* Contact Us Link matching reference screenshot */}
@@ -263,15 +286,6 @@ export function Header() {
             >
               CONTACT US
             </a>
-
-            {/* Admin / Settings Trigger */}
-            <Link 
-              href="/admin" 
-              className="text-zinc-900 hover:text-black transition-colors"
-              title="Admin Control Panel"
-            >
-              <Settings size={18} strokeWidth={1.8} />
-            </Link>
 
             {/* User Account Link / Trigger */}
             <Link 
