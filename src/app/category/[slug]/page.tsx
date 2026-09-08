@@ -140,6 +140,16 @@ function CategoryPageContent() {
   return (
     <div className="bg-white min-h-screen pb-24 text-zinc-950">
       
+      {/* Top Back Link matching classic Styluxe */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-8 py-3.5 border-b border-zinc-100 flex items-center">
+        <Link
+          href="/shop"
+          className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-zinc-600 hover:text-zinc-950 uppercase transition-colors"
+        >
+          <ArrowLeft size={14} /> BACK TO COLLECTIONS
+        </Link>
+      </div>
+
       {/* 1. EDITORIAL LUXURY HERO BANNER MATCHING INTERNATIONAL HOUSES (PRADA / VOGUE) */}
       <section className="relative w-full min-h-[380px] sm:min-h-[440px] lg:min-h-[500px] max-w-[1400px] mx-auto overflow-hidden bg-zinc-950 flex items-end justify-start border-b border-zinc-200">
         

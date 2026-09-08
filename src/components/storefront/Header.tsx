@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Menu, X, Search, ShoppingBag, Heart, User, ChevronRight, MessageCircle, Lock, Award, Ruler
+  Menu, X, Search, ShoppingBag, Heart, User, ChevronRight, MessageCircle, Lock, Award, Ruler, Settings
 } from 'lucide-react';
 import { useCart } from '@/lib/CartContext';
 import { DataService, formatCurrency } from '@/lib/store';
@@ -13,7 +13,7 @@ import { openSizeGuide } from '@/components/storefront/SizeGuideModal';
 
 export function Header() {
   const router = useRouter();
-  const { cart, currency, settings, wishlist } = useCart();
+  const { cart, currency, settings, wishlist, setIsCartOpen } = useCart();
 
   const [isPradaDrawerOpen, setIsPradaDrawerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -214,8 +214,8 @@ export function Header() {
       <header className="navbar">
         <div className="nav-container">
           
-          {/* Left Action: Menu BUTTON (MATCHING PRADA MINIMAL LUXURY) */}
-          <div className="flex items-center">
+          {/* Left Action: Menu and Search Triggers Side-by-Side */}
+          <div className="flex items-center gap-4 sm:gap-6">
             <button 
               onClick={() => {
                 setMenuItems(DataService.getMenuItems());
@@ -224,77 +224,77 @@ export function Header() {
                 setActiveL2(null);
                 setIsPradaDrawerOpen(true);
               }}
-              className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-normal text-zinc-900 hover:opacity-70 transition-opacity cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-zinc-900 hover:text-black transition-colors cursor-pointer uppercase tracking-wider"
               title="Open Navigation Menu"
             >
-              <Menu size={18} strokeWidth={1.5} />
-              <span className="tracking-wide">Menu</span>
+              <Menu size={18} strokeWidth={2} />
+              <span className="tracking-widest">MENU</span>
+            </button>
+
+            <button 
+              onClick={() => setIsSearchOpen(true)}
+              className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold text-zinc-900 hover:text-black transition-colors cursor-pointer uppercase tracking-wider"
+              title="Search Catalog"
+            >
+              <Search size={16} strokeWidth={2} />
+              <span className="tracking-widest hidden xs:inline-block sm:inline-block">SEARCH</span>
             </button>
           </div>
 
-          {/* Center Brand Logo (MATCHING PRADA SERIF LUXURY) */}
+          {/* Center Brand Logo: STYLUXE */}
           <div className="brand-logo flex items-center justify-center">
-            <Link href="/" className="flex items-center justify-center py-1 group" title="STYLUXE Luxury">
-              <img 
-                src="/logo.jpg" 
-                alt="STYLUXE" 
-                className="h-10 sm:h-12 md:h-14 w-auto object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105" 
-              />
+            <Link href="/" className="flex items-center justify-center py-1 group" title="STYLUXE">
+              <span className="font-serif text-2xl sm:text-3xl md:text-4xl font-black tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
+                STYLUXE
+              </span>
             </Link>
           </div>
 
-          {/* Right Utilities (MATCHING PRADA MINIMAL LUXURY) */}
-          <div className="nav-utilities flex items-center gap-2.5 sm:gap-5 md:gap-7">
+          {/* Right Utilities: CONTACT US, Settings, Account, Cart Bag */}
+          <div className="nav-utilities flex items-center gap-3 sm:gap-5 md:gap-6">
             
-            {/* Size Guide Trigger */}
-            <button
-              onClick={() => openSizeGuide()}
-              className="hidden md:flex items-center gap-1.5 text-xs font-bold text-zinc-700 hover:text-zinc-950 uppercase tracking-widest transition-colors cursor-pointer"
-              title="International Size Guide"
-            >
-              <Ruler size={15} className="text-amber-500" />
-              <span>SIZE GUIDE</span>
-            </button>
-
-            {/* Contact Us Link matching Prada screenshot */}
+            {/* Contact Us Link matching reference screenshot */}
             <a 
-              href={`https://wa.me/${settings.whatsappNumber || '96170123456'}`}
+              href={`https://wa.me/${(settings.whatsappNumber || '96170123456').replace(/[^\d]/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:inline-block text-sm font-normal text-zinc-800 hover:text-zinc-950 transition-colors"
+              className="hidden md:inline-block text-xs font-black text-zinc-900 hover:text-black uppercase tracking-widest transition-colors"
             >
-              Contact us
+              CONTACT US
             </a>
 
-            {/* Search Trigger */}
-            <div className="cursor-pointer text-zinc-900 hover:opacity-70 transition-opacity" onClick={() => setIsSearchOpen(true)}>
-              <Search size={18} strokeWidth={1.5} />
-            </div>
-
-            {/* Currency Selector */}
-            <div className="currency-picker">
-              <span className="text-xs font-medium text-zinc-800 tracking-wider">{currency}</span>
-            </div>
-
-            {/* Wishlist Link */}
-            <Link href="/wishlist" className="relative text-zinc-900 hover:opacity-70 transition-opacity">
-              <Heart size={18} strokeWidth={1.5} />
-              {wishlist.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[9px] font-medium w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                  {wishlist.length}
-                </span>
-              )}
+            {/* Admin / Settings Trigger */}
+            <Link 
+              href="/admin" 
+              className="text-zinc-900 hover:text-black transition-colors"
+              title="Admin Control Panel"
+            >
+              <Settings size={18} strokeWidth={1.8} />
             </Link>
 
-            {/* Shopping Bag Trigger */}
-            <Link href="/checkout" className="relative flex items-center text-zinc-900 hover:opacity-70 transition-opacity">
-              <ShoppingBag size={18} strokeWidth={1.5} />
+            {/* User Account Link / Trigger */}
+            <Link 
+              href="/checkout" 
+              className="text-zinc-900 hover:text-black transition-colors"
+              title="My Account"
+            >
+              <User size={19} strokeWidth={1.8} />
+            </Link>
+
+            {/* Shopping Bag Trigger with slide-out Cart Drawer */}
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative flex items-center text-zinc-900 hover:text-black transition-colors cursor-pointer"
+              title="Shopping Bag"
+              aria-label="Shopping Bag"
+            >
+              <ShoppingBag size={19} strokeWidth={1.8} />
               {cart.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[9px] font-medium w-3.5 h-3.5 rounded-full flex items-center justify-center">
-                  {cart.length}
+                <span className="absolute -top-1.5 -right-2 bg-zinc-950 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+                  {cart.reduce((a, c) => a + c.quantity, 0)}
                 </span>
               )}
-            </Link>
+            </button>
 
           </div>
 

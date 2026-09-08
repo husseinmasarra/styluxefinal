@@ -6,6 +6,7 @@ import { Footer } from "@/components/storefront/Footer";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { ToastNotification } from "@/components/storefront/ToastNotification";
 import { SizeGuideModal } from "@/components/storefront/SizeGuideModal";
+import { FloatingActions } from "@/components/storefront/FloatingActions";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -110,6 +111,7 @@ export default function RootLayout({
           <CartDrawer />
           <ToastNotification />
           <SizeGuideModal />
+          <FloatingActions />
           <main className="flex-1">
             {children}
           </main>

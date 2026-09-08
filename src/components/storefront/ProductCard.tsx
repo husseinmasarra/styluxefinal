@@ -61,19 +61,18 @@ export function ProductCard({ product }: ProductCardProps) {
           />
         </Link>
 
-        {/* Badges */}
+        {/* Badges - 100% Match to Classic Styluxe Reference */}
         {product.isPreOrder ? (
-          <span className="product-badge bg-amber-400 border-amber-400 text-zinc-950 font-black">
+          <span className="product-badge bg-amber-400 text-zinc-950 font-black">
             PRE-ORDER
           </span>
-        ) : product.isNewArrival ? (
-          <span className="product-badge">
-            NEW
-          </span>
-        ) : null}
-        {product.salePrice && (
-          <span className="product-badge bg-red-600 border-red-600">
+        ) : product.salePrice ? (
+          <span className="product-badge bg-red-600 text-white font-black">
             SALE
+          </span>
+        ) : (
+          <span className="product-badge">
+            NEW ARRIVAL
           </span>
         )}
 
@@ -106,20 +105,30 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
 
       {/* Product Info */}
-      <div className="product-info space-y-1">
-        {/* Line 1: BRAND NAME (ONLY SHOW IF EXPLICITLY SET BY USER!) */}
-        {product.brandName && product.brandName.trim() !== '' && (
-          <span className="product-brand font-extrabold tracking-widest text-zinc-950 uppercase">
-            {product.brandName}
-          </span>
-        )}
+      <div className="product-info space-y-1 pt-3">
+        {/* Line 1: BRAND NAME (DEFAULTS TO STYLUXE IF UNSET MATCHING SCREENSHOT) */}
+        <span className="product-brand font-black tracking-widest text-zinc-950 uppercase text-xs block">
+          {product.brandName && product.brandName.trim() !== '' ? product.brandName : 'STYLUXE'}
+        </span>
 
         {/* Line 2: PRODUCT TITLE */}
         <Link href={`/product/${product.id}`} onClick={handleProductClick} scroll={true}>
-          <h3 className="product-name font-semibold tracking-wider text-zinc-900 uppercase">
+          <h3 className="product-name font-medium tracking-wide text-zinc-800 hover:text-zinc-950 uppercase text-xs line-clamp-1">
             {product.title}
           </h3>
         </Link>
+
+        {/* Line 3: PRICE */}
+        <div className="flex items-center gap-2 pt-0.5">
+          <span className="text-xs font-black text-zinc-950">
+            {formatCurrency(product.salePrice || product.price, currency, settings.lbpRate, settings.eurRate)}
+          </span>
+          {product.salePrice && (
+            <span className="text-[11px] text-zinc-400 line-through">
+              {formatCurrency(product.price, currency, settings.lbpRate, settings.eurRate)}
+            </span>
+          )}
+        </div>
 
         {/* Smart Visual Color Swatches with tooltips */}
         {product.colors && product.colors.length > 0 && (
