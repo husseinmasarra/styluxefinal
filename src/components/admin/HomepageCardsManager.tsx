@@ -28,6 +28,19 @@ export function HomepageCardsManager() {
     return () => window.removeEventListener('styluxe_data_updated', handleUpdate);
   }, []);
 
+  // Keyboard shortcut listener: ESC to close card modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+    if (isModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen]);
+
   const loadCards = () => {
     setCards(DataService.getCards());
   };
@@ -195,7 +208,10 @@ export function HomepageCardsManager() {
 
       {/* 3. MODAL POPUP MATCHING EXACT SCREENSHOT 100% */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
           <div className="bg-white border border-zinc-300 p-8 sm:p-10 max-w-xl w-full space-y-6 relative shadow-2xl animate-fadeIn rounded-none">
             
             <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2">

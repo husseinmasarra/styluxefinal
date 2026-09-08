@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, X, Building, FileText } from 'lucide-react';
 
 interface Supplier {
@@ -28,6 +28,20 @@ export function SuppliersInvoicesManager() {
   // Modals state
   const [isSuppModalOpen, setIsSuppModalOpen] = useState(false);
   const [isInvModalOpen, setIsInvModalOpen] = useState(false);
+
+  // Keyboard shortcut listener: ESC to close supplier/invoice modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isSuppModalOpen) setIsSuppModalOpen(false);
+        if (isInvModalOpen) setIsInvModalOpen(false);
+      }
+    };
+    if (isSuppModalOpen || isInvModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSuppModalOpen, isInvModalOpen]);
 
   // Supplier Form State
   const [suppName, setSuppName] = useState('');
@@ -227,7 +241,10 @@ export function SuppliersInvoicesManager() {
 
       {/* POPUP MODAL: ADD SUPPLIER */}
       {isSuppModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-zinc-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsSuppModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-zinc-950/80 backdrop-blur-md flex items-center justify-center p-4"
+        >
           <div className="bg-white border border-zinc-200 rounded-xl p-6 sm:p-8 max-w-md w-full space-y-6 relative shadow-2xl animate-fadeIn">
             
             <button onClick={() => setIsSuppModalOpen(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2">
@@ -302,7 +319,10 @@ export function SuppliersInvoicesManager() {
 
       {/* POPUP MODAL: RECORD INVOICE */}
       {isInvModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-zinc-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsInvModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-zinc-950/80 backdrop-blur-md flex items-center justify-center p-4"
+        >
           <div className="bg-white border-2 border-zinc-950 rounded-xl p-6 sm:p-8 max-w-md w-full space-y-6 relative shadow-2xl animate-fadeIn">
             
             <button onClick={() => setIsInvModalOpen(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2">

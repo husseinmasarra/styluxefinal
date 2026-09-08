@@ -42,6 +42,19 @@ export function PosTerminal({ onBackToDashboard }: PosTerminalProps) {
     loadData();
   }, []);
 
+  // Keyboard shortcut listener: ESC to close POS receipt modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && lastCompletedOrder) {
+        setLastCompletedOrder(null);
+      }
+    };
+    if (lastCompletedOrder) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lastCompletedOrder]);
+
   const loadData = () => {
     const prods = DataService.getProducts();
     setProducts(prods);
@@ -477,7 +490,10 @@ export function PosTerminal({ onBackToDashboard }: PosTerminalProps) {
 
       {/* POS THERMAL RECEIPT MODAL */}
       {lastCompletedOrder && (
-        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setLastCompletedOrder(null); }}
+          className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+        >
           <div className="bg-white border border-zinc-200 rounded p-6 max-w-md w-full space-y-4 relative">
             <button 
               onClick={() => setLastCompletedOrder(null)} 

@@ -21,6 +21,19 @@ export function BrandsManager() {
     return () => window.removeEventListener('styluxe_data_updated', handleUpdate);
   }, []);
 
+  // Keyboard shortcut listener: ESC to close brand modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+    if (isModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen]);
+
   const loadBrands = () => {
     setBrands(DataService.getBrands());
   };
@@ -155,7 +168,10 @@ export function BrandsManager() {
 
       {/* POPUP MODAL: ADD / EDIT BRAND - ULTRA LARGE & ULTRA CLEAR */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-zinc-950/85 backdrop-blur-lg flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-zinc-950/85 backdrop-blur-lg flex items-center justify-center p-4 sm:p-8 overflow-y-auto"
+        >
           <div className="bg-white border-4 border-zinc-950 rounded-3xl p-8 sm:p-12 max-w-3xl w-full space-y-10 relative shadow-2xl animate-fadeIn">
             
             <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 text-zinc-400 hover:text-zinc-950 p-3 rounded-full hover:bg-zinc-100 transition-colors">

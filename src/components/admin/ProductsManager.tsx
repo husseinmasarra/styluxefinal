@@ -90,6 +90,23 @@ export function ProductsManager() {
     return () => window.removeEventListener('styluxe_data_updated', handleUpdate);
   }, []);
 
+  // Keyboard shortcut listener: ESC to close popup modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isQuickBrandModalOpen) {
+          setIsQuickBrandModalOpen(false);
+        } else if (isModalOpen) {
+          setIsModalOpen(false);
+        }
+      }
+    };
+    if (isModalOpen || isQuickBrandModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen, isQuickBrandModalOpen]);
+
   const loadData = () => {
     const loadedProds = DataService.getProducts();
     const loadedBrands = DataService.getBrands();
@@ -525,7 +542,10 @@ export function ProductsManager() {
 
       {/* 3. POPUP MODAL DIALOG WITH ULTRA-CLEAR & LARGE FONTS FOR EASY WORK */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
+        >
           
           <div className="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl p-6 sm:p-8 space-y-6 relative shadow-2xl border-2 border-zinc-950 animate-fadeIn">
             
@@ -1080,7 +1100,10 @@ export function ProductsManager() {
 
       {/* QUICK ADD BRAND POPUP MODAL */}
       {isQuickBrandModalOpen && (
-        <div className="fixed inset-0 z-[1000001] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsQuickBrandModalOpen(false); }}
+          className="fixed inset-0 z-[1000001] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+        >
           <div className="bg-white border-2 border-zinc-950 p-6 sm:p-8 max-w-md w-full space-y-6 relative shadow-2xl animate-fadeIn">
             <button
               onClick={() => setIsQuickBrandModalOpen(false)}

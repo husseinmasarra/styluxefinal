@@ -34,6 +34,24 @@ export function CategoriesManager() {
     return () => window.removeEventListener('styluxe_data_updated', handleUpdate);
   }, []);
 
+  // Keyboard shortcut listener: ESC to close modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isSubCatModalOpen) {
+          setIsSubCatModalOpen(false);
+          setEditingSubCat(null);
+        } else if (isCatModalOpen) {
+          setIsCatModalOpen(false);
+        }
+      }
+    };
+    if (isCatModalOpen || isSubCatModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCatModalOpen, isSubCatModalOpen]);
+
   const loadCategories = () => {
     const cats = DataService.getCategories();
     setCategories(cats);
@@ -341,7 +359,10 @@ export function CategoriesManager() {
 
       {/* POPUP MODAL: ADD MAIN CATEGORY MATCHING SCREENSHOT 100% */}
       {isCatModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsCatModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
           <div className="bg-white border border-zinc-300 p-8 sm:p-10 max-w-xl w-full space-y-6 relative shadow-2xl animate-fadeIn rounded-none">
             
             <button onClick={() => setIsCatModalOpen(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2">
@@ -358,11 +379,12 @@ export function CategoriesManager() {
                 <label className="text-xs font-bold text-zinc-700 block">Department *</label>
                 <select 
                   value={catDepartment} 
-                  onChange={e => setCatDepartment(e.target.value as Department)}
-                  className="w-full p-3.5 border border-zinc-900 rounded-none text-sm font-semibold text-zinc-950 bg-white focus:outline-none focus:ring-1 focus:ring-zinc-950 uppercase"
+                  onChange={e => setCatDepartment(e.target.value as any)}
+                  className="w-full p-3.5 border border-zinc-300 rounded-none bg-white font-bold text-zinc-950 focus:border-zinc-950 outline-none uppercase"
                 >
-                  <option value="women">Women</option>
-                  <option value="men">Men</option>
+                  <option value="women">WOMEN (نسائي)</option>
+                  <option value="men">MEN (رجالي)</option>
+                  <option value="all">BOTH / ALL DEPARTMENTS (مشترك)</option>
                 </select>
               </div>
 
@@ -414,7 +436,10 @@ export function CategoriesManager() {
 
       {/* POPUP MODAL: ADD SUB-CATEGORY MATCHING SCREENSHOT 100% */}
       {isSubCatModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) { setIsSubCatModalOpen(false); setEditingSubCat(null); } }}
+          className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
           <div className="bg-white border border-zinc-300 p-8 sm:p-10 max-w-xl w-full space-y-6 relative shadow-2xl animate-fadeIn rounded-none">
             
             <button onClick={() => { setIsSubCatModalOpen(false); setEditingSubCat(null); }} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2">

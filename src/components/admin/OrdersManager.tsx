@@ -31,6 +31,19 @@ export function OrdersManager() {
     return () => window.removeEventListener('styluxe_data_updated', handleUpdate);
   }, []);
 
+  // Keyboard shortcut listener: ESC to close order modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedOrder) {
+        setSelectedOrder(null);
+      }
+    };
+    if (selectedOrder) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedOrder]);
+
   const loadOrders = () => {
     const initial = DataService.getOrders();
     previousCountRef.current = initial.length;
@@ -254,7 +267,10 @@ export function OrdersManager() {
 
       {/* FULL ORDER DETAILS & ADMIN PRINTING MODAL */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedOrder(null); }}
+          className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans"
+        >
           <div className="bg-white border border-zinc-300 p-8 sm:p-10 max-w-2xl w-full space-y-6 relative shadow-2xl animate-fadeIn rounded-none">
             
             <button 

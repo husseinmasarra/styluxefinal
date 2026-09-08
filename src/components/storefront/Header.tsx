@@ -60,6 +60,7 @@ export function Header() {
         setIsSearchOpen(prev => !prev);
       } else if (e.key === 'Escape') {
         setIsSearchOpen(false);
+        setIsPradaDrawerOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

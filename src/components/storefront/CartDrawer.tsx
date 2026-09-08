@@ -9,6 +9,19 @@ import { formatCurrency } from '@/lib/store';
 export function CartDrawer() {
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, clearCart, currency, settings, showToast } = useCart();
 
+  // Keyboard shortcut listener: ESC to close cart drawer
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isCartOpen) {
+        setIsCartOpen(false);
+      }
+    };
+    if (isCartOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCartOpen, setIsCartOpen]);
+
   if (!isCartOpen) return null;
 
   const subtotalUSD = cart.reduce((acc, item) => acc + (item.product.salePrice || item.product.price) * item.quantity, 0);

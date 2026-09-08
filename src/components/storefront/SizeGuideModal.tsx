@@ -41,6 +41,19 @@ export function SizeGuideModal() {
     return () => window.removeEventListener('styluxe_open_size_guide', handleOpen);
   }, []);
 
+  // Keyboard shortcut listener: ESC to close size guide modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
   if (!isOpen) {
     return null;
   }
@@ -95,7 +108,10 @@ export function SizeGuideModal() {
   ];
 
   return (
-    <div className="fixed inset-0 z-[999999] bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget) setIsOpen(false); }}
+      className="fixed inset-0 z-[999999] bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
+    >
       <div className="bg-white text-zinc-950 w-full max-w-5xl max-h-[92vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-scaleUp border border-zinc-200">
         
         {/* MODAL HEADER */}

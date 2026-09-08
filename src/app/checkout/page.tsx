@@ -28,6 +28,19 @@ export default function CheckoutPage() {
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  // Keyboard shortcut listener: ESC to close auth modal
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isAuthModalOpen) {
+        setIsAuthModalOpen(false);
+      }
+    };
+    if (isAuthModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAuthModalOpen]);
+
   // Auto load saved customer account details
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -574,7 +587,10 @@ export default function CheckoutPage() {
 
       {/* CUSTOMER ACCOUNT LOGIN & SHIPPING DETAILS REGISTRATION MODAL (ULTRA-LUXURY GLOBAL STYLE) */}
       {isAuthModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 font-sans">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsAuthModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 font-sans"
+        >
           <div className="bg-white border border-zinc-200 p-8 sm:p-12 max-w-xl w-full space-y-7 relative shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] rounded-none overflow-hidden animate-fadeIn">
             
             {/* Top Gold Border Ribbon */}

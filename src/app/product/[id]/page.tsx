@@ -43,6 +43,19 @@ export default function ProductDetailPage() {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [isZoomModalOpen, setIsZoomModalOpen] = useState<boolean>(false);
 
+  // Keyboard shortcut listener: ESC to close image zoom lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isZoomModalOpen) {
+        setIsZoomModalOpen(false);
+      }
+    };
+    if (isZoomModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isZoomModalOpen]);
+
   // ALWAYS SCROLL TO THE TOP IMMEDIATELY WHEN PRODUCT PAGE LOADS OR PRODUCT CHANGES!
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -420,8 +433,14 @@ export default function ProductDetailPage() {
 
       {/* FULL-SCREEN HIGH-RESOLUTION IMAGE LIGHTBOX ZOOM MODAL */}
       {isZoomModalOpen && (
-        <div className="fixed inset-0 z-[999999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-fadeIn">
-          <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsZoomModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 animate-fadeIn cursor-pointer"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center cursor-default"
+          >
             
             {/* Close Button */}
             <button 
