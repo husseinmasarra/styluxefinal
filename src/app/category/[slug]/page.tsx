@@ -241,67 +241,99 @@ function CategoryPageContent() {
 
         </div>
 
-        {/* Sub-Categories Luxury Showcase Cards with custom images */}
+        {/* Sub-Categories Luxury Showcase: Prada 4-Column Divided Grid Layout */}
         {category?.subCategories && category.subCategories.length > 0 && (
-          <div className="space-y-3 pt-1">
-            <span className="text-[10px] font-black tracking-[0.25em] text-zinc-400 uppercase block">
-              SUB-COLLECTIONS / SECTIONS
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              <div
-                onClick={() => setSelectedSubCategory('all')}
-                className={`group cursor-pointer rounded-lg overflow-hidden border-2 transition-all select-none ${
-                  selectedSubCategory === 'all'
-                    ? 'border-zinc-950 shadow-md ring-1 ring-zinc-950 scale-102'
-                    : 'border-zinc-200 hover:border-zinc-400 opacity-90 hover:opacity-100'
-                }`}
-              >
-                <div className="h-24 sm:h-28 bg-zinc-900 flex items-center justify-center relative overflow-hidden">
-                  <img
-                    src={categoryImage}
-                    alt="All"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-70"
-                  />
-                  <div className="absolute inset-0 bg-black/40" />
-                  <span className="relative z-10 text-white text-xs font-black uppercase tracking-wider text-center px-2 drop-shadow-md">
-                    ALL {categoryName}
-                  </span>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black tracking-[0.25em] text-zinc-900 uppercase">
+                EXPLORE COLLECTIONS
+              </span>
+              {selectedSubCategory !== 'all' && (
+                <button
+                  onClick={() => setSelectedSubCategory('all')}
+                  className="text-[11px] font-bold tracking-wider text-zinc-500 hover:text-zinc-950 underline uppercase transition-colors"
+                >
+                  SHOW ALL ({categoryName})
+                </button>
+              )}
+            </div>
+
+            <div className="border border-zinc-200 bg-white overflow-hidden shadow-2xs">
+              <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-zinc-200">
+                {/* ALL CATEGORY ITEM */}
+                <div
+                  onClick={() => setSelectedSubCategory('all')}
+                  className={`group flex flex-col bg-white overflow-hidden cursor-pointer transition-colors ${
+                    selectedSubCategory === 'all'
+                      ? 'bg-zinc-100/70'
+                      : 'hover:bg-zinc-50/60'
+                  }`}
+                >
+                  <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-4 sm:p-6">
+                    <img
+                      src={categoryImage}
+                      alt="All"
+                      className="w-full h-full object-contain sm:object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out"
+                    />
+                    {selectedSubCategory === 'all' && (
+                      <div className="absolute top-3 right-3 bg-zinc-950 text-white text-[9px] font-black uppercase px-2 py-0.5 tracking-wider">
+                        Active
+                      </div>
+                    )}
+                  </div>
+                  <div className="py-4 px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[58px]">
+                    <span className={`text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline ${
+                      selectedSubCategory === 'all' ? 'underline' : ''
+                    }`}>
+                      ALL {categoryName}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase mt-0.5">
+                      {deptFiltered.length} PIECES
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {category.subCategories.map(sub => {
-                const isSel = selectedSubCategory === sub.name;
-                const subProdsCount = deptFiltered.filter(p => isProductMatchingCategory(p.category, sub.name)).length;
+                {/* INDIVIDUAL SUB-CATEGORIES */}
+                {category.subCategories.map(sub => {
+                  const isSel = selectedSubCategory === sub.name;
+                  const subProdsCount = deptFiltered.filter(p => isProductMatchingCategory(p.category, sub.name)).length;
 
-                return (
-                  <div
-                    key={sub.id}
-                    onClick={() => setSelectedSubCategory(isSel ? 'all' : sub.name)}
-                    className={`group cursor-pointer rounded-lg overflow-hidden border-2 transition-all select-none ${
-                      isSel
-                        ? 'border-zinc-950 shadow-md ring-1 ring-zinc-950 scale-102'
-                        : 'border-zinc-200 hover:border-zinc-400 opacity-90 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="h-24 sm:h-28 bg-zinc-900 flex items-center justify-center relative overflow-hidden">
-                      <img
-                        src={sub.imageUrl || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=600'}
-                        alt={sub.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-75"
-                      />
-                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/25 transition-colors" />
-                      <div className="relative z-10 text-center px-2 drop-shadow-md space-y-0.5">
-                        <span className="text-white text-xs font-black uppercase tracking-wider block">
+                  return (
+                    <div
+                      key={sub.id}
+                      onClick={() => setSelectedSubCategory(isSel ? 'all' : sub.name)}
+                      className={`group flex flex-col bg-white overflow-hidden cursor-pointer transition-colors ${
+                        isSel
+                          ? 'bg-zinc-100/70'
+                          : 'hover:bg-zinc-50/60'
+                      }`}
+                    >
+                      <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-4 sm:p-6">
+                        <img
+                          src={sub.imageUrl || categoryImage || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=600'}
+                          alt={sub.name}
+                          className="w-full h-full object-contain sm:object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out"
+                        />
+                        {isSel && (
+                          <div className="absolute top-3 right-3 bg-zinc-950 text-white text-[9px] font-black uppercase px-2 py-0.5 tracking-wider">
+                            Active
+                          </div>
+                        )}
+                      </div>
+                      <div className="py-4 px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[58px]">
+                        <span className={`text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline ${
+                          isSel ? 'underline' : ''
+                        }`}>
                           {sub.name}
                         </span>
-                        <span className="text-[10px] text-zinc-200 font-extrabold tracking-wider block">
+                        <span className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase mt-0.5">
                           {subProdsCount} PIECES
                         </span>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}

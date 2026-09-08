@@ -207,48 +207,108 @@ export default function HomePage() {
             }
           };
 
+          const allSubCats = deptCats.flatMap(c => (c.subCategories || []).map(sc => ({
+            ...sc,
+            parentName: c.name,
+            parentSlug: c.slug
+          })));
+
+          const formatPradaCategoryTitle = (name: string, dept: string): string => {
+            const clean = name.trim();
+            if (/^(women'?s?|men'?s?)\s+/i.test(clean)) {
+              return clean;
+            }
+            const prefix = dept === 'women' ? "Women's" : (dept === 'men' ? "Men's" : "");
+            if (!prefix) return clean;
+            return `${prefix} ${clean}`;
+          };
+
           return (
             <div className="space-y-12 max-w-7xl mx-auto">
-              {/* 4 TALL PORTRAIT CATEGORY CARDS SIDE BY SIDE MATCHING REFERENCE SCREENSHOT 100% */}
+              {/* EXACT PRADA 4-COLUMN HORIZONTAL GRID MATCHING SCREENSHOT 100% */}
               {deptCats.length > 0 && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5 py-2">
-                  {deptCats.map(cat => {
-                    const catImage = cat.imageUrl || "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80";
-                    const count = displayedProducts.filter(p => isProductMatchingCategory(p.category, cat.name)).length;
-                    const catSlug = cat.slug || encodeURIComponent(cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                <div className="border border-zinc-200 bg-white overflow-hidden shadow-2xs">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-zinc-200">
+                    {deptCats.map(cat => {
+                      const catImage = cat.imageUrl || "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80";
+                      const catSlug = cat.slug || encodeURIComponent(cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+                      const formattedTitle = formatPradaCategoryTitle(cat.name, selectedDept);
 
-                    return (
-                      <Link
-                        key={cat.id}
-                        href={`/category/${catSlug}?department=${selectedDept}`}
-                        className="group flex flex-col items-center cursor-pointer transition-all hover:scale-[1.01]"
-                        title={`Explore ${cat.name} Collection`}
-                      >
-                        {/* TALL PORTRAIT STUDIO IMAGE CONTAINER MATCHING SCREENSHOT */}
-                        <div className="w-full aspect-[3/4] bg-[#f4f4f4] flex items-center justify-center overflow-hidden transition-all relative group-hover:bg-[#ebebeb]">
-                          <img 
-                            src={catImage} 
-                            alt={cat.name} 
-                            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" 
-                          />
-                          {/* LUXURY HOVER BADGE */}
-                          <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="px-4 py-2 bg-white text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-transform">
-                              <span>EXPLORE</span>
-                              <ArrowRight size={12} />
+                      return (
+                        <Link
+                          key={cat.id}
+                          href={`/category/${catSlug}?department=${selectedDept}`}
+                          className="group flex flex-col bg-white overflow-hidden transition-colors hover:bg-zinc-50/60"
+                          title={`Explore ${formattedTitle}`}
+                        >
+                          {/* PRADA STUDIO BACKGROUND WITH CRISP OBJECT-CONTAIN / COVER */}
+                          <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-4 sm:p-8">
+                            <img 
+                              src={catImage} 
+                              alt={cat.name} 
+                              className="w-full h-full object-contain sm:object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out" 
+                            />
+                          </div>
+
+                          {/* PRADA CLEAN BOLD TITLE BELOW IMAGE */}
+                          <div className="py-4 sm:py-5 px-3 bg-white text-center border-t border-zinc-100 flex items-center justify-center min-h-[56px]">
+                            <span className="text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline">
+                              {formattedTitle}
                             </span>
                           </div>
-                        </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-                        {/* BOLD CENTERED CATEGORY TITLE BELOW IMAGE MATCHING SCREENSHOT */}
-                        <div className="flex flex-col items-center pt-3 pb-1 max-w-full">
-                          <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-center truncate max-w-full text-zinc-900 group-hover:text-zinc-950 group-hover:underline">
-                            {cat.name}
-                          </span>
-                        </div>
-                      </Link>
-                    );
-                  })}
+              {/* SUB-CATEGORIES SECTION IN THE SAME PRADA 4-COLUMN ARRANGEMENT */}
+              {allSubCats.length > 0 && (
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-950">
+                      SUB-CATEGORIES & ARCHIVES
+                    </span>
+                    <span className="text-[11px] font-medium text-zinc-500">
+                      Curated collections
+                    </span>
+                  </div>
+
+                  <div className="border border-zinc-200 bg-white overflow-hidden shadow-2xs">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-zinc-200">
+                      {allSubCats.map(sub => {
+                        const subImage = sub.imageUrl || "https://images.unsplash.com/photo-1544441893-675973e31985?w=800&auto=format&fit=crop&q=80";
+                        const subSlug = sub.slug || encodeURIComponent(sub.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+
+                        return (
+                          <Link
+                            key={sub.id}
+                            href={`/category/${subSlug}?department=${selectedDept}`}
+                            className="group flex flex-col bg-white overflow-hidden transition-colors hover:bg-zinc-50/60"
+                            title={`Explore ${sub.name}`}
+                          >
+                            <div className="w-full aspect-[4/5] sm:aspect-[3/4] bg-[#f6f6f6] flex items-center justify-center overflow-hidden relative p-4 sm:p-8">
+                              <img 
+                                src={subImage} 
+                                alt={sub.name} 
+                                className="w-full h-full object-contain sm:object-cover object-center group-hover:scale-103 transition-transform duration-700 ease-out" 
+                              />
+                            </div>
+
+                            <div className="py-4 sm:py-5 px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[56px]">
+                              <span className="text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline">
+                                {sub.name}
+                              </span>
+                              <span className="text-[10px] text-zinc-400 uppercase tracking-widest mt-0.5">
+                                {sub.parentName}
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
 
