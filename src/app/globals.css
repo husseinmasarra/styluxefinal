@@ -1,0 +1,559 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Cinzel:wght@400;500;600;700;800;900&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* STYLUXE LUXURY DESIGN SYSTEM */
+
+:root {
+    /* Color Palette */
+    --color-bg: #ffffff;
+    --color-surface: #ffffff;
+    --color-surface-hover: #f7f7f7;
+    --color-border: #e5e5e5;
+    --color-border-light: #cccccc;
+    --color-text: #000000;
+    --color-text-muted: #555555;
+    --color-accent: #000000;
+    --color-accent-hover: #222222;
+    --color-success: #10b981;
+    --color-error: #ef4444;
+    --color-overlay: rgba(0, 0, 0, 0.4);
+
+    /* Luxury Fonts (HIGH CONTRAST PRADA / VOGUE SERIF) */
+    --font-heading: 'Bodoni Moda', 'Playfair Display', 'Cinzel', serif;
+    --font-body: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Transition speeds */
+    --transition-fast: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    --transition-normal: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    
+    /* Layout Constants */
+    --navbar-height: 80px;
+    --promo-bar-height: 40px;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: auto;
+    font-size: 100%;
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+button, input, select, textarea {
+    font-family: var(--font-body);
+    background: none;
+    border: none;
+    color: inherit;
+    outline: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* 1. Promo Announcement Bar */
+.promo-bar {
+    height: var(--promo-bar-height);
+    background-color: #000000;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    z-index: 100;
+}
+
+.promo-text-container {
+    display: flex;
+    white-space: nowrap;
+    animation: scroll-promo 25s linear infinite;
+}
+
+.promo-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    color: #ffffff;
+}
+
+@keyframes scroll-promo {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-50%, 0, 0); }
+}
+
+/* 2. Header / Navigation */
+.navbar {
+    height: var(--navbar-height);
+    width: 100%;
+    position: sticky;
+    top: 0;
+    left: 0;
+    z-index: 99;
+    border-bottom: 1px solid var(--color-border);
+    background-color: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+}
+
+.nav-container {
+    max-width: 1400px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 3rem;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2.5rem;
+    flex: 1;
+}
+
+.nav-links a {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    padding: 0.5rem 0;
+    position: relative;
+    text-transform: uppercase;
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--color-accent);
+    transition: width var(--transition-fast);
+}
+
+.nav-links a:hover::after,
+.nav-links a.active::after {
+    width: 100%;
+}
+
+.brand-logo {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--color-text);
+}
+
+.nav-utilities {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2.5rem;
+}
+
+/* 3. Hero Section Slider */
+.hero-section {
+    position: relative;
+    width: 100%;
+    min-height: 520px;
+    background-color: #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+}
+
+.hero-slider {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.hero-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+.hero-slide.active {
+    opacity: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+    max-width: 800px;
+    text-align: center;
+    color: #ffffff;
+    margin: 0 auto;
+}
+
+.hero-subtitle {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: #e5e5e5;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.hero-title {
+    font-family: var(--font-heading);
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+}
+
+.hero-description {
+    font-size: 1rem;
+    color: #d4d4d4;
+    max-width: 600px;
+    margin: 0 auto 2.5rem auto;
+    line-height: 1.6;
+}
+
+.cta-button {
+    display: inline-block;
+    padding: 0.9rem 2.5rem;
+    background-color: #ffffff;
+    color: #000000;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    border: 2px solid #ffffff;
+    transition: all 0.3s ease;
+}
+
+.cta-button:hover {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+.hero-department-links {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.hero-dept-link {
+    padding: 0.5rem 1.2rem;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #ffffff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.hero-dept-link.active,
+.hero-dept-link:hover {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+}
+
+/* 4. Section Containers & Header Lines */
+.section-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 3.5rem 2rem;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.section-title {
+    font-family: var(--font-heading);
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    position: relative;
+    display: inline-block;
+}
+
+.section-line {
+    width: 60px;
+    height: 2px;
+    background-color: #000000;
+    margin: 1.5rem auto 0 auto;
+}
+
+/* 5. Collection Cards Grid (Side-By-Side on Desktop & Stacked on Mobile) */
+.collections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 2.5rem;
+}
+
+@media (max-width: 640px) {
+    .collections-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.collection-card {
+    display: block;
+    position: relative;
+    background-color: #ffffff;
+    border: 1px solid #e5e5e5;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.collection-card:hover {
+    border-color: #000000;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.collection-card-img-wrapper {
+    aspect-ratio: 4 / 5;
+    width: 100%;
+    overflow: hidden;
+    background-color: #f5f5f5;
+}
+
+.collection-card-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.collection-card:hover .collection-card-img-wrapper img {
+    transform: scale(1.05);
+}
+
+.collection-card-title {
+    padding: 1.2rem;
+    text-align: center;
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #000000;
+}
+
+/* 6. Product Cards Grid System */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 2.5rem;
+}
+
+.product-card {
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border: 1px solid #f0f0f0;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    border-color: #e5e5e5;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+}
+
+.product-img-wrapper {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    width: 100%;
+    overflow: hidden;
+    background-color: #f7f7f7;
+}
+
+.product-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.product-card:hover .product-img-wrapper img {
+    transform: scale(1.04);
+}
+
+.product-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background-color: #000000;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    padding: 0.35rem 0.7rem;
+    text-transform: uppercase;
+    z-index: 2;
+}
+
+.product-quick-view {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1.2rem;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    z-index: 3;
+}
+
+.product-card:hover .product-quick-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.quick-view-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #ffffff;
+    color: #000000;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    transition: background-color 0.2s ease;
+}
+
+.quick-view-btn:hover {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+.product-info {
+    padding: 1.2rem;
+    text-align: center;
+}
+
+.product-brand {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: #737373;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.product-name {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #000000;
+    text-transform: uppercase;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.product-price {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: #000000;
+}
+
+/* 8. SINGLE INVOICE PRINT RULE (EXACT 1 PAGE GUARANTEE - NO 2ND PAGE/DUPLICATE) */
+@media print {
+    @page {
+        margin: 0 !important;
+        size: auto;
+    }
+    html, body {
+        width: 100vw !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    body * {
+        visibility: hidden !important;
+    }
+    #pos-receipt-print {
+        display: block !important;
+        visibility: visible !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 100vh !important;
+        margin: 0 !important;
+        padding: 2mm 5mm 5mm 5mm !important;
+        box-sizing: border-box !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: none !important;
+        box-shadow: none !important;
+        z-index: 9999999 !important;
+        overflow: hidden !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+        page-break-before: avoid !important;
+        break-before: avoid !important;
+    }
+    #pos-receipt-print * {
+        visibility: visible !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
