@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeft, ArrowRight, SlidersHorizontal, ArrowUpDown, Grid3X3, 
-  LayoutGrid, Ruler, Sparkles, Filter, ChevronRight
+  LayoutGrid, Ruler, Filter, ChevronRight
 } from 'lucide-react';
 import { DataService, formatCurrency, isProductMatchingCategory } from '@/lib/store';
 import { Product, Category, Brand } from '@/lib/types';
@@ -180,13 +180,8 @@ function CategoryPageContent() {
             {category?.description || `Explore our permanent curated collection of authentic designer ${categoryName.toLowerCase()}, crafted by premier international luxury houses.`}
           </p>
 
-          {/* Live Badge Status */}
+          {/* Action Buttons */}
           <div className="pt-2 flex items-center gap-4 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-black uppercase tracking-widest border border-white/20">
-              <Sparkles size={13} className="text-amber-400" />
-              <span>{finalProducts.length} {finalProducts.length === 1 ? 'PIECE' : 'PIECES'} AVAILABLE</span>
-            </span>
-
             <button
               onClick={() => openSizeGuide(categoryName, selectedDept !== 'all' ? selectedDept : undefined)}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400 text-zinc-950 hover:bg-amber-300 transition-all text-[11px] font-black uppercase tracking-widest shadow-md cursor-pointer"

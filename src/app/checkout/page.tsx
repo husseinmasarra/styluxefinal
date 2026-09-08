@@ -3,14 +3,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, ShieldCheck, Truck, Banknote, ArrowLeft, Printer } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Truck, Banknote, ArrowLeft, Printer, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/lib/CartContext';
 import { DataService, formatCurrency } from '@/lib/store';
 import { Order, OrderItem } from '@/lib/types';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, clearCart, currency, settings, showToast } = useCart();
+  const { cart, removeFromCart, updateQuantity, clearCart, currency, settings, showToast } = useCart();
 
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -214,6 +214,36 @@ export default function CheckoutPage() {
     );
   }
 
+  // EMPTY BAG STATE
+  if (cart.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-24 text-center space-y-6 font-sans">
+        <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto text-zinc-400 border border-zinc-200">
+          <ShoppingBag size={32} />
+        </div>
+        <div className="space-y-2">
+          <span className="text-[10px] font-black tracking-pradaWide text-zinc-400 uppercase block">
+            YOUR BAG IS EMPTY
+          </span>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-prada text-zinc-950 uppercase">
+            NO ITEMS IN SHOPPING BAG
+          </h2>
+          <p className="text-xs text-zinc-500 uppercase tracking-widest max-w-md mx-auto pt-1">
+            You currently have no items selected for checkout. Explore our latest luxury arrivals to fill your bag.
+          </p>
+        </div>
+        <div className="pt-4">
+          <Link
+            href="/shop"
+            className="inline-block px-10 py-4 bg-zinc-950 text-white text-xs font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors shadow-sm"
+          >
+            EXPLORE COLLECTIONS
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
@@ -354,24 +384,113 @@ export default function CheckoutPage() {
         {/* Right: Order Summary Sidebar */}
         <div className="space-y-6">
           <div className="bg-white border border-zinc-200 p-6 space-y-6 shadow-sm">
-            <h3 className="text-xs font-extrabold tracking-prada text-zinc-950 uppercase border-b border-zinc-200 pb-3">
-              ORDER SUMMARY ({cart.length} ITEMS)
-            </h3>
+            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+              <h3 className="text-xs font-extrabold tracking-prada text-zinc-950 uppercase">
+                ORDER SUMMARY ({cart.reduce((acc, i) => acc + i.quantity, 0)} ITEMS)
+              </h3>
+              {cart.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Clear all items from your bag? / هل تريد تفريغ السلة؟')) {
+                      clearCart();
+                      showToast('Shopping bag emptied / تم تفريغ السلة', 'info');
+                    }
+                  }}
+                  className="text-[10px] font-bold tracking-wider text-red-600 hover:text-red-700 uppercase cursor-pointer"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
 
-            <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
-              {cart.map((item, idx) => (
-                <div key={idx} className="flex gap-3 text-xs">
-                  <img src={item.product.images[0]} alt={item.product.title} className="w-14 h-16 object-cover bg-zinc-100 rounded" />
-                  <div className="flex-1">
-                    <span className="text-[9px] font-bold text-zinc-400 uppercase block">{item.product.brandName}</span>
-                    <h4 className="font-bold text-zinc-900 line-clamp-1">{item.product.title}</h4>
-                    <p className="text-[10px] text-zinc-500">Qty: {item.quantity} | Size: {item.size}</p>
-                    <span className="font-extrabold text-zinc-950 block mt-0.5">
-                      {formatCurrency((item.product.salePrice || item.product.price) * item.quantity, currency, settings.lbpRate, settings.eurRate)}
-                    </span>
+            <div className="space-y-4 max-h-80 overflow-y-auto pr-1 divide-y divide-zinc-100">
+              {cart.map((item, idx) => {
+                const itemPrice = item.product.salePrice || item.product.price;
+                return (
+                  <div key={`${item.product.id}-${item.size}-${item.color || ''}-${idx}`} className="pt-3 first:pt-0 flex gap-3 text-xs">
+                    <Link href={`/product/${item.product.id}`} className="shrink-0 group">
+                      <img 
+                        src={item.product.images[0]} 
+                        alt={item.product.title} 
+                        className="w-14 h-18 object-cover bg-zinc-100 rounded border border-zinc-200 group-hover:opacity-90 transition-opacity" 
+                      />
+                    </Link>
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-1">
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block truncate">
+                              {item.product.brandName}
+                            </span>
+                            <Link href={`/product/${item.product.id}`} className="font-bold text-zinc-900 hover:text-zinc-600 line-clamp-1">
+                              {item.product.title}
+                            </Link>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              removeFromCart(item.product.id, item.size, item.color);
+                              showToast(`Removed "${item.product.title}" / تم الحذف`, 'info');
+                            }}
+                            className="text-zinc-400 hover:text-red-600 p-1 transition-colors cursor-pointer shrink-0 ml-1"
+                            title="Remove item"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 mt-0.5">
+                          Size: <span className="font-semibold text-zinc-800 uppercase">{item.size}</span>
+                          {item.color && (
+                            <> | Color: <span className="font-semibold text-zinc-800">{item.color}</span></>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2 pt-1">
+                        {/* Quantity Controller */}
+                        <div className="inline-flex items-center border border-zinc-300 rounded bg-zinc-50 shadow-2xs">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (item.quantity > 1) {
+                                updateQuantity(item.product.id, item.size, item.color, item.quantity - 1);
+                              } else {
+                                removeFromCart(item.product.id, item.size, item.color);
+                                showToast(`Removed "${item.product.title}"`, 'info');
+                              }
+                            }}
+                            className="w-7 h-7 flex items-center justify-center text-zinc-600 hover:text-black hover:bg-zinc-200 active:scale-95 transition-all cursor-pointer"
+                            title={item.quantity === 1 ? 'Remove item' : 'Decrease'}
+                            aria-label="Decrease quantity"
+                          >
+                            {item.quantity === 1 ? <Trash2 size={11} className="text-red-600" /> : <Minus size={11} />}
+                          </button>
+                          <span className="w-7 text-center font-bold text-xs text-zinc-950 select-none">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updateQuantity(item.product.id, item.size, item.color, item.quantity + 1);
+                            }}
+                            className="w-7 h-7 flex items-center justify-center text-zinc-600 hover:text-black hover:bg-zinc-200 active:scale-95 transition-all cursor-pointer"
+                            title="Increase"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus size={11} />
+                          </button>
+                        </div>
+
+                        <span className="font-extrabold text-zinc-950 text-xs">
+                          {formatCurrency(itemPrice * item.quantity, currency, settings.lbpRate, settings.eurRate)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <hr className="border-zinc-200" />

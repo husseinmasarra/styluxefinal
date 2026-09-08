@@ -7,7 +7,7 @@ import { useCart } from '@/lib/CartContext';
 import { formatCurrency } from '@/lib/store';
 
 export function CartDrawer() {
-  const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, currency, settings } = useCart();
+  const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, clearCart, currency, settings, showToast } = useCart();
 
   if (!isCartOpen) return null;
 
@@ -15,6 +15,19 @@ export function CartDrawer() {
   const freeShippingThreshold = settings.freeShippingThresholdUSD || 500;
   const progressPercent = Math.min(100, (subtotalUSD / freeShippingThreshold) * 100);
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotalUSD);
+
+  const handleRemove = (productId: string, size: string, color: string, title: string) => {
+    removeFromCart(productId, size, color);
+    showToast(`Removed "${title}" from bag`, 'info');
+  };
+
+  const handleQuantityChange = (productId: string, size: string, color: string, nextQty: number, title: string) => {
+    if (nextQty <= 0) {
+      handleRemove(productId, size, color, title);
+    } else {
+      updateQuantity(productId, size, color, nextQty);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -30,9 +43,23 @@ export function CartDrawer() {
           {/* Header */}
           <div className="p-6 border-b border-zinc-200 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold tracking-prada text-zinc-950 uppercase">
-                SHOPPING BAG ({cart.reduce((a, c) => a + c.quantity, 0)})
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm font-bold tracking-prada text-zinc-950 uppercase">
+                  SHOPPING BAG ({cart.reduce((a, c) => a + c.quantity, 0)})
+                </h2>
+                {cart.length > 0 && (
+                  <button 
+                    onClick={() => {
+                      clearCart();
+                      showToast('All items removed from bag', 'info');
+                    }}
+                    className="text-[10px] font-bold text-zinc-400 hover:text-red-600 uppercase underline transition-colors cursor-pointer"
+                    title="Empty shopping bag"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
               <p className="text-[10px] tracking-wider text-zinc-500 uppercase mt-0.5">
                 COMPLIMENTARY LUXURY PACKAGING INCLUDED
               </p>
@@ -81,53 +108,87 @@ export function CartDrawer() {
               cart.map((item, idx) => {
                 const itemPrice = item.product.salePrice || item.product.price;
                 return (
-                  <div key={`${item.product.id}-${item.size}-${item.color}-${idx}`} className="flex gap-4 border-b border-zinc-100 pb-6">
-                    <img 
-                      src={item.product.images[0]} 
-                      alt={item.product.title} 
-                      className="w-20 h-24 object-cover bg-zinc-100 rounded"
-                    />
+                  <div key={`${item.product.id}-${item.size}-${item.color}-${idx}`} className="flex gap-4 border-b border-zinc-100 pb-6 group">
+                    <Link 
+                      href={`/product/${item.product.id}`} 
+                      onClick={() => setIsCartOpen(false)}
+                      className="shrink-0"
+                    >
+                      <img 
+                        src={item.product.images[0] || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=400'} 
+                        alt={item.product.title} 
+                        className="w-20 h-24 object-cover bg-zinc-100 rounded hover:opacity-90 transition-opacity"
+                      />
+                    </Link>
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-2">
                           <span className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">
-                            {item.product.brandName}
+                            {item.product.brandName || 'STYLUXE'}
                           </span>
                           <button 
-                            onClick={() => removeFromCart(item.product.id, item.size, item.color)}
-                            className="text-zinc-400 hover:text-red-600 transition-colors"
+                            onClick={() => handleRemove(item.product.id, item.size, item.color, item.product.title)}
+                            className="p-1 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                            title="Remove from bag"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={15} />
                           </button>
                         </div>
-                        <h4 className="text-xs font-bold text-zinc-900 line-clamp-1 mt-0.5">
-                          {item.product.title}
-                        </h4>
-                        <p className="text-[11px] text-zinc-500 mt-1">
-                          Size: <span className="font-semibold text-zinc-900">{item.size}</span> | Color: <span className="font-semibold text-zinc-900">{item.color}</span>
-                        </p>
+                        <Link 
+                          href={`/product/${item.product.id}`} 
+                          onClick={() => setIsCartOpen(false)}
+                        >
+                          <h4 className="text-xs font-bold text-zinc-900 hover:text-zinc-600 transition-colors line-clamp-1 mt-0.5">
+                            {item.product.title}
+                          </h4>
+                        </Link>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] px-2 py-0.5 bg-zinc-100 text-zinc-800 font-bold rounded">
+                            Size: {item.size}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 bg-zinc-100 text-zinc-800 font-bold rounded">
+                            Color: {item.color}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center border border-zinc-200 rounded">
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-zinc-50">
+                        {/* Quantity Increment / Decrement Selector */}
+                        <div className="flex items-center border border-zinc-300 rounded overflow-hidden bg-white shadow-2xs">
                           <button 
-                            onClick={() => updateQuantity(item.product.id, item.size, item.color, item.quantity - 1)}
-                            className="p-1 text-zinc-600 hover:text-zinc-950"
+                            onClick={() => handleQuantityChange(item.product.id, item.size, item.color, item.quantity - 1, item.product.title)}
+                            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 transition-colors cursor-pointer active:scale-90"
+                            title={item.quantity === 1 ? "Remove item" : "Decrease quantity"}
                           >
-                            <Minus size={12} />
+                            {item.quantity === 1 ? (
+                              <Trash2 size={12} className="text-red-500" />
+                            ) : (
+                              <Minus size={12} />
+                            )}
                           </button>
-                          <span className="px-3 text-xs font-bold text-zinc-900">{item.quantity}</span>
+                          <span className="w-8 text-center text-xs font-black text-zinc-950 select-none">
+                            {item.quantity}
+                          </span>
                           <button 
-                            onClick={() => updateQuantity(item.product.id, item.size, item.color, item.quantity + 1)}
-                            className="p-1 text-zinc-600 hover:text-zinc-950"
+                            onClick={() => handleQuantityChange(item.product.id, item.size, item.color, item.quantity + 1, item.product.title)}
+                            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950 transition-colors cursor-pointer active:scale-90"
+                            title="Increase quantity"
                           >
                             <Plus size={12} />
                           </button>
                         </div>
 
-                        <span className="text-xs font-extrabold text-zinc-950">
-                          {formatCurrency(itemPrice * item.quantity, currency, settings.lbpRate, settings.eurRate)}
-                        </span>
+                        {/* Price Display */}
+                        <div className="text-right">
+                          <span className="text-xs font-black text-zinc-950 block">
+                            {formatCurrency(itemPrice * item.quantity, currency, settings.lbpRate, settings.eurRate)}
+                          </span>
+                          {item.quantity > 1 && (
+                            <span className="text-[10px] text-zinc-400 block">
+                              {formatCurrency(itemPrice, currency, settings.lbpRate, settings.eurRate)} each
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
