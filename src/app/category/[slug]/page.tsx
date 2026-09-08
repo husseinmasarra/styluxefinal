@@ -30,6 +30,7 @@ function CategoryPageContent() {
 
   // Filter States
   const [selectedDept, setSelectedDept] = useState<'women' | 'men' | 'all'>(initialDept);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'featured' | 'newest' | 'price-asc' | 'price-desc'>('featured');
   const [gridCols, setGridCols] = useState<2 | 4>(4);
@@ -84,8 +85,14 @@ function CategoryPageContent() {
   const categoryName = category?.name || decodeURIComponent(slugParam).replace(/-/g, ' ').toUpperCase();
   const categoryImage = category?.imageUrl || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=1600&auto=format&fit=crop&q=80';
 
-  // 1. FILTER STRICTLY FOR THIS CATEGORY (NO CROSS-CATEGORY CONTAMINATION)
-  const categoryProducts = allProducts.filter(p => isProductMatchingCategory(p.category, categoryName));
+  // 1. FILTER STRICTLY FOR THIS CATEGORY (INCLUDING ITS SUB-CATEGORIES)
+  const subCatNames = (category?.subCategories || []).map(sc => sc.name.toLowerCase().trim());
+  const categoryProducts = allProducts.filter(p => {
+    if (isProductMatchingCategory(p.category, categoryName)) return true;
+    if (subCatNames.includes(p.category.toLowerCase().trim())) return true;
+    if (p.category.toLowerCase().startsWith(categoryName.toLowerCase())) return true;
+    return false;
+  });
 
   // 2. FILTER BY DEPARTMENT (IF SELECTED)
   const deptFiltered = categoryProducts.filter(p => {
@@ -93,13 +100,19 @@ function CategoryPageContent() {
     return p.department === selectedDept || p.department === 'all';
   });
 
-  // 3. AVAILABLE BRANDS IN THIS SPECIFIC CATEGORY
+  // 3. FILTER BY SUB-CATEGORY (IF SELECTED)
+  const subCatFiltered = deptFiltered.filter(p => {
+    if (selectedSubCategory === 'all') return true;
+    return isProductMatchingCategory(p.category, selectedSubCategory);
+  });
+
+  // 4. AVAILABLE BRANDS IN THIS SPECIFIC CATEGORY
   const availableBrandsInCategory = brands.filter(b => 
-    deptFiltered.some(p => p.brandId === b.id || p.brandName?.toLowerCase() === b.name.toLowerCase())
+    subCatFiltered.some(p => p.brandId === b.id || p.brandName?.toLowerCase() === b.name.toLowerCase())
   );
 
-  // 4. FILTER BY BRAND
-  let finalProducts = deptFiltered.filter(p => {
+  // 5. FILTER BY BRAND
+  let finalProducts = subCatFiltered.filter(p => {
     if (selectedBrand === 'all') return true;
     const b = brands.find(brand => brand.slug === selectedBrand || brand.id === selectedBrand || brand.name.toLowerCase() === selectedBrand.toLowerCase());
     if (b && p.brandId !== b.id && p.brandName?.toLowerCase() !== b.name.toLowerCase()) return false;
@@ -227,6 +240,71 @@ function CategoryPageContent() {
           </Link>
 
         </div>
+
+        {/* Sub-Categories Luxury Showcase Cards with custom images */}
+        {category?.subCategories && category.subCategories.length > 0 && (
+          <div className="space-y-3 pt-1">
+            <span className="text-[10px] font-black tracking-[0.25em] text-zinc-400 uppercase block">
+              SUB-COLLECTIONS / SECTIONS
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <div
+                onClick={() => setSelectedSubCategory('all')}
+                className={`group cursor-pointer rounded-lg overflow-hidden border-2 transition-all select-none ${
+                  selectedSubCategory === 'all'
+                    ? 'border-zinc-950 shadow-md ring-1 ring-zinc-950 scale-102'
+                    : 'border-zinc-200 hover:border-zinc-400 opacity-90 hover:opacity-100'
+                }`}
+              >
+                <div className="h-24 sm:h-28 bg-zinc-900 flex items-center justify-center relative overflow-hidden">
+                  <img
+                    src={categoryImage}
+                    alt="All"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-70"
+                  />
+                  <div className="absolute inset-0 bg-black/40" />
+                  <span className="relative z-10 text-white text-xs font-black uppercase tracking-wider text-center px-2 drop-shadow-md">
+                    ALL {categoryName}
+                  </span>
+                </div>
+              </div>
+
+              {category.subCategories.map(sub => {
+                const isSel = selectedSubCategory === sub.name;
+                const subProdsCount = deptFiltered.filter(p => isProductMatchingCategory(p.category, sub.name)).length;
+
+                return (
+                  <div
+                    key={sub.id}
+                    onClick={() => setSelectedSubCategory(isSel ? 'all' : sub.name)}
+                    className={`group cursor-pointer rounded-lg overflow-hidden border-2 transition-all select-none ${
+                      isSel
+                        ? 'border-zinc-950 shadow-md ring-1 ring-zinc-950 scale-102'
+                        : 'border-zinc-200 hover:border-zinc-400 opacity-90 hover:opacity-100'
+                    }`}
+                  >
+                    <div className="h-24 sm:h-28 bg-zinc-900 flex items-center justify-center relative overflow-hidden">
+                      <img
+                        src={sub.imageUrl || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=600'}
+                        alt={sub.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-75"
+                      />
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/25 transition-colors" />
+                      <div className="relative z-10 text-center px-2 drop-shadow-md space-y-0.5">
+                        <span className="text-white text-xs font-black uppercase tracking-wider block">
+                          {sub.name}
+                        </span>
+                        <span className="text-[10px] text-zinc-200 font-extrabold tracking-wider block">
+                          {subProdsCount} PIECES
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Brand Swatches Bar (If available in this category) */}
         {availableBrandsInCategory.length > 0 && (

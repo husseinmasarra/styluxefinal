@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DataService } from '@/lib/store';
+import { DataService, isProductMatchingCategory } from '@/lib/store';
 import { Category, Department } from '@/lib/types';
 import { compressImageFile } from '@/lib/imageCompressor';
 import { Plus, Edit2, Trash2, X, FolderPlus, ArrowUp, ArrowDown, ExternalLink, Upload } from 'lucide-react';
@@ -21,9 +21,11 @@ export function CategoriesManager() {
 
   // Form States for Sub Category
   const [subName, setSubName] = useState('');
+  const [subImage, setSubImage] = useState('');
   const [parentCatId, setParentCatId] = useState('');
   const [subDepartment, setSubDepartment] = useState<Department>('women');
   const [subOrder, setSubOrder] = useState<number>(1);
+  const [editingSubCat, setEditingSubCat] = useState<Category | null>(null);
 
   useEffect(() => {
     loadCategories();
@@ -79,6 +81,30 @@ export function CategoriesManager() {
     setIsCatModalOpen(false);
   };
 
+  const handleOpenAddSubCat = (selectedParentId?: string) => {
+    setEditingSubCat(null);
+    if (selectedParentId) {
+      setParentCatId(selectedParentId);
+      const parent = categories.find(c => c.id === selectedParentId);
+      if (parent) setSubDepartment(parent.department);
+    } else if (categories.length > 0 && !parentCatId) {
+      setParentCatId(categories[0].id);
+      setSubDepartment(categories[0].department);
+    }
+    setSubName('');
+    setSubImage('');
+    setIsSubCatModalOpen(true);
+  };
+
+  const handleOpenEditSubCat = (parent: Category, sub: Category) => {
+    setEditingSubCat(sub);
+    setParentCatId(parent.id);
+    setSubDepartment(sub.department || parent.department);
+    setSubName(sub.name);
+    setSubImage(sub.imageUrl || '');
+    setIsSubCatModalOpen(true);
+  };
+
   const handleSaveSubCategory = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subName.trim() || !parentCatId) return;
@@ -86,17 +112,34 @@ export function CategoriesManager() {
     const parent = categories.find(c => c.id === parentCatId);
     if (!parent) return;
 
-    const newSub: Category = {
-      id: `subcat-${Date.now()}`,
-      name: subName.trim(),
-      slug: subName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      department: subDepartment,
-      isFeatured: false,
-      displayOrder: Number(subOrder)
-    };
-
     const existingSub = parent.subCategories || [];
-    const updatedSub = [...existingSub, newSub];
+    let updatedSub: Category[];
+
+    if (editingSubCat) {
+      updatedSub = existingSub.map(s => {
+        if (s.id === editingSubCat.id) {
+          return {
+            ...s,
+            name: subName.trim(),
+            slug: subName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            department: subDepartment,
+            imageUrl: subImage.trim() || s.imageUrl || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800'
+          };
+        }
+        return s;
+      });
+    } else {
+      const newSub: Category = {
+        id: `subcat-${Date.now()}`,
+        name: subName.trim(),
+        slug: subName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        department: subDepartment,
+        imageUrl: subImage.trim() || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800',
+        isFeatured: false,
+        displayOrder: Number(subOrder)
+      };
+      updatedSub = [...existingSub, newSub];
+    }
 
     const updatedParent: Category = {
       ...parent,
@@ -107,7 +150,24 @@ export function CategoriesManager() {
     setCategories(updated);
 
     setSubName('');
+    setSubImage('');
+    setEditingSubCat(null);
     setIsSubCatModalOpen(false);
+  };
+
+  const handleDeleteSubCategory = (parentId: string, subId: string) => {
+    if (!confirm('Are you sure you want to delete this sub-category?')) return;
+    const parent = categories.find(c => c.id === parentId);
+    if (!parent) return;
+
+    const updatedSub = (parent.subCategories || []).filter(s => s.id !== subId);
+    const updatedParent: Category = {
+      ...parent,
+      subCategories: updatedSub
+    };
+
+    const updated = DataService.saveCategory(updatedParent);
+    setCategories(updated);
   };
 
   const handleDeleteCategory = (id: string) => {
@@ -204,6 +264,12 @@ export function CategoriesManager() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => handleOpenAddSubCat(cat.id)}
+                      className="px-3 py-1.5 border border-zinc-950 text-zinc-950 hover:bg-zinc-950 hover:text-white text-xs font-bold rounded uppercase transition-colors flex items-center gap-1"
+                    >
+                      <Plus size={12} /> ADD SUB-CAT
+                    </button>
                     <span className="px-3 py-1 bg-zinc-200 text-zinc-900 text-xs font-bold rounded uppercase">
                       🛍 {DataService.getProducts().filter(p => p.category === cat.name).length} products
                     </span>
@@ -218,6 +284,54 @@ export function CategoriesManager() {
                     </button>
                   </div>
                 </div>
+
+                {/* SUB-CATEGORIES SECTION WITH CUSTOM IMAGES */}
+                {cat.subCategories && cat.subCategories.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-zinc-200 pl-2 sm:pl-6 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-zinc-500">
+                        SUB-CATEGORIES ({cat.subCategories.length})
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                      {cat.subCategories.map(sub => (
+                        <div key={sub.id} className="flex items-center justify-between gap-3 p-2.5 bg-white border border-zinc-200 rounded hover:border-zinc-300 transition-colors shadow-2xs">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <img 
+                              src={sub.imageUrl || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=800'} 
+                              alt={sub.name}
+                              className="w-11 h-11 object-cover rounded border border-zinc-200 shrink-0 bg-zinc-100"
+                            />
+                            <div className="truncate">
+                              <span className="font-black text-xs text-zinc-950 uppercase block truncate">{sub.name}</span>
+                              <span className="text-[10px] font-bold text-zinc-400 uppercase">
+                                {sub.department.toUpperCase()} • {DataService.getProducts().filter(p => isProductMatchingCategory(p.category, sub.name)).length} prods
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => handleOpenEditSubCat(cat, sub)}
+                              className="p-1.5 text-zinc-500 hover:text-zinc-950 hover:bg-zinc-100 rounded"
+                              title="Edit Sub-Category"
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteSubCategory(cat.id, sub.id)}
+                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                              title="Delete Sub-Category"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
               </div>
             ))}
@@ -303,12 +417,12 @@ export function CategoriesManager() {
         <div className="fixed inset-0 z-[999999] bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white border border-zinc-300 p-8 sm:p-10 max-w-xl w-full space-y-6 relative shadow-2xl animate-fadeIn rounded-none">
             
-            <button onClick={() => setIsSubCatModalOpen(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2">
+            <button onClick={() => { setIsSubCatModalOpen(false); setEditingSubCat(null); }} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2">
               <X size={20} />
             </button>
 
             <h2 className="font-serif text-3xl font-black tracking-[0.25em] text-zinc-950 uppercase text-center">
-              ADD SUB-CATEGORY
+              {editingSubCat ? 'EDIT SUB-CATEGORY' : 'ADD SUB-CATEGORY'}
             </h2>
 
             <form onSubmit={handleSaveSubCategory} className="space-y-5 text-xs font-sans">
@@ -350,11 +464,42 @@ export function CategoriesManager() {
                 />
               </div>
 
+              {/* SUB-CATEGORY IMAGE (FILE UPLOAD OR URL) */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-700 block">
+                  Sub-Category Image (Upload File or Image URL) *
+                </label>
+                
+                <div className="p-3 border border-zinc-300 rounded-none bg-white flex items-center gap-3">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={e => handleFileUpload(e, setSubImage)}
+                    className="text-xs text-zinc-600 file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-xs file:font-bold file:bg-zinc-200 file:text-zinc-950 hover:file:bg-zinc-300 cursor-pointer"
+                  />
+                </div>
+
+                <input 
+                  type="text" 
+                  value={subImage} 
+                  onChange={e => setSubImage(e.target.value)} 
+                  placeholder="Or paste Sub-Category Image URL..." 
+                  className="w-full p-3.5 border border-zinc-300 rounded-none text-xs font-mono text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-950"
+                />
+
+                {subImage && (
+                  <div className="flex items-center gap-3 p-2 bg-zinc-50 border border-zinc-200">
+                    <img src={subImage} alt="Preview" className="w-14 h-14 object-cover border border-zinc-300 rounded" />
+                    <span className="text-xs font-bold text-zinc-600">Sub-Category Image Loaded</span>
+                  </div>
+                )}
+              </div>
+
               <button 
                 type="submit" 
                 className="w-full py-4 bg-black hover:bg-zinc-900 text-white text-xs font-black tracking-[0.25em] uppercase transition-colors rounded-none shadow-md mt-6"
               >
-                SAVE SUB-CATEGORY
+                {editingSubCat ? 'UPDATE SUB-CATEGORY' : 'SAVE SUB-CATEGORY'}
               </button>
 
             </form>

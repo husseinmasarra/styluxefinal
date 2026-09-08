@@ -40,6 +40,11 @@ export function ProductsManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
+  // Quick Brand Modal State
+  const [isQuickBrandModalOpen, setIsQuickBrandModalOpen] = useState(false);
+  const [quickBrandName, setQuickBrandName] = useState('');
+  const [quickBrandLogo, setQuickBrandLogo] = useState('');
+
   const [formData, setFormData] = useState({
     title: '',
     barcode: '',
@@ -114,6 +119,31 @@ export function ProductsManager() {
     }
   };
 
+  const handleSaveQuickBrand = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickBrandName.trim()) return;
+
+    const brandToSave: Brand = {
+      id: `brand-${Date.now()}`,
+      name: quickBrandName.trim().toUpperCase(),
+      slug: quickBrandName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      logoUrl: quickBrandLogo || 'https://images.unsplash.com/photo-1544441893-675973e31985?w=400',
+      isFeatured: true
+    };
+
+    const updatedBrands = DataService.saveBrand(brandToSave);
+    setBrands(updatedBrands);
+    setFormData(prev => ({
+      ...prev,
+      brandId: brandToSave.id,
+      brandName: brandToSave.name
+    }));
+
+    setQuickBrandName('');
+    setQuickBrandLogo('');
+    setIsQuickBrandModalOpen(false);
+  };
+
   const handleOpenAddModal = () => {
     setEditingProduct(null);
     const availableCats = categories.filter(c => c.department === 'women' || c.department === 'all');
@@ -124,8 +154,8 @@ export function ProductsManager() {
       priority: 1000,
       department: 'women',
       category: firstCat,
-      brandId: '',
-      brandName: '',
+      brandId: brands[0]?.id || '',
+      brandName: brands[0]?.name || '',
       season: 'All Seasons',
       price: 90,
       salePrice: 0,
@@ -210,8 +240,36 @@ export function ProductsManager() {
     e.preventDefault();
     if (!formData.title.trim()) return;
 
-    const brand = formData.brandId ? brands.find(b => b.id === formData.brandId) : undefined;
-    const brandName = brand ? brand.name : (formData.brandId ? formData.brandName : '');
+    let finalBrandId = formData.brandId;
+    let finalBrandName = (formData.brandName || '').trim();
+
+    if (finalBrandId && !finalBrandName) {
+      const b = brands.find(brand => brand.id === finalBrandId);
+      if (b) finalBrandName = b.name;
+    } else if (!finalBrandId && finalBrandName) {
+      const b = brands.find(brand => brand.name.toLowerCase() === finalBrandName.toLowerCase());
+      if (b) {
+        finalBrandId = b.id;
+        finalBrandName = b.name;
+      } else {
+        const newBrand: Brand = {
+          id: `brand-${Date.now()}`,
+          name: finalBrandName.toUpperCase(),
+          slug: finalBrandName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          logoUrl: 'https://images.unsplash.com/photo-1544441893-675973e31985?w=400',
+          isFeatured: true
+        };
+        const updatedBrands = DataService.saveBrand(newBrand);
+        setBrands(updatedBrands);
+        finalBrandId = newBrand.id;
+      }
+    } else if (finalBrandId && finalBrandName) {
+      // Validate that brandName matches brandId
+      const b = brands.find(brand => brand.id === finalBrandId);
+      if (b && b.name.toLowerCase() !== finalBrandName.toLowerCase()) {
+        finalBrandName = b.name;
+      }
+    }
 
     const colorsList = formData.colorsInput.split(',').map(c => c.trim()).filter(Boolean);
     const sizesList = formData.sizesInput.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
@@ -236,8 +294,8 @@ export function ProductsManager() {
       slug: formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       department: formData.department,
       category: formData.category || (categories[0]?.name || 'General'),
-      brandId: formData.brandId || (brand ? brand.id : ''),
-      brandName: brandName,
+      brandId: finalBrandId || '',
+      brandName: finalBrandName || 'PRADA',
       price: Number(formData.price),
       salePrice: formData.salePrice ? Number(formData.salePrice) : undefined,
       sku: formData.barcode || `SKU-${Date.now()}`,
@@ -556,12 +614,22 @@ export function ProductsManager() {
                     Category *
                   </label>
                   <select 
-                    value={modalCategoryOptions.includes(formData.category) ? formData.category : ''} 
+                    value={formData.category} 
                     onChange={e => setFormData({ ...formData, category: e.target.value })} 
                     className="w-full p-4 border-2 border-zinc-300 rounded text-sm font-black uppercase text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
                   >
                     <option value="">-- CHOOSE CATEGORY FROM LIST --</option>
-                    {modalCategoryOptions.map(c => (
+                    {categories
+                      .filter(c => formData.department === 'all' || c.department === formData.department || c.department === 'all')
+                      .map(cat => (
+                        <optgroup key={cat.id} label={cat.name.toUpperCase()}>
+                          <option value={cat.name}>{cat.name} (Main Category)</option>
+                          {(cat.subCategories || []).map(sub => (
+                            <option key={sub.id} value={sub.name}>↳ {sub.name}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    {modalCategoryOptions.filter(c => !categories.some(cat => cat.name === c || (cat.subCategories || []).some(sub => sub.name === c))).map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
@@ -576,19 +644,52 @@ export function ProductsManager() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-black text-zinc-950 uppercase tracking-wider block">
-                    Brand *
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-black text-zinc-950 uppercase tracking-wider block">
+                      Brand *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickBrandModalOpen(true)}
+                      className="text-[11px] font-bold text-zinc-600 hover:text-zinc-950 uppercase flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus size={13} /> + NEW BRAND
+                    </button>
+                  </div>
                   <select 
                     value={formData.brandId} 
-                    onChange={e => setFormData({ ...formData, brandId: e.target.value })} 
+                    onChange={e => {
+                      const selId = e.target.value;
+                      const found = brands.find(b => b.id === selId);
+                      setFormData(prev => ({
+                        ...prev,
+                        brandId: selId,
+                        brandName: found ? found.name : ''
+                      }));
+                    }} 
                     className="w-full p-4 border-2 border-zinc-300 rounded text-sm font-black uppercase text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
                   >
-                    <option value="">SELECT BRAND</option>
+                    <option value="">-- SELECT BRAND ({brands.length}) --</option>
                     {brands.map(b => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                   </select>
+                  <input 
+                    type="text" 
+                    value={formData.brandName} 
+                    onChange={e => {
+                      const typed = e.target.value;
+                      const match = brands.find(b => b.name.toLowerCase() === typed.trim().toLowerCase());
+                      setFormData(prev => ({
+                        ...prev,
+                        brandName: typed,
+                        brandId: match ? match.id : ''
+                      }));
+                    }} 
+                    placeholder="Or type brand name (e.g. Prada, Nike)..."
+                    required={!formData.brandId && !formData.brandName}
+                    className="w-full p-3 border-2 border-zinc-300 rounded text-xs font-bold text-zinc-950 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-950 bg-zinc-50 uppercase"
+                  />
                 </div>
               </div>
 
@@ -974,6 +1075,71 @@ export function ProductsManager() {
 
           </div>
 
+        </div>
+      )}
+
+      {/* QUICK ADD BRAND POPUP MODAL */}
+      {isQuickBrandModalOpen && (
+        <div className="fixed inset-0 z-[1000001] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border-2 border-zinc-950 p-6 sm:p-8 max-w-md w-full space-y-6 relative shadow-2xl animate-fadeIn">
+            <button
+              onClick={() => setIsQuickBrandModalOpen(false)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-1"
+            >
+              <X size={20} />
+            </button>
+
+            <h3 className="text-xl font-serif font-black text-zinc-950 uppercase tracking-widest text-center">
+              ADD NEW BRAND
+            </h3>
+
+            <form onSubmit={handleSaveQuickBrand} className="space-y-4 text-xs font-sans">
+              <div className="space-y-1.5">
+                <label className="font-bold text-zinc-700 block uppercase">Brand Name *</label>
+                <input
+                  type="text"
+                  value={quickBrandName}
+                  onChange={e => setQuickBrandName(e.target.value)}
+                  placeholder="e.g. Prada, Louis Vuitton, Gucci"
+                  required
+                  autoFocus
+                  className="w-full p-3.5 border border-zinc-300 text-sm font-bold uppercase text-zinc-950 focus:outline-none focus:border-zinc-950"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-bold text-zinc-700 block uppercase">Brand Logo (File or URL)</label>
+                <div className="p-2.5 border border-zinc-300 bg-zinc-50 flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleFileUpload(e, base64 => setQuickBrandLogo(base64))}
+                    className="text-xs text-zinc-600 file:mr-3 file:py-1.5 file:px-3 file:border-0 file:text-xs file:font-bold file:bg-zinc-200 file:text-zinc-950 hover:file:bg-zinc-300 cursor-pointer"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={quickBrandLogo}
+                  onChange={e => setQuickBrandLogo(e.target.value)}
+                  placeholder="Or paste Logo URL..."
+                  className="w-full p-2.5 border border-zinc-300 text-xs font-mono"
+                />
+                {quickBrandLogo && (
+                  <div className="flex items-center gap-2 p-2 bg-zinc-50 border border-zinc-200">
+                    <img src={quickBrandLogo} alt="Logo" className="w-10 h-10 object-contain bg-white border border-zinc-300 p-1" />
+                    <span className="text-xs font-bold text-zinc-600">Logo preview</span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-black tracking-widest uppercase transition-colors shadow-md mt-2"
+              >
+                SAVE & SELECT BRAND
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
