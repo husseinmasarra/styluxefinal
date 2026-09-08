@@ -209,15 +209,15 @@ export default function AdminPage() {
               {/* DEVELOPER / IT SUPPORT BADGE */}
               <div className="w-full p-3 bg-zinc-50 border border-zinc-200 text-center rounded-none">
                 <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase block tracking-wider">
-                  الدعم الفني والاتصال بالمبرمج
+                  DEVELOPED BY
                 </span>
                 <a
-                  href="https://wa.me/96181713408?text=Hi%20Developer,%20regarding%20Styluxe%20Admin"
+                  href="https://wa.me/96181713408"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 mt-1.5 text-xs font-mono font-bold text-zinc-900 hover:text-amber-600 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 mt-1.5 text-xs font-mono font-bold text-zinc-900 hover:text-amber-600 transition-colors uppercase"
                 >
-                  <span>+961 81 713 408</span>
+                  <span>CONTACT DEVELOPER</span>
                   <span className="text-[10px] px-1.5 py-0.5 bg-emerald-600 text-white rounded-sm font-sans font-bold">واتساب</span>
                 </a>
               </div>
@@ -294,16 +294,16 @@ export default function AdminPage() {
         <div>
           <div className="px-5 py-3 border-t border-zinc-900 bg-zinc-900/30">
             <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1 flex items-center justify-between">
-              <span>الاتصال بالمبرمج</span>
+              <span>DEVELOPED BY</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             </div>
             <a
-              href="https://wa.me/96181713408?text=Hi%20Developer,%20support%20request%20from%20Styluxe%20Admin"
+              href="https://wa.me/96181713408"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 hover:text-amber-300 transition-colors"
+              className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 hover:text-amber-300 transition-colors uppercase"
             >
-              <span>+961 81 713 408</span>
+              <span>CONTACT DEVELOPER</span>
               <span className="text-[10px] px-1.5 py-0.5 bg-emerald-700/60 text-emerald-200 rounded border border-emerald-600/40 font-sans">واتساب</span>
             </a>
           </div>

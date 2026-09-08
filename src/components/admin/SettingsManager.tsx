@@ -598,17 +598,17 @@ export function SettingsManager() {
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="text-[11px] font-mono tracking-widest uppercase text-zinc-400">IT & SYSTEM DEVELOPER</span>
           </div>
-          <h3 className="text-lg font-bold font-serif text-white">الدعم الفني والاتصال بالمبرمج</h3>
+          <h3 className="text-lg font-bold font-serif text-white">DEVELOPED BY: CONTACT DEVELOPER</h3>
           <p className="text-xs text-zinc-400">لأي استفسار تقني، صيانة، تعديل في المتجر أو إضافة ميزات جديدة، يرجى التواصل مباشرة مع المبرمج.</p>
         </div>
         <a
-          href="https://wa.me/96181713408?text=Hi%20Developer,%20regarding%20Styluxe%20Admin%20Settings"
+          href="https://wa.me/96181713408"
           target="_blank"
           rel="noopener noreferrer"
           className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold tracking-wider uppercase rounded-lg flex items-center gap-2 transition-all shadow-lg shrink-0"
         >
           <Phone size={14} />
-          <span>+961 81 713 408 (واتساب المبرمج)</span>
+          <span>CONTACT DEVELOPER (واتساب)</span>
         </a>
       </div>
 

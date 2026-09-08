@@ -122,12 +122,12 @@ export function Footer() {
               <li className="pt-3 border-t border-zinc-850">
                 <span className="text-[10px] text-zinc-500 block font-mono">DEVELOPER / الاتصال بالمبرمج</span>
                 <a
-                  href="https://wa.me/96181713408?text=Hi%20Developer,%20regarding%20Styluxe"
+                  href="https://wa.me/96181713408"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 transition-colors font-mono font-bold text-xs"
+                  className="inline-flex items-center gap-1.5 text-amber-400 hover:text-amber-300 transition-colors font-mono font-bold text-xs uppercase"
                 >
-                  <span>WhatsApp: +961 81 713 408</span>
+                  <span>CONTACT DEVELOPER</span>
                 </a>
               </li>
             </ul>
@@ -164,7 +164,7 @@ export function Footer() {
         </div>
 
         {/* 3. BOTTOM COPYRIGHT BAR IN SOLID BLACK - WITH SECRET TRIPLE-CLICK ACCESS TO ADMIN */}
-        <div className="border-t border-zinc-900 pt-8 text-center text-xs font-mono text-zinc-500 uppercase tracking-widest select-none">
+        <div className="border-t border-zinc-900 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-500 uppercase tracking-widest select-none">
           <p 
             onClick={(e) => {
               if (e.detail === 3) {
@@ -174,7 +174,18 @@ export function Footer() {
             className="cursor-default"
             title="STYLUXE Boutique"
           >
-            © 2026 {(settings.storeName || "STYLUXE").replace(/\s+/g, '')} BOUTIQUE. ALL RIGHTS RESERVED. • AUTHENTICITY GUARANTEED
+            © 2026 {(settings.storeName || "STYLUXE").replace(/\s+/g, '')} BOUTIQUE. ALL RIGHTS RESERVED.
+          </p>
+          <p className="text-zinc-500 text-xs font-mono tracking-widest select-auto">
+            DEVELOPED BY:{" "}
+            <a
+              href="https://wa.me/96181713408"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-zinc-300 hover:text-amber-400 font-bold underline underline-offset-4 transition-colors"
+            >
+              CONTACT DEVELOPER
+            </a>
           </p>
         </div>
       </div>
