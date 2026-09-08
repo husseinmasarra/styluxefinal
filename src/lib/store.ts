@@ -25,9 +25,33 @@ const STORAGE_KEYS = {
   WISHLIST: 'styluxe_wishlist_v1',
 };
 
+const DATA_VERSION_KEY = 'styluxe_app_version';
+const CURRENT_DATA_VERSION = 'v2.2_realtime_sync';
+
+// Automated migration and cache-buster to keep all phones & visitors in sync with latest changes
+function checkAndMigrateVersion(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const saved = localStorage.getItem(DATA_VERSION_KEY);
+    if (saved !== CURRENT_DATA_VERSION) {
+      // Clear old outdated cache on client devices so latest updates take effect immediately
+      localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
+      localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
+      localStorage.removeItem(STORAGE_KEYS.CARDS);
+      localStorage.removeItem(STORAGE_KEYS.MENU);
+      localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+      localStorage.removeItem(STORAGE_KEYS.BRANDS);
+      localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION);
+    }
+  } catch (err) {
+    console.error('Migration check error:', err);
+  }
+}
+
 // Helper for local storage reading
 function getStorageItem<T>(key: string, defaultValue: T): T {
   if (typeof window === 'undefined') return defaultValue;
+  checkAndMigrateVersion();
   try {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
