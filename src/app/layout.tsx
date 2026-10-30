@@ -9,6 +9,7 @@ import { SizeGuideModal } from "@/components/storefront/SizeGuideModal";
 import { FloatingActions } from "@/components/storefront/FloatingActions";
 import { VisitorTracker } from "@/components/storefront/VisitorTracker";
 import { PixelTracker } from "@/components/storefront/PixelTracker";
+import { VideoIntroSplash } from "@/components/storefront/VideoIntroSplash";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -79,6 +80,7 @@ export default function RootLayout({
       </head>
       <body className="bg-white text-zinc-950 min-h-screen flex flex-col antialiased">
         <CartProvider>
+          <VideoIntroSplash />
           <VisitorTracker />
           <PixelTracker />
           <Header />

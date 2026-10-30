@@ -203,6 +203,9 @@ export interface StoreSettings {
   logoUrl: string;
   logoVideoUrl?: string; // Animated video logo (MP4/WebM/data URI)
   hideVideoLogo?: boolean; // When true, fallback to static logo or text
+  introVideoUrl?: string; // Luxury intro splash screen video (MP4/WebM/data URI/URL)
+  hideIntroVideo?: boolean; // When true, disable intro splash video
+  enableIntroVideo?: boolean; // Explicit toggle for intro splash video
   phone: string;
   email: string;
   address: string;

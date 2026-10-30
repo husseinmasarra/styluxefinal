@@ -1,0 +1,7 @@
+.next
+node_modules
+.git
+.system_generated
+scripts/test*.js
+scripts/inspect*.js
+scripts/check*.js

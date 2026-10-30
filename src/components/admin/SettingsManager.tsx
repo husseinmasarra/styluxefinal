@@ -5,7 +5,7 @@ import { useCart } from '@/lib/CartContext';
 import { DataService } from '@/lib/store';
 import { StoreSettings } from '@/lib/types';
 import { compressImageFile } from '@/lib/imageCompressor';
-import { Save, Check, Plus, Trash2, Globe, Shield, Truck, DollarSign, Image as ImageIcon, Send, Percent, Upload, Phone, Instagram, Database, Download, Cloud, RefreshCw, Target, BarChart3, Radio, Video, Film, Sparkles } from 'lucide-react';
+import { Save, Check, Plus, Trash2, Globe, Shield, Truck, DollarSign, Image as ImageIcon, Send, Percent, Upload, Phone, Instagram, Database, Download, Cloud, RefreshCw, Target, BarChart3, Radio, Video, Film, Sparkles, Eye } from 'lucide-react';
 import { testSupabaseConnection, syncLocalDataToSupabase, getSupabaseClient, SUPABASE_CONFIG } from '@/lib/supabase';
 
 export function SettingsManager() {
@@ -277,6 +277,149 @@ export function SettingsManager() {
             When active, the video logo automatically autoplays in an elegant loop in the top navigation header and footer. 
             If the video logo is disabled or cleared, STYLUXE automatically uses your static image logo or standard typographic brand mark.
           </p>
+        </div>
+
+        {/* CINEMATIC INTRO SPLASH VIDEO CARD */}
+        <div className="border-2 border-amber-500/30 rounded-xl p-6 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black text-white space-y-6 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-zinc-800 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <Film size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-black uppercase tracking-widest text-white">
+                    شاشة المقدمة والفيديو الترحيبي (INTRO SPLASH VIDEO)
+                  </h3>
+                  <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-amber-500 text-black rounded font-mono font-bold">
+                    VIP
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 pt-0.5">
+                  فيديو الشاشة السوداء الفاخرة التي تظهر للزبون عند فتح المتجر لأول مرة مع زر SKIP
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(new Event('styluxe_trigger_intro_splash'));
+                }}
+                className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+                title="معاينة شاشة المقدمة الآن كما يراها الزبون"
+              >
+                <Eye size={15} />
+                <span>معاينة الشاشة الحية (TEST SPLASH)</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Video Player Preview */}
+            <div className="lg:col-span-6 bg-black rounded-xl overflow-hidden border border-zinc-800 flex items-center justify-center relative min-h-[220px] sm:min-h-[260px] shadow-2xl">
+              {formData.introVideoUrl || formData.logoVideoUrl ? (
+                <video
+                  key={formData.introVideoUrl || formData.logoVideoUrl}
+                  src={formData.introVideoUrl || formData.logoVideoUrl}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  className="w-full h-full max-h-[260px] object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-zinc-600 space-y-2 p-6 text-center">
+                  <Film size={42} className="text-zinc-700" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">لا يوجد فيديو مقدمة حالياً</span>
+                  <span className="text-[11px] text-zinc-600 max-w-xs">ارفع ملف فيديو أو ضع رابط مباشر لتفعيله فوراً</span>
+                </div>
+              )}
+            </div>
+
+            {/* Controls & Inputs */}
+            <div className="lg:col-span-6 space-y-4">
+              {/* Upload file button */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-amber-400 uppercase tracking-wider block">
+                  1. رفع ملف فيديو من جهازك (MP4 / WEBM / MOV):
+                </label>
+                <label className="w-full py-3.5 bg-white hover:bg-zinc-100 text-black text-xs font-black uppercase tracking-wider rounded-lg cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-md">
+                  <Upload size={16} />
+                  <span>اختر ملف فيديو لرفعه من الجهاز</span>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                    className="hidden"
+                    onChange={e => handleVideoUpload(e, (url) => handleChange('introVideoUrl', url))}
+                  />
+                </label>
+                <span className="text-[10px] text-zinc-400 block">
+                  يدعم صيغ MP4 و WebM و MOV حتى 30 ميغابايت.
+                </span>
+              </div>
+
+              {/* Direct URL input */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-zinc-300 uppercase tracking-wider block">
+                  2. أو ضع رابط فيديو مباشر (Direct URL):
+                </label>
+                <input
+                  type="text"
+                  value={formData.introVideoUrl || ''}
+                  onChange={e => handleChange('introVideoUrl', e.target.value.trim())}
+                  placeholder="e.g. /logo-video.mp4 or https://..."
+                  className="w-full p-3.5 border-2 border-zinc-700 rounded-lg font-mono text-xs font-bold text-white bg-zinc-900 focus:outline-none focus:border-amber-500"
+                />
+                <span className="text-[10px] text-zinc-500 block">
+                  يمكنك وضع رابط سحابي مباشر (Cloudinary, Supabase, Google Drive, Streamable...)
+                </span>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleChange('introVideoUrl', '/logo-video.mp4')}
+                  className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-lg text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 transition-colors cursor-pointer"
+                  title="استعادة الفيديو المدمج في المشروع"
+                >
+                  <Sparkles size={14} className="text-amber-400" />
+                  <span>الفيديو الافتراضي (/logo-video.mp4)</span>
+                </button>
+
+                {formData.introVideoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => handleChange('introVideoUrl', '')}
+                    className="px-3 py-2 bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800/60 rounded-lg text-xs font-bold tracking-wider uppercase transition-colors cursor-pointer"
+                  >
+                    حذف فيديو المقدمة
+                  </button>
+                )}
+              </div>
+
+              {/* Enable / Disable Splash Screen Toggle */}
+              <div className="pt-2 border-t border-zinc-800">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={!formData.hideIntroVideo && formData.enableIntroVideo !== false}
+                    onChange={e => {
+                      handleChange('hideIntroVideo', !e.target.checked);
+                      handleChange('enableIntroVideo', e.target.checked);
+                    }}
+                    className="w-5 h-5 rounded border-zinc-700 text-amber-500 focus:ring-amber-500 bg-zinc-900"
+                  />
+                  <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                    تفعيل ظهور شاشة المقدمة الفاخرة للزوار عند الدخول للمتجر
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
