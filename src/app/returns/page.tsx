@@ -22,7 +22,7 @@ export default function ReturnsPage() {
         <span className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 block">
           PURCHASE WITH COMPLETE CONFIDENCE
         </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-[0.2em] text-zinc-950 uppercase">
+        <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal tracking-[0.25em] text-zinc-950 uppercase">
           RETURNS & EXCHANGES POLICY
         </h1>
         <p className="text-xs sm:text-sm text-zinc-600 font-medium tracking-wider uppercase leading-relaxed max-w-2xl">
@@ -59,8 +59,8 @@ export default function ReturnsPage() {
 
       {/* Policy Details */}
       <div className="space-y-6 text-xs text-zinc-700 leading-relaxed border-t border-zinc-200 pt-8">
-        <h2 className="font-serif text-lg font-bold tracking-wider uppercase text-zinc-950">
-          HOW TO INITIATE AN EXCHANGE
+        <h2 className="font-serif text-lg font-normal tracking-[0.25em] uppercase text-zinc-950">
+          ELIGIBILITY CRITERIA & TIMELINE
         </h2>
         <ol className="list-decimal pl-5 space-y-3 font-medium">
           <li>

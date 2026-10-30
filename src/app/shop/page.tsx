@@ -4,11 +4,13 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { SlidersHorizontal, RotateCcw, X, Check, Filter, ArrowUpDown, Ruler } from 'lucide-react';
-import { DataService, formatCurrency, isProductMatchingCategory } from '@/lib/store';
+import { DataService, formatCurrency, isProductMatchingCategory, isProductMatchingSeason } from '@/lib/store';
 import { Product, Brand, Category } from '@/lib/types';
 import { ProductCard } from '@/components/storefront/ProductCard';
 import { useCart } from '@/lib/CartContext';
 import { openSizeGuide } from '@/components/storefront/SizeGuideModal';
+import { fetchSupabaseCloudData } from '@/lib/supabase';
+import { setActiveDepartment } from '@/lib/departmentContext';
 
 function ShopContent() {
   const router = useRouter();
@@ -19,6 +21,7 @@ function ShopContent() {
   const brandParam = searchParams.get('brand') || 'all';
   const saleParam = searchParams.get('sale') === 'true';
   const newParam = searchParams.get('new') === 'true';
+  const preOrderParam = searchParams.get('preorder') === 'true';
 
   const { currency, settings } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
@@ -38,10 +41,39 @@ function ShopContent() {
     setProducts(DataService.getProducts());
     setBrands(DataService.getBrands());
     setCategories(DataService.getCategories());
+
+    fetchSupabaseCloudData().then(cloud => {
+      if (cloud.hasData) {
+        if (cloud.products !== undefined && cloud.products.length > 0) {
+          setProducts(cloud.products);
+          DataService.saveAllProducts(cloud.products);
+        }
+        if (cloud.brands !== undefined) {
+          setBrands(cloud.brands);
+          try {
+            localStorage.setItem('styluxe_brands_v1', JSON.stringify(cloud.brands));
+          } catch (_) {}
+        }
+        if (cloud.categories !== undefined) {
+          setCategories(cloud.categories);
+          DataService.saveAllCategories(cloud.categories);
+        }
+      }
+    });
+
+    const handleUpdate = () => {
+      setProducts(DataService.getProducts());
+      setBrands(DataService.getBrands());
+      setCategories(DataService.getCategories());
+    };
+    window.addEventListener('styluxe_data_updated', handleUpdate);
+    return () => window.removeEventListener('styluxe_data_updated', handleUpdate);
   }, []);
 
   useEffect(() => {
-    setSelectedDept(departmentParam || 'women');
+    const dept = (departmentParam === 'men' ? 'men' : 'women') as 'women' | 'men';
+    setSelectedDept(dept);
+    setActiveDepartment(dept);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
@@ -55,18 +87,54 @@ function ShopContent() {
     setSelectedBrand(brandParam);
   }, [brandParam]);
 
-  // 1. SEPARATE DEPARTMENTS STRICTLY (ONLY SHOW PRODUCTS OF SELECTED DEPARTMENT OR BOTH!)
+  // 1. SEPARATE DEPARTMENTS STRICTLY & APPLY ACTIVE SEASON FILTER
   const deptProducts = products.filter(p => {
     if (selectedDept !== 'all') {
-      return p.department === selectedDept || p.department === 'all';
+      if (p.department !== selectedDept && p.department !== 'all') return false;
+    }
+    return isProductMatchingSeason(p.season, settings?.activeSeason);
+  });
+
+  // PRODUCTS SCOPED BY BOTH DEPARTMENT AND CATEGORY
+  const categoryScopedProducts = deptProducts.filter(p => {
+    if (selectedCategory !== 'all') {
+      return isProductMatchingCategory(p.category, selectedCategory);
     }
     return true;
   });
 
-  // BRANDS THAT ACTUALLY HAVE PRODUCTS IN SELECTED DEPARTMENT (HIDE EMPTY BRANDS!)
-  const availableBrandsInDept = brands.filter(b => {
-    return deptProducts.some(p => p.brandId === b.id || p.brandName?.toLowerCase() === b.name.toLowerCase());
-  });
+  // BRANDS THAT ACTUALLY HAVE PRODUCTS IN THE CURRENTLY ACTIVE SELECTION (DEPARTMENT + CATEGORY)
+  // Deduplicated by brand name to prevent duplicates (e.g., duplicate Bottega Veneta entries)
+  const availableBrandsInDept = (() => {
+    const seenNames = new Set<string>();
+    const list: typeof brands = [];
+
+    brands.forEach(b => {
+      const normalizedName = b.name.toLowerCase().trim();
+      const hasProducts = categoryScopedProducts.some(
+        p => p.brandId === b.id || p.brandName?.toLowerCase().trim() === normalizedName
+      );
+
+      if (hasProducts && !seenNames.has(normalizedName)) {
+        seenNames.add(normalizedName);
+        list.push(b);
+      }
+    });
+
+    return list;
+  })();
+
+  // AUTO-RESET BRAND IF CURRENTLY SELECTED BRAND DOES NOT EXIST IN THE ACTIVE CATEGORY
+  useEffect(() => {
+    if (selectedBrand !== 'all') {
+      const existsInScope = availableBrandsInDept.some(
+        b => b.slug === selectedBrand || b.id === selectedBrand || b.name.toLowerCase() === selectedBrand.toLowerCase()
+      );
+      if (!existsInScope) {
+        setSelectedBrand('all');
+      }
+    }
+  }, [selectedCategory, selectedDept, availableBrandsInDept, selectedBrand]);
 
   // 2. APPLY BRAND, CATEGORY, SIZE, PRICE & SALE FILTERS
   let filtered = deptProducts.filter(p => {
@@ -85,6 +153,7 @@ function ShopContent() {
     if (p.price > maxPrice && (p.salePrice || p.price) > maxPrice) return false;
     if (saleParam && (!p.salePrice || p.salePrice >= p.price)) return false;
     if (newParam && !p.isNewArrival) return false;
+    if (preOrderParam && !p.isPreOrder) return false;
 
     return true;
   });
@@ -101,7 +170,8 @@ function ShopContent() {
   // 3. GROUP PRODUCTS INTO CATEGORY CARDS WITH PRODUCTS INSIDE
   const categoriesMap: Record<string, Product[]> = {};
   filtered.forEach(p => {
-    const catName = p.category || 'General Collection';
+    const rawCat = p.category || 'General Collection';
+    const catName = rawCat.split(/[>/]+/).pop()?.trim() || rawCat;
     if (!categoriesMap[catName]) {
       categoriesMap[catName] = [];
     }
@@ -217,7 +287,9 @@ function ShopContent() {
             {/* BRAND CIRCLES (DYNAMICALLY FILTERED & HIDES EMPTY BRANDS) */}
             {availableBrandsInDept.map(brand => {
               const isSelected = selectedBrand === brand.slug || selectedBrand === brand.id;
-              const productCount = deptProducts.filter(p => p.brandId === brand.id || p.brandName?.toLowerCase() === brand.name.toLowerCase()).length;
+              const productCount = categoryScopedProducts.filter(
+                p => p.brandId === brand.id || p.brandName?.toLowerCase().trim() === brand.name.toLowerCase().trim()
+              ).length;
 
               return (
                 <button
@@ -433,7 +505,7 @@ function ShopContent() {
                   ALL BRANDS
                 </button>
 
-                {brands.map(b => {
+                {availableBrandsInDept.map(b => {
                   const isSelected = selectedBrand === b.slug || selectedBrand === b.id;
                   return (
                     <button

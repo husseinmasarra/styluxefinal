@@ -3,8 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { Truck, Clock, ShieldCheck, Banknote, ArrowLeft } from 'lucide-react';
+import { useCart } from '@/lib/CartContext';
+import { formatCurrency } from '@/lib/store';
 
 export default function ShippingPage() {
+  const { settings, currency } = useCart();
+  const freeThreshold = settings?.freeShippingThresholdUSD || 149;
+  const formattedThreshold = formatCurrency(freeThreshold, currency, settings?.lbpRate, settings?.eurRate);
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-12 bg-white">
       
@@ -22,11 +28,11 @@ export default function ShippingPage() {
         <span className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-400 block">
           CLIENT SERVICES & LOGISTICS
         </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-[0.2em] text-zinc-950 uppercase">
+        <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal tracking-[0.25em] text-zinc-950 uppercase">
           SHIPPING & DELIVERY INFORMATION
         </h1>
         <p className="text-xs sm:text-sm text-zinc-600 font-medium tracking-wider uppercase leading-relaxed max-w-2xl">
-          Complimentary private white-glove express courier dispatch across all territories of Lebanon.
+          Complimentary private white-glove express courier dispatch on all orders over {formattedThreshold} across all territories of Lebanon.
         </p>
       </div>
 
@@ -59,7 +65,7 @@ export default function ShippingPage() {
 
       {/* Detailed Delivery Guidelines */}
       <div className="space-y-6 text-xs text-zinc-700 leading-relaxed border-t border-zinc-200 pt-8">
-        <h2 className="font-serif text-lg font-bold tracking-wider uppercase text-zinc-950">
+        <h2 className="font-serif text-lg font-normal tracking-[0.25em] uppercase text-zinc-950">
           TERRITORIAL COVERAGE & COURIER STANDARDS
         </h2>
         <div className="space-y-4">

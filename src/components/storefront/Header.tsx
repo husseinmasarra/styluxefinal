@@ -2,21 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { 
-  Menu, X, Search, ShoppingBag, Heart, User, ChevronRight, MessageCircle, Lock, Award, Ruler, Settings
+  Menu, X, Search, ShoppingBag, Heart, User, ChevronRight, ChevronLeft, ArrowRight, MessageCircle, Lock, Award, Ruler, Settings, Instagram
 } from 'lucide-react';
 import { useCart } from '@/lib/CartContext';
-import { DataService, formatCurrency } from '@/lib/store';
+import { DataService, formatCurrency, getProductDisplayPrices } from '@/lib/store';
 import { Product, Category, Brand, MenuItem } from '@/lib/types';
 import { openSizeGuide } from '@/components/storefront/SizeGuideModal';
+import { useActiveDepartment } from '@/lib/departmentContext';
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const { cart, currency, settings, wishlist, setIsCartOpen } = useCart();
+  const deptContext = useActiveDepartment(settings);
 
   const [isPradaDrawerOpen, setIsPradaDrawerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   
@@ -25,8 +29,11 @@ export function Header() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customerUser, setCustomerUser] = useState<any>(null);
+  const panelsContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Secret 5-clicks tracker on Logo to access /admin
+  // Logo Click handler: Guaranteed return to homepage, scroll-to-top, and secret 5-clicks to /admin
   const logoClicksRef = React.useRef<number>(0);
   const logoTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -42,16 +49,39 @@ export function Header() {
     logoTimerRef.current = setTimeout(() => {
       logoClicksRef.current = 0;
     }, 1500);
+
+    // Close any open flyout navigation or search modals
+    setIsPradaDrawerOpen(false);
+    setIsSearchOpen(false);
+
+    // If already on homepage, smoothly scroll right to top
+    if (pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    } else {
+      e.preventDefault();
+      router.push('/');
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
   };
 
   useEffect(() => {
     setCategories(DataService.getCategories());
     setMenuItems(DataService.getMenuItems());
     setBrands(DataService.getBrands());
+    setProducts(DataService.getProducts());
+    setCustomerUser(DataService.getCustomerUser());
+
     const handleUpdate = () => {
       setCategories(DataService.getCategories());
       setMenuItems(DataService.getMenuItems());
       setBrands(DataService.getBrands());
+      setProducts(DataService.getProducts());
+      setCustomerUser(DataService.getCustomerUser());
+    };
+
+    const handleAuth = () => {
+      setCustomerUser(DataService.getCustomerUser());
     };
 
     // Secret shortcut: Ctrl + Shift + A to secretly navigate to Admin panel
@@ -63,9 +93,11 @@ export function Header() {
     };
 
     window.addEventListener('styluxe_data_updated', handleUpdate);
+    window.addEventListener('styluxe_customer_auth_changed', handleAuth);
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('styluxe_data_updated', handleUpdate);
+      window.removeEventListener('styluxe_customer_auth_changed', handleAuth);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [router]);
@@ -83,6 +115,16 @@ export function Header() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Track scroll position to enhance sticky navbar elevation
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Search logic
@@ -103,25 +145,67 @@ export function Header() {
     }
   }, [searchQuery]);
 
-  // Level 1 Root Items from MenuBuilder
+  // Check if a menu item represents sale / discounts
+  const isSaleMenuItem = React.useCallback((item: MenuItem): boolean => {
+    const t = (item.title || '').toLowerCase();
+    const u = (item.url || '').toLowerCase();
+    const id = (item.id || '').toLowerCase();
+    return id === 'sale' ||
+           t.includes('sale') ||
+           
+           
+           
+           
+           u.includes('sale=true') ||
+           u.includes('sale=1');
+  }, []);
+
+  // Check if there are active discounted products in store for a menu item
+  const hasDiscountedProducts = React.useCallback((item: MenuItem): boolean => {
+    const clean = (item.title || '').toLowerCase();
+    const dept = item.department ||
+      (clean.includes('women') ? 'women' :
+       clean.includes('men') ? 'men' :
+       clean.includes('kids') ? 'kids' : null);
+
+    if (dept) {
+      return products.some(p => 
+        p.department === dept && 
+        Boolean(p.salePrice && p.salePrice > 0 && p.salePrice < p.price)
+      );
+    }
+
+    // Global check across all products in store
+    return products.some(p => 
+      Boolean(p.salePrice && p.salePrice > 0 && p.salePrice < p.price)
+    );
+  }, [products]);
+
+  // Level 1 Root Items from MenuBuilder (filtered so sale items only show if there are active discounts)
   const rootMenuItems = React.useMemo(() => {
     const roots = menuItems
       .filter(item => !item.parentId)
       .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     
-    if (roots.length > 0) return roots;
-
-    return [
+    const baseRoots = roots.length > 0 ? roots : [
       { id: 'women', title: 'WOMEN', url: '/shop?department=women', displayOrder: 1 },
       { id: 'men', title: 'MEN', url: '/shop?department=men', displayOrder: 2 },
       { id: 'sale', title: 'SALE', url: '/shop?sale=true', displayOrder: 3 },
     ] as MenuItem[];
-  }, [menuItems]);
+
+    return baseRoots.filter(item => {
+      if (isSaleMenuItem(item)) {
+        return hasDiscountedProducts(item);
+      }
+      return true;
+    });
+  }, [menuItems, isSaleMenuItem, hasDiscountedProducts]);
 
   // Helper to get Level 2 items for a given Level 1 item
   const getLevel2Items = React.useCallback((l1: MenuItem): MenuItem[] => {
     const directChildren = menuItems
       .filter(m => m.parentId === l1.id)
+      .filter(m => !isSaleMenuItem(m) || hasDiscountedProducts(m))
       .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
     if (directChildren.length > 0) {
@@ -130,12 +214,14 @@ export function Header() {
 
     const clean = l1.title.trim().toLowerCase();
     const dept = l1.department || 
-      (clean === 'women' || clean === 'النساء' || clean === 'نساء' ? 'women' :
-       clean === 'men' || clean === 'الرجال' || clean === 'رجال' ? 'men' :
-       clean === 'kids' || clean === 'الأطفال' || clean === 'اطفال' ? 'kids' : null);
+      (clean === 'women' ? 'women' :
+       clean === 'men' ? 'men' :
+       clean === 'kids' ? 'kids' : null);
 
     if (dept) {
-      const deptChildren = menuItems.filter(m => m.parentId === dept);
+      const deptChildren = menuItems
+        .filter(m => m.parentId === dept)
+        .filter(m => !isSaleMenuItem(m) || hasDiscountedProducts(m));
       if (deptChildren.length > 0) {
         return deptChildren;
       }
@@ -151,12 +237,13 @@ export function Header() {
     }
 
     return [];
-  }, [menuItems, categories]);
+  }, [menuItems, categories, isSaleMenuItem, hasDiscountedProducts]);
 
   // Helper to get Level 3 items for a given Level 2 item
   const getLevel3Items = React.useCallback((l2: MenuItem): MenuItem[] => {
     const directChildren = menuItems
       .filter(m => m.parentId === l2.id)
+      .filter(m => !isSaleMenuItem(m) || hasDiscountedProducts(m))
       .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
     if (directChildren.length > 0) {
@@ -175,7 +262,7 @@ export function Header() {
     }
 
     return [];
-  }, [menuItems, categories]);
+  }, [menuItems, categories, isSaleMenuItem, hasDiscountedProducts]);
 
   // Smart URL resolver
   const resolveItemUrl = (item: MenuItem, parent?: MenuItem | null): string => {
@@ -184,18 +271,18 @@ export function Header() {
     }
 
     const clean = item.title.trim().toLowerCase();
-    if (clean === 'women' || clean === 'النساء' || clean === 'نساء') return '/shop?department=women';
-    if (clean === 'men' || clean === 'الرجال' || clean === 'رجال') return '/shop?department=men';
-    if (clean === 'kids' || clean === 'الأطفال' || clean === 'اطفال') return '/shop?department=kids';
-    if (clean === 'sale' || clean === 'البيع' || clean === 'تخفيضات' || clean === 'تنزيلات') return '/shop?sale=true';
-    if (clean === 'new arrivals' || clean === 'الوافدون الجدد' || clean === 'جديد') return '/shop?new=true';
+    if (clean === 'women') return '/shop?department=women';
+    if (clean === 'men') return '/shop?department=men';
+    if (clean === 'kids') return '/shop?department=kids';
+    if (clean === 'sale') return '/shop?sale=true';
+    if (clean === 'new arrivals') return '/shop?new=true';
 
     if (parent) {
       const pClean = parent.title.trim().toLowerCase();
       let parentDept = '';
-      if (pClean === 'women' || pClean === 'النساء' || pClean === 'نساء') parentDept = 'women';
-      else if (pClean === 'men' || pClean === 'الرجال' || pClean === 'رجال') parentDept = 'men';
-      else if (pClean === 'kids' || pClean === 'الأطفال') parentDept = 'kids';
+      if (pClean === 'women') parentDept = 'women';
+      else if (pClean === 'men') parentDept = 'men';
+      else if (pClean === 'kids') parentDept = 'kids';
 
       if (parentDept) {
         return `/shop?department=${parentDept}&category=${encodeURIComponent(item.title.trim())}`;
@@ -211,6 +298,51 @@ export function Header() {
     router.push(url);
   };
 
+  const handleSelectL1 = (item: MenuItem) => {
+    if (activeL1?.id === item.id) {
+      setActiveL1(null);
+      setActiveL2(null);
+      return;
+    }
+    setActiveL1(item);
+    setActiveL2(null); // Keep Column 3 hidden until user clicks an item in Column 2!
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && panelsContainerRef.current) {
+      setTimeout(() => {
+        panelsContainerRef.current?.scrollTo({ left: 300, behavior: 'smooth' });
+      }, 60);
+    }
+  };
+
+  const handleSelectL2 = (item: MenuItem) => {
+    if (activeL2?.id === item.id) {
+      setActiveL2(null);
+      return;
+    }
+    setActiveL2(item);
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && panelsContainerRef.current) {
+      setTimeout(() => {
+        panelsContainerRef.current?.scrollTo({ left: 620, behavior: 'smooth' });
+      }, 60);
+    }
+  };
+
+  const handleBackToL1 = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && panelsContainerRef.current) {
+      panelsContainerRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleBackToL2 = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && panelsContainerRef.current) {
+      panelsContainerRef.current?.scrollTo({ left: 300, behavior: 'smooth' });
+    }
+  };
+
+  // Hide storefront consumer header inside private /admin control panel
+  if (pathname && pathname.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <>
       {/* 1. Promo Announcement Bar */}
@@ -219,10 +351,16 @@ export function Header() {
           <div className="promo-text">
             <span>✦ 100% AUTHENTIC GUARANTEED</span>
             <span>•</span>
-            <span>WORLDWIDE EXPRESS SHIPPING</span>
+            <span>FREE EXPRESS SHIPPING ON ORDERS OVER {formatCurrency(settings.freeShippingThresholdUSD || 149, currency, settings.lbpRate, settings.eurRate)}</span>
             <span>•</span>
             <span>CASH ON DELIVERY & INSTANT POS AVAILABLE</span>
+            <span>•</span>
+            <span>WORLDWIDE EXPRESS SHIPPING</span>
             <span>✦ 100% AUTHENTIC GUARANTEED</span>
+            <span>•</span>
+            <span>FREE EXPRESS SHIPPING ON ORDERS OVER {formatCurrency(settings.freeShippingThresholdUSD || 149, currency, settings.lbpRate, settings.eurRate)}</span>
+            <span>•</span>
+            <span>CASH ON DELIVERY & INSTANT POS AVAILABLE</span>
             <span>•</span>
             <span>WORLDWIDE EXPRESS SHIPPING</span>
           </div>
@@ -230,24 +368,57 @@ export function Header() {
       </div>
 
       {/* 2. Main Navigation Bar */}
-      <header className="navbar">
+      <header className={`navbar ${isScrolled ? 'is-scrolled shadow-xs' : ''}`}>
         <div className="nav-container">
           
           {/* Left Action: Menu and Search Triggers Side-by-Side */}
           <div className="flex items-center gap-4 sm:gap-6">
             <button 
               onClick={() => {
-                setMenuItems(DataService.getMenuItems());
+                const items = DataService.getMenuItems();
+                const prods = DataService.getProducts();
+                setProducts(prods);
+                setMenuItems(items);
                 setCategories(DataService.getCategories());
+
+                const checkItemHasDiscount = (item: MenuItem): boolean => {
+                  const clean = (item.title || '').toLowerCase();
+                  const dept = item.department ||
+                    (clean.includes('women') ? 'women' :
+                     clean.includes('men') ? 'men' :
+                     clean.includes('kids') ? 'kids' : null);
+
+                  if (dept) {
+                    return prods.some(p => p.department === dept && Boolean(p.salePrice && p.salePrice > 0 && p.salePrice < p.price));
+                  }
+                  return prods.some(p => Boolean(p.salePrice && p.salePrice > 0 && p.salePrice < p.price));
+                };
+
+                const checkIsSale = (item: MenuItem): boolean => {
+                  const t = (item.title || '').toLowerCase();
+                  const u = (item.url || '').toLowerCase();
+                  const id = (item.id || '').toLowerCase();
+                  return id === 'sale' || t.includes('sale') ||    u.includes('sale=true');
+                };
+
+                const rawRoots = items.filter(i => !i.parentId && i.id !== 'kids' && i.department !== 'kids' && (i.title || '').toLowerCase() !== 'kids');
+                const baseRoots = rawRoots.length > 0 ? rawRoots : [
+                  { id: 'women', title: 'WOMEN', url: '/shop?department=women', displayOrder: 1 },
+                  { id: 'men', title: 'MEN', url: '/shop?department=men', displayOrder: 2 },
+                  { id: 'sale', title: 'SALE', url: '/shop?sale=true', displayOrder: 3 },
+                ] as MenuItem[];
+
+                const roots = baseRoots.filter(i => !checkIsSale(i) || checkItemHasDiscount(i));
+                // Sub-menus only appear when user explicitly clicks a category!
                 setActiveL1(null);
                 setActiveL2(null);
                 setIsPradaDrawerOpen(true);
               }}
-              className="flex items-center gap-1.5 text-[12px] font-semibold text-zinc-900 hover:text-black transition-colors cursor-pointer uppercase tracking-[0.1em]"
+              className="flex items-center text-zinc-900 hover:text-black transition-colors cursor-pointer"
               title="Open Navigation Menu"
+              aria-label="Open Navigation Menu"
             >
-              <Menu size={16} strokeWidth={1.8} />
-              <span className="tracking-[0.1em]">MENU</span>
+              <Menu size={19} strokeWidth={1.8} />
             </button>
 
             <button 
@@ -260,26 +431,46 @@ export function Header() {
             </button>
           </div>
 
-          {/* Center Brand Logo: STYLUXE (Secret 5-click access to /admin) */}
+          {/* Center Brand Logo: STYLUXE Video Logo / Image Logo / Text (Secret 5-click access to /admin) */}
           <div className="brand-logo flex items-center justify-center">
             <Link 
               href="/" 
               onClick={handleSecretLogoClick}
-              className="flex items-center justify-center py-1 group cursor-pointer" 
-              title="STYLUXE"
+              className="flex items-center justify-center py-0.5 group cursor-pointer" 
+              title={settings.storeName || 'STYLUXE'}
             >
-              <span className="font-serif text-[22px] sm:text-[24px] font-semibold tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
-                STYLUXE
-              </span>
+              {settings.logoVideoUrl && !settings.hideVideoLogo ? (
+                <div className="relative flex items-center justify-center h-8 sm:h-10 max-h-[44px] overflow-hidden">
+                  <video 
+                    src={settings.logoVideoUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="auto"
+                    className="h-full w-auto max-w-[170px] sm:max-w-[220px] object-contain pointer-events-none select-none group-hover:opacity-90 transition-opacity"
+                  />
+                </div>
+              ) : settings.logoUrl ? (
+                <img 
+                  src={settings.logoUrl} 
+                  alt={settings.storeName || 'STYLUXE'} 
+                  className="h-7 sm:h-9 max-h-[40px] w-auto max-w-[160px] sm:max-w-[200px] object-contain pointer-events-none select-none group-hover:opacity-85 transition-opacity" 
+                />
+              ) : (
+                <span className="font-serif text-[17px] sm:text-[19px] font-semibold tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
+                  {settings.storeName || 'STYLUXE'}
+                </span>
+              )}
             </Link>
           </div>
 
           {/* Right Utilities: CONTACT US, Account, Cart Bag */}
           <div className="nav-utilities flex items-center gap-3.5 sm:gap-5 md:gap-6">
             
-            {/* Contact Us Link matching reference screenshot */}
+            {/* Contact Us Link matching active department WhatsApp */}
             <a 
-              href={`https://wa.me/${(settings.whatsappNumber || '96170123456').replace(/[^\d]/g, '')}`}
+              href={deptContext.whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden md:inline-block text-[12px] font-semibold text-zinc-900 hover:text-black uppercase tracking-[0.1em] transition-colors"
@@ -287,13 +478,29 @@ export function Header() {
               CONTACT US
             </a>
 
+            {/* Direct Instagram Link for Active Department */}
+            <a 
+              href={deptContext.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex items-center text-zinc-900 hover:text-pink-600 transition-colors cursor-pointer"
+              title={`Instagram (${deptContext.department === 'women' ? '@styluxe.womenn' : '@styluxe.men_lb'})`}
+              aria-label="Instagram Profile"
+            >
+              <Instagram size={18} strokeWidth={1.8} />
+            </a>
+
             {/* User Account Link / Trigger */}
             <Link 
-              href="/checkout" 
-              className="text-zinc-900 hover:text-black transition-colors"
-              title="My Account"
+              href="/account" 
+              className="relative flex items-center text-zinc-900 hover:text-black transition-colors"
+              title={customerUser ? `My Account (${customerUser.name})` : "My Account & Orders"}
+              aria-label="My Account & Orders"
             >
               <User size={19} strokeWidth={1.8} />
+              {customerUser && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
+              )}
             </Link>
 
             {/* Shopping Bag Trigger with slide-out Cart Drawer */}
@@ -316,7 +523,7 @@ export function Header() {
         </div>
       </header>
 
-      {/* 3. MULTI-COLUMN FLYOUT NAVIGATION DRAWER (100% EXACT MATCH TO PRADA REFERENCE SCREENSHOT) */}
+      {/* 3. MULTI-COLUMN FLYOUT NAVIGATION DRAWER */}
       {isPradaDrawerOpen && (
         <div className="fixed inset-0 z-[99999] flex animate-fadeIn">
           
@@ -325,66 +532,96 @@ export function Header() {
             className="fixed inset-0 bg-black/40 backdrop-blur-2xs transition-opacity"
             onClick={() => setIsPradaDrawerOpen(false)}
           />
+
           {/* Multi-Column Panels Container */}
-          <div className="relative h-full flex flex-row overflow-x-auto overflow-y-hidden shadow-2xl z-10 bg-white">
+          <div 
+            ref={panelsContainerRef}
+            className="relative h-full flex flex-row overflow-x-auto overflow-y-hidden shadow-2xl z-10 bg-white border-r border-zinc-200/80 scroll-smooth snap-x snap-mandatory"
+          >
             
             {/* ==================== COLUMN 1: MAIN NAVIGATION (LEVEL 1) ==================== */}
-            <div className={`w-[85vw] max-w-[320px] sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight ${activeL1 ? 'hidden sm:flex' : 'flex'}`}>
+            <div className="w-[85vw] max-w-[310px] sm:w-72 md:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto snap-start">
               
               <div className="flex-shrink-0">
                 {/* Top Header Row: ✕ Close and 🔍 Search side by side */}
-                <div className="px-6 sm:px-8 py-6 sm:py-7 flex items-center gap-7 bg-white border-b border-zinc-100">
-                  <button 
-                    onClick={() => setIsPradaDrawerOpen(false)}
-                    className="flex items-center gap-2 text-sm font-normal text-zinc-900 hover:opacity-70 transition-opacity cursor-pointer"
-                  >
-                    <X size={17} strokeWidth={1.75} />
-                    <span>Close</span>
-                  </button>
+                <div className="px-6 sm:px-8 py-5 sm:py-6 flex items-center justify-between bg-white border-b border-zinc-100">
+                  <div className="flex items-center gap-6">
+                    <button 
+                      onClick={() => setIsPradaDrawerOpen(false)}
+                      className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-900 hover:text-black transition-colors cursor-pointer"
+                    >
+                      <X size={16} strokeWidth={2} />
+                      <span>CLOSE</span>
+                    </button>
 
-                  <button 
-                    onClick={() => {
-                      setIsPradaDrawerOpen(false);
-                      setIsSearchOpen(true);
-                    }}
-                    className="flex items-center gap-2 text-sm font-normal text-zinc-900 hover:opacity-70 transition-opacity cursor-pointer"
-                  >
-                    <Search size={16} strokeWidth={1.75} />
-                    <span>Search</span>
-                  </button>
+                    <button 
+                      onClick={() => {
+                        setIsPradaDrawerOpen(false);
+                        setIsSearchOpen(true);
+                      }}
+                      className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-zinc-900 transition-colors cursor-pointer"
+                    >
+                      <Search size={15} strokeWidth={2} />
+                      <span>SEARCH</span>
+                    </button>
+                  </div>
+
+                  <span className="text-[10px] font-black text-zinc-400 tracking-[0.2em] uppercase">MENU</span>
                 </div>
 
-                {/* Level 1 Menu Items directly from MenuBuilder */}
-                <div className="py-4 space-y-0.5">
+                {/* Level 1 Menu Items */}
+                <div className="py-3 px-2 space-y-1">
                   {rootMenuItems.map(item => {
                     const l2 = getLevel2Items(item);
                     const hasChildren = l2.length > 0;
                     const isActive = activeL1?.id === item.id;
+                    const isPreOrder = item.title.toLowerCase().includes('pre-order') || item.url?.includes('pre-order');
+                    const isSale = item.title.toLowerCase().includes('sale') || item.url?.includes('sale');
 
                     return (
                       <div 
                         key={item.id}
                         onClick={() => {
                           if (hasChildren) {
-                            setActiveL1(isActive ? null : item);
-                            setActiveL2(null);
+                            handleSelectL1(item);
                           } else {
                             handleNavigateItem(item);
                           }
                         }}
-                        className={`flex items-center justify-between px-6 sm:px-8 py-3.5 cursor-pointer select-none transition-colors ${
-                          isActive ? 'bg-zinc-50 text-zinc-950 font-medium' : 'hover:bg-zinc-50 text-zinc-900'
+                        className={`group flex items-center justify-between px-5 py-3.5 rounded-xs cursor-pointer select-none transition-all duration-200 ${
+                          isActive 
+                            ? 'bg-zinc-950 text-white font-bold shadow-xs' 
+                            : 'hover:bg-zinc-100/80 text-zinc-900'
                         }`}
                       >
-                        <span className="font-sans text-[15px] font-normal">
-                          {item.title}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-sans text-[14px] sm:text-[15px] tracking-wide">
+                            {item.title}
+                          </span>
+                          {isPreOrder && (
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-black tracking-wider uppercase ${
+                              isActive ? 'bg-amber-400 text-black' : 'bg-amber-100 text-amber-900'
+                            }`}>
+                              2026
+                            </span>
+                          )}
+                          {isSale && (
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-black tracking-wider uppercase ${
+                              isActive ? 'bg-red-500 text-white' : 'bg-red-100 text-red-700'
+                            }`}>
+                              SALE
+                            </span>
+                          )}
+                        </div>
+
                         {hasChildren && (
                           <ChevronRight 
                             size={16} 
-                            strokeWidth={1.5}
+                            strokeWidth={isActive ? 2.5 : 1.5}
                             className={`transition-all duration-200 ${
-                              isActive ? 'text-zinc-950 translate-x-0.5' : 'text-zinc-400'
+                              isActive 
+                                ? 'text-amber-400 translate-x-1' 
+                                : 'text-zinc-400 group-hover:translate-x-1 group-hover:text-zinc-700'
                             }`} 
                           />
                         )}
@@ -394,60 +631,98 @@ export function Header() {
                 </div>
               </div>
 
-              {/* Bottom Footer Section: Contact us */}
-              <div className="p-6 sm:p-8 border-t border-zinc-100 bg-white flex-shrink-0">
+              {/* Bottom Footer Section: WhatsApp VIP Concierge & Official Instagram */}
+              <div className="p-4 sm:p-5 border-t border-zinc-100 bg-zinc-50/70 flex-shrink-0 space-y-2.5">
                 <a 
-                  href={`https://wa.me/${settings.whatsappNumber || '96170123456'}`}
+                  href={activeL1?.id === 'men' ? deptContext.menWhatsappUrl : activeL1?.id === 'women' ? deptContext.womenWhatsappUrl : deptContext.whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setIsPradaDrawerOpen(false)}
-                  className="flex items-center gap-2.5 text-sm font-normal text-zinc-700 hover:text-zinc-950 transition-colors"
+                  className="flex items-center gap-2.5 text-xs font-bold text-zinc-700 hover:text-zinc-950 transition-colors uppercase tracking-wider cursor-pointer"
+                  title="VIP WhatsApp Concierge"
                 >
-                  <MessageCircle size={16} strokeWidth={1.5} />
-                  <span>Contact us</span>
+                  <MessageCircle size={16} className="text-emerald-600 shrink-0" />
+                  <span>VIP CONCIERGE ASSISTANCE</span>
                 </a>
+
+                <a 
+                  href={activeL1?.id === 'men' ? deptContext.menInstagramUrl : activeL1?.id === 'women' ? deptContext.womenInstagramUrl : deptContext.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsPradaDrawerOpen(false)}
+                  className="flex items-center gap-2.5 text-xs font-bold text-zinc-700 hover:text-zinc-950 transition-colors uppercase tracking-wider cursor-pointer"
+                  title="Official Instagram"
+                >
+                  <Instagram size={16} className={activeL1?.id === 'men' ? "text-sky-500 shrink-0" : "text-pink-500 shrink-0"} />
+                  <span>FOLLOW ON INSTAGRAM</span>
+                </a>
+
+                <Link
+                  href="/account"
+                  onClick={() => setIsPradaDrawerOpen(false)}
+                  className="flex items-center gap-2.5 text-xs font-bold text-zinc-900 hover:text-black transition-colors uppercase tracking-wider cursor-pointer pt-1 border-t border-zinc-200"
+                  title="My Account & Orders"
+                >
+                  <User size={16} className="text-zinc-950 shrink-0" />
+                  <span className="font-black text-zinc-950">
+                    {customerUser ? `MY ACCOUNT (${customerUser.name})` : 'MY ACCOUNT & ORDERS'}
+                  </span>
+                </Link>
               </div>
 
             </div>
 
             {/* ==================== COLUMN 2: LEVEL 2 SUB-ITEMS ==================== */}
-            {(() => {
-              if (!activeL1) return null;
+            {activeL1 && (() => {
               const l2Items = getLevel2Items(activeL1);
               if (l2Items.length === 0) return null;
 
               return (
-                <div className={`w-[85vw] max-w-[320px] sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight ${activeL2 ? 'hidden sm:flex' : 'flex'}`}>
+                <div className="w-[85vw] max-w-[310px] sm:w-72 md:w-80 shrink-0 bg-zinc-50/50 backdrop-blur-xs h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-menu-column snap-start">
                   
                   <div className="flex-shrink-0">
                     {/* Column 2 Header */}
-                    <div className="px-8 py-7 bg-white border-b border-zinc-100 flex items-center justify-between">
-                      <h2 className="font-sans text-sm font-medium text-zinc-950">
-                        {activeL1.title}
-                      </h2>
+                    <div className="px-6 py-5 sm:py-6 bg-white border-b border-zinc-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={handleBackToL1}
+                          className="sm:hidden flex items-center gap-1 text-xs font-bold text-zinc-600 hover:text-black cursor-pointer p-1"
+                          title="Back"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <div>
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">DEPARTMENT</span>
+                          <h2 className="font-sans text-sm font-bold text-zinc-950 uppercase tracking-wide">
+                            {activeL1.title}
+                          </h2>
+                        </div>
+                      </div>
+
                       <button 
                         onClick={() => {
                           setActiveL1(null);
                           setActiveL2(null);
                         }} 
-                        className="text-xs font-normal text-zinc-500 hover:text-zinc-950 cursor-pointer"
+                        className="hidden sm:block text-[11px] font-bold text-zinc-400 hover:text-zinc-950 cursor-pointer uppercase tracking-wider"
                       >
-                        ← Back
+                        CLOSE ✕
                       </button>
                     </div>
 
                     {/* View All Option */}
                     <div 
                       onClick={() => handleNavigateItem(activeL1)}
-                      className="px-8 py-3 cursor-pointer select-none transition-colors hover:bg-zinc-50 border-b border-zinc-100"
+                      className="px-6 py-3.5 cursor-pointer select-none transition-all duration-200 bg-white hover:bg-zinc-100 border-b border-zinc-100 flex items-center justify-between group"
                     >
-                      <span className="font-sans text-[13px] font-bold text-zinc-600 uppercase tracking-wider">
-                        All {activeL1.title}
+                      <span className="font-sans text-[12px] font-black text-amber-700 uppercase tracking-wider">
+                        EXPLORE ALL {activeL1.title}
                       </span>
+                      <ArrowRight size={14} className="text-amber-600 group-hover:translate-x-1 transition-transform" />
                     </div>
 
                     {/* Level 2 Items List */}
-                    <div className="py-3 space-y-0.5">
+                    <div className="py-2 px-2 space-y-0.5">
                       {l2Items.map(item => {
                         const l3 = getLevel3Items(item);
                         const hasChildren = l3.length > 0;
@@ -458,25 +733,29 @@ export function Header() {
                             key={item.id}
                             onClick={() => {
                               if (hasChildren) {
-                                setActiveL2(isSelected ? null : item);
+                                handleSelectL2(item);
                               } else {
                                 handleNavigateItem(item, activeL1);
                               }
                             }}
-                            className={`flex items-center justify-between px-8 py-3 cursor-pointer select-none transition-colors ${
-                              isSelected ? 'bg-zinc-50 text-zinc-950 font-medium' : 'hover:bg-zinc-50 text-zinc-800'
+                            className={`group flex items-center justify-between px-5 py-3 rounded-xs cursor-pointer select-none transition-all duration-200 ${
+                              isSelected 
+                                ? 'bg-zinc-950 text-white font-bold shadow-xs' 
+                                : 'hover:bg-zinc-200/60 text-zinc-800'
                             }`}
                           >
-                            <span className="font-sans text-[14px] font-normal">
+                            <span className="font-sans text-[14px]">
                               {item.title}
                             </span>
                             
                             {hasChildren && (
                               <ChevronRight 
                                 size={15} 
-                                strokeWidth={1.5}
+                                strokeWidth={isSelected ? 2.5 : 1.5}
                                 className={`transition-all duration-200 ${
-                                  isSelected ? 'text-zinc-950 translate-x-0.5' : 'text-zinc-400'
+                                  isSelected 
+                                    ? 'text-amber-400 translate-x-1' 
+                                    : 'text-zinc-400 group-hover:translate-x-1 group-hover:text-zinc-700'
                                 }`} 
                               />
                             )}
@@ -492,47 +771,63 @@ export function Header() {
             })()}
 
             {/* ==================== COLUMN 3: LEVEL 3 LEAF ITEMS ==================== */}
-            {(() => {
-              if (!activeL1 || !activeL2) return null;
+            {activeL1 && activeL2 && (() => {
               const l3Items = getLevel3Items(activeL2);
               if (l3Items.length === 0) return null;
 
               return (
-                <div className="w-[85vw] max-w-[320px] sm:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-slideRight">
+                <div className="w-[85vw] max-w-[310px] sm:w-72 md:w-80 shrink-0 bg-white h-full border-r border-zinc-200/80 flex flex-col justify-between overflow-y-auto animate-menu-column snap-start">
                   
                   <div className="flex-shrink-0">
                     {/* Column 3 Header */}
-                    <div className="px-8 py-7 bg-white border-b border-zinc-100 flex items-center justify-between">
-                      <h2 className="font-sans text-sm font-medium text-zinc-950">
-                        {activeL2.title}
-                      </h2>
+                    <div className="px-6 py-5 sm:py-6 bg-white border-b border-zinc-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={handleBackToL2}
+                          className="sm:hidden flex items-center gap-1 text-xs font-bold text-zinc-600 hover:text-black cursor-pointer p-1"
+                          title="Back"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <div>
+                          <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block">CATEGORY</span>
+                          <h2 className="font-sans text-sm font-bold text-zinc-950 uppercase tracking-wide">
+                            {activeL2.title}
+                          </h2>
+                        </div>
+                      </div>
+
                       <button 
                         onClick={() => setActiveL2(null)} 
-                        className="text-xs font-normal text-zinc-500 hover:text-zinc-950 cursor-pointer"
+                        className="hidden sm:block text-[11px] font-bold text-zinc-400 hover:text-zinc-950 cursor-pointer uppercase tracking-wider"
                       >
-                        ← Back
+                        CLOSE ✕
                       </button>
                     </div>
 
                     {/* View All Option */}
                     <div 
                       onClick={() => handleNavigateItem(activeL2, activeL1)}
-                      className="px-8 py-3 cursor-pointer select-none transition-colors hover:bg-zinc-50 border-b border-zinc-100"
+                      className="px-6 py-3.5 cursor-pointer select-none transition-all duration-200 bg-zinc-50 hover:bg-zinc-100 border-b border-zinc-100 flex items-center justify-between group"
                     >
-                      <span className="font-sans text-[13px] font-bold text-zinc-600 uppercase tracking-wider">
-                        All {activeL2.title}
+                      <span className="font-sans text-[12px] font-black text-zinc-900 uppercase tracking-wider">
+                        ALL {activeL2.title}
                       </span>
+                      <ArrowRight size={14} className="text-zinc-600 group-hover:translate-x-1 transition-transform" />
                     </div>
 
                     {/* Level 3 Leaf Items */}
-                    <div className="py-3 space-y-0.5">
+                    <div className="py-2 px-2 space-y-0.5">
                       {l3Items.map(item => (
                         <div
                           key={item.id}
                           onClick={() => handleNavigateItem(item, activeL1)}
-                          className="px-8 py-3 font-sans text-[14px] font-normal text-zinc-800 hover:text-zinc-950 hover:bg-zinc-50 transition-colors cursor-pointer select-none block"
+                          className="group px-5 py-2.5 rounded-xs font-sans text-[13.5px] text-zinc-700 hover:text-zinc-950 hover:bg-zinc-100/70 transition-all duration-200 cursor-pointer select-none flex items-center justify-between"
                         >
-                          {item.title}
+                          <span>{item.title}</span>
+                          <span className="text-zinc-300 group-hover:text-zinc-950 group-hover:translate-x-1 transition-all text-xs font-bold">
+                            →
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -666,7 +961,7 @@ export function Header() {
                             {product.title}
                           </h4>
                           <span className="text-xs font-black text-zinc-950">
-                            {formatCurrency(product.salePrice || product.price, currency, settings.lbpRate, settings.eurRate)}
+                            {formatCurrency(getProductDisplayPrices(product.price, product.salePrice).currentPrice, currency, settings.lbpRate, settings.eurRate)}
                           </span>
                         </div>
                       </Link>

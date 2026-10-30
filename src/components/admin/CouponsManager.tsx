@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { DataService } from '@/lib/store';
 import { Coupon } from '@/lib/types';
 import { useCart } from '@/lib/CartContext';
-import { Tag, Plus, Trash2, CheckCircle2, XCircle, Search, Percent } from 'lucide-react';
+import { Tag, Plus, Trash2, CheckCircle2, XCircle, Search, Percent, RotateCcw } from 'lucide-react';
 
 export function CouponsManager() {
   const { showToast } = useCart();
@@ -14,7 +14,10 @@ export function CouponsManager() {
   // New coupon form state
   const [code, setCode] = useState('');
   const [discountPercent, setDiscountPercent] = useState<number>(10);
+  const [department, setDepartment] = useState<'all' | 'men' | 'women'>('all');
+  const [activeDeptTab, setActiveDeptTab] = useState<'all' | 'men' | 'women'>('all');
   const [minSpendUSD, setMinSpendUSD] = useState<number>(0);
+  const [usageLimit, setUsageLimit] = useState<number>(0);
   const [active, setActive] = useState<boolean>(true);
 
   useEffect(() => {
@@ -47,7 +50,10 @@ export function CouponsManager() {
       code: cleanCode,
       discountPercent: Number(discountPercent),
       active,
+      department,
       minSpendUSD: Number(minSpendUSD) || 0,
+      usageLimit: Number(usageLimit) || 0,
+      usedCount: 0,
       createdAt: new Date().toISOString()
     };
 
@@ -57,9 +63,19 @@ export function CouponsManager() {
     // Reset form
     setCode('');
     setDiscountPercent(10);
+    setDepartment('all');
     setMinSpendUSD(0);
+    setUsageLimit(0);
     setActive(true);
-    showToast(`Coupon ${cleanCode} created successfully!`, 'success');
+    showToast(`Coupon ${cleanCode} (${department.toUpperCase()}) created successfully`, 'success');
+  };
+
+  const handleResetUsage = (id: string, codeStr: string) => {
+    if (confirm(`Are you sure you want to reset the usage count for coupon "${codeStr}"?`)) {
+      const updated = DataService.resetCouponUsage(id);
+      setCoupons(updated);
+      showToast(`Coupon ${codeStr} usage counter reset successfully`, 'success');
+    }
   };
 
   const handleToggleActive = (coupon: Coupon) => {
@@ -80,9 +96,11 @@ export function CouponsManager() {
     }
   };
 
-  const filteredCoupons = coupons.filter(c => 
-    c.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCoupons = coupons.filter(c => {
+    const matchesQuery = c.code.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDept = activeDeptTab === 'all' ? true : (c.department || 'all') === activeDeptTab;
+    return matchesQuery && matchesDept;
+  });
 
   return (
     <div className="space-y-8 bg-white min-h-[80vh]">
@@ -94,7 +112,7 @@ export function CouponsManager() {
           DISCOUNT COUPONS & PROMO CODES
         </h1>
         <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider pt-1.5">
-          Manage checkout promotional coupons, discount percentages, and minimum purchase rules.
+          Manage checkout promotional coupons, department separation (Men / Women), discount percentages, and usage rules.
         </p>
       </div>
 
@@ -105,7 +123,7 @@ export function CouponsManager() {
           CREATE NEW PROMO CODE
         </h2>
 
-        <form onSubmit={handleCreateCoupon} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
+        <form onSubmit={handleCreateCoupon} className="grid grid-cols-1 sm:grid-cols-6 gap-4 items-end">
           
           <div>
             <label className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-1">
@@ -116,9 +134,24 @@ export function CouponsManager() {
               required
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="e.g. STYLUXE20"
+              placeholder="e.g. MEN20 / WOMEN15"
               className="w-full p-3 border-2 border-zinc-300 rounded text-xs font-mono font-black uppercase text-zinc-950 focus:border-zinc-950 focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-1">
+              DEPARTMENT *
+            </label>
+            <select
+              value={department}
+              onChange={(e) => setDepartment(e.target.value as 'all' | 'men' | 'women')}
+              className="w-full p-3 border-2 border-zinc-300 rounded text-xs font-black text-zinc-950 focus:border-zinc-950 focus:outline-none bg-white"
+            >
+              <option value="all">ALL DEPARTMENTS</option>
+              <option value="men">MEN ONLY (FOR HIM)</option>
+              <option value="women">WOMEN ONLY (FOR HER)</option>
+            </select>
           </div>
 
           <div>
@@ -142,7 +175,7 @@ export function CouponsManager() {
 
           <div>
             <label className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-1">
-              MINIMUM SPEND ($ USD)
+              MIN SPEND ($ USD)
             </label>
             <input
               type="number"
@@ -155,9 +188,26 @@ export function CouponsManager() {
           </div>
 
           <div>
+            <label className="text-[10px] font-black text-zinc-700 uppercase tracking-widest block mb-1">
+              USAGE LIMIT
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={usageLimit}
+              onChange={(e) => setUsageLimit(Number(e.target.value))}
+              placeholder="0 = Unlimited"
+              className="w-full p-3 border-2 border-zinc-300 rounded text-xs font-black text-zinc-950 focus:border-zinc-950 focus:outline-none"
+            />
+            <span className="text-[9px] text-zinc-400 font-bold block mt-1">
+              0 = Unlimited
+            </span>
+          </div>
+
+          <div>
             <button
               type="submit"
-              className="w-full py-3.5 bg-zinc-950 hover:bg-black text-white text-xs font-black tracking-[0.2em] uppercase rounded shadow-md transition-all flex items-center justify-center gap-2"
+              className="w-full py-3.5 bg-zinc-950 hover:bg-black text-white text-xs font-black tracking-[0.2em] uppercase rounded shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus size={16} /> ADD COUPON
             </button>
@@ -166,8 +216,44 @@ export function CouponsManager() {
         </form>
       </div>
 
-      {/* FILTER BAR */}
+      {/* FILTER BAR & DEPARTMENT TABS */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 pb-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveDeptTab('all')}
+            className={`px-4 py-2 text-xs font-black tracking-wider uppercase rounded-full transition-all cursor-pointer ${
+              activeDeptTab === 'all'
+                ? 'bg-zinc-950 text-white shadow'
+                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+            }`}
+          >
+            ALL COUPONS ({coupons.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveDeptTab('men')}
+            className={`px-4 py-2 text-xs font-black tracking-wider uppercase rounded-full transition-all cursor-pointer ${
+              activeDeptTab === 'men'
+                ? 'bg-blue-600 text-white shadow'
+                : 'bg-blue-50 text-blue-800 hover:bg-blue-100 border border-blue-200'
+            }`}
+          >
+            MEN'S COLLECTION ({coupons.filter(c => c.department === 'men').length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveDeptTab('women')}
+            className={`px-4 py-2 text-xs font-black tracking-wider uppercase rounded-full transition-all cursor-pointer ${
+              activeDeptTab === 'women'
+                ? 'bg-rose-600 text-white shadow'
+                : 'bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200'
+            }`}
+          >
+            WOMEN'S COLLECTION ({coupons.filter(c => c.department === 'women').length})
+          </button>
+        </div>
+
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
           <input
@@ -185,79 +271,137 @@ export function CouponsManager() {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-zinc-300 bg-zinc-100/70">
-              <th className="py-4 px-6 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">COUPON CODE</th>
-              <th className="py-4 px-6 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">DISCOUNT %</th>
-              <th className="py-4 px-6 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">MIN SPEND</th>
-              <th className="py-4 px-6 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">STATUS</th>
-              <th className="py-4 px-6 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">CREATED DATE</th>
-              <th className="py-4 px-6 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">ACTIONS</th>
+              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">COUPON CODE</th>
+              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">DEPARTMENT</th>
+              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">DISCOUNT %</th>
+              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">MIN SPEND</th>
+              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">USAGE LIMIT & COUNT</th>
+              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">STATUS</th>
+              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">CREATED DATE</th>
+              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {filteredCoupons.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-20 text-center text-xs font-extrabold text-zinc-400 tracking-wider uppercase">
+                <td colSpan={8} className="py-20 text-center text-xs font-extrabold text-zinc-400 tracking-wider uppercase">
                   NO COUPONS FOUND.
                 </td>
               </tr>
             ) : (
-              filteredCoupons.map((coupon) => (
-                <tr key={coupon.id} className="border-b border-zinc-200 hover:bg-zinc-50 transition-colors text-xs">
-                  
-                  {/* CODE */}
-                  <td className="py-4 px-6 text-center font-mono font-black text-base text-amber-600 uppercase tracking-widest">
-                    {coupon.code}
-                  </td>
+              filteredCoupons.map((coupon) => {
+                const limit = Number(coupon.usageLimit) || 0;
+                const used = Number(coupon.usedCount) || 0;
+                const isExhausted = limit > 0 && used >= limit;
 
-                  {/* DISCOUNT PERCENT */}
-                  <td className="py-4 px-6 text-center font-black text-zinc-950 text-sm">
-                    {coupon.discountPercent}% OFF
-                  </td>
+                return (
+                  <tr key={coupon.id} className="border-b border-zinc-200 hover:bg-zinc-50 transition-colors text-xs">
+                    
+                    {/* CODE */}
+                    <td className="py-4 px-4 text-center font-mono font-black text-base text-amber-600 uppercase tracking-widest">
+                      {coupon.code}
+                    </td>
 
-                  {/* MIN SPEND */}
-                  <td className="py-4 px-6 text-center font-bold text-zinc-700">
-                    {coupon.minSpendUSD ? `$${coupon.minSpendUSD}` : 'No Minimum'}
-                  </td>
-
-                  {/* STATUS TOGGLE */}
-                  <td className="py-4 px-6 text-center">
-                    <button
-                      onClick={() => handleToggleActive(coupon)}
-                      className={`px-3 py-1.5 text-xs font-black uppercase tracking-wider rounded-full transition-all flex items-center gap-1.5 mx-auto ${
-                        coupon.active
-                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                          : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
-                      }`}
-                    >
-                      {coupon.active ? (
-                        <>
-                          <CheckCircle2 size={14} className="text-emerald-600" /> ACTIVE
-                        </>
+                    {/* DEPARTMENT */}
+                    <td className="py-4 px-4 text-center">
+                      {coupon.department === 'men' ? (
+                        <span className="px-2.5 py-1 text-[10px] font-black uppercase rounded bg-blue-50 text-blue-800 border border-blue-200 inline-block">
+                          MEN ONLY
+                        </span>
+                      ) : coupon.department === 'women' ? (
+                        <span className="px-2.5 py-1 text-[10px] font-black uppercase rounded bg-rose-50 text-rose-800 border border-rose-200 inline-block">
+                          WOMEN ONLY
+                        </span>
                       ) : (
-                        <>
-                          <XCircle size={14} className="text-zinc-400" /> INACTIVE
-                        </>
+                        <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-zinc-100 text-zinc-700 inline-block">
+                          ALL DEPARTMENTS
+                        </span>
                       )}
-                    </button>
-                  </td>
+                    </td>
 
-                  {/* CREATED DATE */}
-                  <td className="py-4 px-6 text-center font-bold text-zinc-500 text-xs">
-                    {new Date(coupon.createdAt).toLocaleDateString()}
-                  </td>
+                    {/* DISCOUNT PERCENT */}
+                    <td className="py-4 px-4 text-center font-black text-zinc-950 text-sm">
+                      {coupon.discountPercent}% OFF
+                    </td>
 
-                  {/* ACTIONS */}
-                  <td className="py-4 px-6 text-center">
-                    <button
-                      onClick={() => handleDeleteCoupon(coupon.id, coupon.code)}
-                      className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase rounded shadow-2xs flex items-center gap-1 mx-auto"
-                    >
-                      <Trash2 size={12} /> DELETE
-                    </button>
-                  </td>
+                    {/* MIN SPEND */}
+                    <td className="py-4 px-4 text-center font-bold text-zinc-700">
+                      {coupon.minSpendUSD ? `$${coupon.minSpendUSD}` : 'No Minimum'}
+                    </td>
 
-                </tr>
-              ))
+                    {/* USAGE LIMIT & USED COUNT */}
+                    <td className="py-4 px-4 text-center">
+                      {limit > 0 ? (
+                        <div className="space-y-1 inline-block">
+                          <span className={`px-2.5 py-1 text-[11px] font-black uppercase rounded-md inline-flex items-center gap-1 ${
+                            isExhausted
+                              ? 'bg-red-100 text-red-700 border border-red-300'
+                              : 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                          }`}>
+                            {isExhausted ? '⛔ EXHAUSTED' : '✓ ACTIVE'} ({used} / {limit})
+                          </span>
+                          <span className="text-[10px] font-bold text-zinc-500 block">
+                            {Math.max(0, limit - used)} left of {limit}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="px-2.5 py-1 text-[11px] font-bold uppercase rounded-md bg-zinc-100 text-zinc-700">
+                          {used} / ∞ (Unlimited)
+                        </span>
+                      )}
+                    </td>
+
+                    {/* STATUS TOGGLE */}
+                    <td className="py-4 px-4 text-center">
+                      <button
+                        onClick={() => handleToggleActive(coupon)}
+                        className={`px-3 py-1.5 text-xs font-black uppercase tracking-wider rounded-full transition-all flex items-center gap-1.5 mx-auto cursor-pointer ${
+                          coupon.active
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'
+                        }`}
+                      >
+                        {coupon.active ? (
+                          <>
+                            <CheckCircle2 size={14} className="text-emerald-600" /> ACTIVE
+                          </>
+                        ) : (
+                          <>
+                            <XCircle size={14} className="text-zinc-400" /> INACTIVE
+                          </>
+                        )}
+                      </button>
+                    </td>
+
+                    {/* CREATED DATE */}
+                    <td className="py-4 px-4 text-center font-bold text-zinc-500 text-xs">
+                      {new Date(coupon.createdAt).toLocaleDateString()}
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="py-4 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {used > 0 && (
+                          <button
+                            onClick={() => handleResetUsage(coupon.id, coupon.code)}
+                            className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold uppercase rounded flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Reset usage counter to 0"
+                          >
+                            <RotateCcw size={12} /> RESET
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteCoupon(coupon.id, coupon.code)}
+                          className="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold uppercase rounded shadow-2xs flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Trash2 size={12} /> DELETE
+                        </button>
+                      </div>
+                    </td>
+
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

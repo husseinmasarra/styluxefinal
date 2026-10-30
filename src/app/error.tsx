@@ -18,6 +18,11 @@ export default function Error({
       <p className="text-xs text-zinc-500 max-w-md">
         An error occurred while loading this page. Please try refreshing or return to homepage.
       </p>
+      {error?.message && (
+        <div className="max-w-lg p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-mono break-words rounded">
+          {error.message}
+        </div>
+      )}
       <div className="flex gap-4">
         <button
           onClick={() => reset()}

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Product, StoreSettings } from './types';
 import { DataService, initCloudSync } from './store';
 import { INITIAL_SETTINGS } from './seed';
+import { trackPixelAddToCart } from './pixelEvents';
 
 export interface CartItem {
   product: Product;
@@ -90,6 +91,28 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addToCart = (product: Product, size: string, color: string, quantity = 1) => {
+    // Validate Stock if not a pre-order item
+    if (!product.isPreOrder) {
+      const stock = product.stockPerSize && product.stockPerSize[size] !== undefined
+        ? Number(product.stockPerSize[size])
+        : Number(product.totalStock) || 0;
+
+      if (stock <= 0) {
+        showToast(`Out of Stock: ${product.title} (${size}) is currently sold out (Stock: 0).`, 'error');
+        return;
+      }
+
+      const existing = cart.find(
+        item => item.product.id === product.id && item.size === size && item.color === color
+      );
+      const currentQty = existing ? existing.quantity : 0;
+
+      if (currentQty + quantity > stock) {
+        showToast(`Stock limit: Only ${stock} items available for ${product.title} (${size}).`, 'error');
+        return;
+      }
+    }
+
     const existingIndex = cart.findIndex(
       item => item.product.id === product.id && item.size === size && item.color === color
     );
@@ -104,6 +127,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     saveCartToStorage(updated);
     setIsCartOpen(true);
     showToast(`Added ${product.title} (${size}) to Shopping Bag`, 'success');
+    trackPixelAddToCart({
+      id: product.id,
+      title: product.title,
+      price: product.salePrice || product.price,
+      quantity,
+      currency: currency || 'USD',
+    });
   };
 
   const removeFromCart = (productId: string, size: string, color: string) => {
@@ -118,6 +148,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeFromCart(productId, size, color);
       return;
     }
+
+    const existing = cart.find(
+      item => item.product.id === productId && item.size === size && item.color === color
+    );
+
+    if (existing && !existing.product.isPreOrder) {
+      const stock = existing.product.stockPerSize && existing.product.stockPerSize[size] !== undefined
+        ? Number(existing.product.stockPerSize[size])
+        : Number(existing.product.totalStock) || 0;
+
+      if (quantity > stock) {
+        showToast(`Stock limit reached: Only ${stock} available in stock.`, 'error');
+        return;
+      }
+    }
+
     const updated = cart.map(item => {
       if (item.product.id === productId && item.size === size && item.color === color) {
         return { ...item, quantity };

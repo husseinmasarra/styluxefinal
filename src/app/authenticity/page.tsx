@@ -22,7 +22,7 @@ export default function AuthenticityPage() {
         <span className="text-[11px] font-black uppercase tracking-[0.3em] text-amber-600 block">
           OUR SACRED PLEDGE
         </span>
-        <h1 className="font-serif text-3xl sm:text-4xl font-extrabold tracking-[0.2em] text-zinc-950 uppercase">
+        <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-normal tracking-[0.25em] text-zinc-950 uppercase">
           100% AUTHENTICITY GUARANTEE
         </h1>
         <p className="text-xs sm:text-sm text-zinc-600 font-medium tracking-wider uppercase leading-relaxed max-w-2xl">
@@ -59,8 +59,8 @@ export default function AuthenticityPage() {
 
       {/* Detailed Standards */}
       <div className="space-y-6 text-xs text-zinc-700 leading-relaxed border-t border-zinc-200 pt-8">
-        <h2 className="font-serif text-lg font-bold tracking-wider uppercase text-zinc-950">
-          DESIGNER HOUSES REPRESENTED
+        <h2 className="font-serif text-lg font-normal tracking-[0.25em] uppercase text-zinc-950">
+          PROVENANCE & AUTHENTICATION PROTOCOLS
         </h2>
         <p>
           STYLUXE curates collections from prestigious world-renowned luxury houses including Prada, Gucci, Amiri, Off-White, Balenciaga, and Dior. We maintain strict zero-tolerance policies regarding unauthorized goods or grey-market duplicates.

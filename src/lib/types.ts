@@ -1,4 +1,4 @@
-export type Department = 'men' | 'women' | 'all';
+export type Department = 'men' | 'women' | 'all' | 'kids';
 
 export interface Product {
   id: string;
@@ -17,9 +17,11 @@ export interface Product {
   totalStock: number;
   colors: string[];
   colorHexes?: Record<string, string>; // e.g. { "Black": "#000000", "Charcoal": "#36454F", "Grey": "#808080" }
-  colorImages?: Record<string, string>; // e.g. { "Black": "data:image...", "Red": "data:image..." }
+  colorImages?: Record<string, string | string[]>; // e.g. { "Black": ["data:image...", "data:image..."], "Red": "data:image..." }
   images: string[];
   description: string;
+  shortDescription?: string;
+  season?: string; // e.g. "Summer", "Winter", "All Seasons"
   isFeatured: boolean;
   isNewArrival: boolean;
   isPreOrder?: boolean;
@@ -82,8 +84,21 @@ export interface OrderItem {
   imageUrl: string;
 }
 
-export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-export type PaymentMethod = 'cod' | 'card' | 'pos_cash' | 'pos_card';
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+export type PaymentMethod = 'cod' | 'card' | 'cash' | 'pos_cash' | 'pos_card';
+
+export type CustomerTier = 'platinum' | 'gold' | 'silver' | 'bronze';
+
+export interface CustomerTierInfo {
+  tier: CustomerTier;
+  label: string;
+  arabicLabel: string;
+  icon: string;
+  minSpendUSD: number;
+  minOrders: number;
+  badgeClass: string;
+  perks: string[];
+}
 
 export interface Order {
   id: string;
@@ -106,6 +121,7 @@ export interface Order {
   paymentMethod: PaymentMethod;
   isPosSale?: boolean;
   cashierName?: string;
+  customerTier?: CustomerTier;
   createdAt: string;
   notes?: string;
 }
@@ -116,10 +132,26 @@ export interface Customer {
   email: string;
   phone: string;
   address: string;
+  city?: string;
   totalOrders: number;
   totalSpentUSD: number;
+  tier?: CustomerTier;
   notes?: string;
   createdAt: string;
+}
+
+export interface CustomerProfile {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  tier?: CustomerTier;
+  totalOrders?: number;
+  totalSpentUSD?: number;
+  notes?: string;
+  createdAt?: string;
 }
 
 export interface Staff {
@@ -169,6 +201,8 @@ export interface StoreSettings {
   storeName: string;
   tagline: string;
   logoUrl: string;
+  logoVideoUrl?: string; // Animated video logo (MP4/WebM/data URI)
+  hideVideoLogo?: boolean; // When true, fallback to static logo or text
   phone: string;
   email: string;
   address: string;
@@ -201,6 +235,14 @@ export interface StoreSettings {
   heroTitle?: string;
   heroDescription?: string;
   heroImages?: string[];
+  hideHeroBanner?: boolean;
+  activeSeason?: 'all' | 'summer' | 'winter';
+
+  // Tracking Pixels & Marketing Analytics
+  metaPixelId?: string; // Meta (Instagram & Facebook) Pixel ID
+  tiktokPixelId?: string; // TikTok Pixel ID
+  googleAnalyticsId?: string; // Google Analytics / Tag ID (e.g. G-XXXXX)
+  snapchatPixelId?: string; // Snapchat Pixel ID
 }
 
 export interface StaffMember {
@@ -218,6 +260,9 @@ export interface Coupon {
   code: string;
   discountPercent: number;
   active: boolean;
+  department?: 'all' | 'men' | 'women';
   minSpendUSD?: number;
+  usageLimit?: number;
+  usedCount?: number;
   createdAt: string;
 }

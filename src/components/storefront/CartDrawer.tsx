@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { X, Trash2, Plus, Minus, ArrowRight, ShieldCheck, Truck } from 'lucide-react';
 import { useCart } from '@/lib/CartContext';
-import { formatCurrency } from '@/lib/store';
+import { formatCurrency, getProductDisplayPrices } from '@/lib/store';
 
 export function CartDrawer() {
   const { cart, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, clearCart, currency, settings, showToast } = useCart();
@@ -24,7 +24,10 @@ export function CartDrawer() {
 
   if (!isCartOpen) return null;
 
-  const subtotalUSD = cart.reduce((acc, item) => acc + (item.product.salePrice || item.product.price) * item.quantity, 0);
+  const subtotalUSD = cart.reduce((acc, item) => {
+    const { currentPrice } = getProductDisplayPrices(item.product.price, item.product.salePrice);
+    return acc + currentPrice * item.quantity;
+  }, 0);
   const freeShippingThreshold = settings.freeShippingThresholdUSD || 500;
   const progressPercent = Math.min(100, (subtotalUSD / freeShippingThreshold) * 100);
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotalUSD);
@@ -58,16 +61,16 @@ export function CartDrawer() {
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-sm font-bold tracking-prada text-zinc-950 uppercase">
-                  SHOPPING BAG ({cart.reduce((a, c) => a + c.quantity, 0)})
+                  SHOPPING CART ({cart.reduce((a, c) => a + c.quantity, 0)})
                 </h2>
                 {cart.length > 0 && (
                   <button 
                     onClick={() => {
                       clearCart();
-                      showToast('All items removed from bag', 'info');
+                      showToast('All items removed from cart', 'info');
                     }}
                     className="text-[10px] font-bold text-zinc-400 hover:text-red-600 uppercase underline transition-colors cursor-pointer"
-                    title="Empty shopping bag"
+                    title="Empty shopping cart"
                   >
                     Clear All
                   </button>
@@ -108,7 +111,7 @@ export function CartDrawer() {
             {cart.length === 0 ? (
               <div className="text-center py-16 space-y-4">
                 <p className="text-xs font-bold tracking-widest text-zinc-400 uppercase">
-                  YOUR SHOPPING BAG IS CURRENTLY EMPTY
+                  YOUR SHOPPING CART IS CURRENTLY EMPTY
                 </p>
                 <button 
                   onClick={() => setIsCartOpen(false)}
@@ -119,7 +122,7 @@ export function CartDrawer() {
               </div>
             ) : (
               cart.map((item, idx) => {
-                const itemPrice = item.product.salePrice || item.product.price;
+                const { currentPrice: itemPrice } = getProductDisplayPrices(item.product.price, item.product.salePrice);
                 return (
                   <div key={`${item.product.id}-${item.size}-${item.color}-${idx}`} className="flex gap-4 border-b border-zinc-100 pb-6 group">
                     <Link 
@@ -159,9 +162,11 @@ export function CartDrawer() {
                           <span className="text-[10px] px-2 py-0.5 bg-zinc-100 text-zinc-800 font-bold rounded">
                             Size: {item.size}
                           </span>
-                          <span className="text-[10px] px-2 py-0.5 bg-zinc-100 text-zinc-800 font-bold rounded">
-                            Color: {item.color}
-                          </span>
+                          {item.color && item.color.toLowerCase() !== 'default' && item.color.toLowerCase() !== 'standard' && (
+                            <span className="text-[10px] px-2 py-0.5 bg-zinc-100 text-zinc-800 font-bold rounded">
+                              Color: {item.color}
+                            </span>
+                          )}
                         </div>
                       </div>
 

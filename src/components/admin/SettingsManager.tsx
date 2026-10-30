@@ -5,18 +5,18 @@ import { useCart } from '@/lib/CartContext';
 import { DataService } from '@/lib/store';
 import { StoreSettings } from '@/lib/types';
 import { compressImageFile } from '@/lib/imageCompressor';
-import { Save, Check, Plus, Trash2, Globe, Shield, Truck, DollarSign, Image as ImageIcon, Send, Percent, Upload, Phone, Instagram, Database, Download, Cloud, RefreshCw } from 'lucide-react';
-import { testSupabaseConnection, syncLocalDataToSupabase, getSupabaseClient } from '@/lib/supabase';
+import { Save, Check, Plus, Trash2, Globe, Shield, Truck, DollarSign, Image as ImageIcon, Send, Percent, Upload, Phone, Instagram, Database, Download, Cloud, RefreshCw, Target, BarChart3, Radio, Video, Film, Sparkles } from 'lucide-react';
+import { testSupabaseConnection, syncLocalDataToSupabase, getSupabaseClient, SUPABASE_CONFIG } from '@/lib/supabase';
 
 export function SettingsManager() {
   const { settings } = useCart();
   const [formData, setFormData] = useState<StoreSettings>({ ...settings });
   const [isSaved, setIsSaved] = useState(false);
   const [supabaseUrl, setSupabaseUrl] = useState(
-    typeof window !== 'undefined' ? (localStorage.getItem('styluxe_supabase_url') || '') : ''
+    typeof window !== 'undefined' ? (localStorage.getItem('styluxe_supabase_url') || SUPABASE_CONFIG.url) : SUPABASE_CONFIG.url
   );
   const [supabaseKey, setSupabaseKey] = useState(
-    typeof window !== 'undefined' ? (localStorage.getItem('styluxe_supabase_key') || '') : ''
+    typeof window !== 'undefined' ? (localStorage.getItem('styluxe_supabase_key') || SUPABASE_CONFIG.anonKey) : SUPABASE_CONFIG.anonKey
   );
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
@@ -43,6 +43,48 @@ export function SettingsManager() {
         .then(compressedUrl => callback(compressedUrl))
         .catch(err => {
           console.error('Settings image compression failed:', err);
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (reader.result) callback(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+        });
+    }
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 30 * 1024 * 1024) {
+        alert('Video file size exceeds 30MB. Please select a video under 30MB or compress it.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) callback(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleHeroMediaUpload = (e: React.ChangeEvent<HTMLInputElement>, callback: (url: string) => void) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type.startsWith('video/')) {
+      if (file.size > 30 * 1024 * 1024) {
+        alert('Hero video file size exceeds 30MB. Please select a video under 30MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) callback(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      compressImageFile(file, { maxWidth: 1600, maxHeight: 1600, quality: 0.85 })
+        .then(compressedUrl => callback(compressedUrl))
+        .catch(err => {
+          console.error('Hero media compression error, using fallback:', err);
           const reader = new FileReader();
           reader.onloadend = () => {
             if (reader.result) callback(reader.result as string);
@@ -135,8 +177,10 @@ export function SettingsManager() {
     if (e) e.preventDefault();
     DataService.updateSettings(formData);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('styluxe_supabase_url', supabaseUrl.trim());
-      localStorage.setItem('styluxe_supabase_key', supabaseKey.trim());
+      const urlToSave = supabaseUrl.trim() || SUPABASE_CONFIG.url;
+      const keyToSave = supabaseKey.trim() || SUPABASE_CONFIG.anonKey;
+      localStorage.setItem('styluxe_supabase_url', urlToSave);
+      localStorage.setItem('styluxe_supabase_key', keyToSave);
     }
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2500);
@@ -190,7 +234,238 @@ export function SettingsManager() {
         </div>
       </div>
 
-      {/* 2. PER-DEPARTMENT WHATSAPP & INSTAGRAM SETTINGS (20% ENLARGED FONTS) */}
+      {/* 2. STORE BRANDING & LOGO (ANIMATED VIDEO LOGO & STATIC IMAGE LOGO) */}
+      <div className="border border-zinc-300 rounded-xl p-6 sm:p-8 bg-white shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-200 pb-4 gap-2">
+          <div className="flex items-center gap-3">
+            <Film className="text-zinc-950" size={26} />
+            <div>
+              <h2 className="font-serif text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
+                STORE IDENTITY & LOGO (VIDEO & IMAGE)
+              </h2>
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest block pt-0.5">
+                Animated website video logo and high-resolution static mark for header & footer
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {formData.logoVideoUrl && !formData.hideVideoLogo ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300 uppercase">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                ACTIVE VIDEO LOGO
+              </span>
+            ) : formData.logoUrl ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wider bg-zinc-100 text-zinc-800 border border-zinc-300 uppercase">
+                STATIC IMAGE LOGO ACTIVE
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wider bg-amber-50 text-amber-800 border border-amber-300 uppercase">
+                TEXT TYPOGRAPHY LOGO
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Guidance Alert */}
+        <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-lg text-xs leading-relaxed text-zinc-700 space-y-1">
+          <p className="font-bold text-zinc-950 flex items-center gap-1.5">
+            <Sparkles size={14} className="text-amber-600" />
+            <span>Storefront Animated Video Logo</span>
+          </p>
+          <p>
+            Upload your animated MP4 or WebM video logo (or click <strong>Use Preloaded Video</strong> to activate the pre-configured video logo). 
+            When active, the video logo automatically autoplays in an elegant loop in the top navigation header and footer. 
+            If the video logo is disabled or cleared, STYLUXE automatically uses your static image logo or standard typographic brand mark.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* COLUMN 1: ANIMATED VIDEO LOGO */}
+          <div className="border-2 border-zinc-900/15 rounded-xl p-6 bg-zinc-50/70 space-y-5 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-200 pb-2.5">
+                <span className="text-sm font-black text-zinc-950 uppercase tracking-widest flex items-center gap-2">
+                  <Video size={18} className="text-zinc-950" />
+                  <span>1. ANIMATED VIDEO LOGO (MP4 / WEBM)</span>
+                </span>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-mono">
+                  PREMIUM
+                </span>
+              </div>
+
+              {/* Video Preview Player */}
+              <div className="h-48 sm:h-56 w-full bg-zinc-950 rounded-xl overflow-hidden border border-zinc-800 flex items-center justify-center relative shadow-inner">
+                {formData.logoVideoUrl ? (
+                  <video 
+                    key={formData.logoVideoUrl}
+                    src={formData.logoVideoUrl}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    controls
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-zinc-500 space-y-2 p-4 text-center">
+                    <Film size={36} className="text-zinc-600" />
+                    <span className="text-xs font-black uppercase tracking-wider text-zinc-400">NO VIDEO LOGO UPLOADED</span>
+                    <span className="text-[11px] text-zinc-500 max-w-xs">Upload an MP4 video or click "Use Preloaded Video" below to activate</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload & Preset Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <label className="flex-1 py-3.5 bg-zinc-950 text-white text-xs font-black uppercase tracking-wider rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-xs">
+                  <Upload size={16} />
+                  <span>UPLOAD VIDEO FILE (.MP4 / .WEBM)</span>
+                  <input 
+                    type="file" 
+                    accept="video/mp4,video/webm,video/ogg,video/quicktime" 
+                    className="hidden" 
+                    onChange={e => handleVideoUpload(e, (url) => handleChange('logoVideoUrl', url))}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => handleChange('logoVideoUrl', '/logo-video.mp4')}
+                  className="px-4 py-3.5 bg-white hover:bg-amber-50 text-zinc-950 border-2 border-zinc-900 rounded-lg text-xs font-black tracking-wider uppercase flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  title="Activate preloaded video logo from public/logo-video.mp4"
+                >
+                  <Sparkles size={15} className="text-amber-600" />
+                  <span>USE PRELOADED VIDEO</span>
+                </button>
+              </div>
+
+              {/* Direct Video URL Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                  Video Logo Path or Direct URL:
+                </label>
+                <input 
+                  type="text" 
+                  value={formData.logoVideoUrl || ''} 
+                  onChange={e => handleChange('logoVideoUrl', e.target.value.trim())} 
+                  placeholder="e.g. /logo-video.mp4 or https://..."
+                  className="w-full p-3.5 border-2 border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
+                />
+              </div>
+
+              {/* Hide Video Logo Option */}
+              <label className="flex items-center gap-2.5 pt-1 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={formData.hideVideoLogo || false}
+                  onChange={e => handleChange('hideVideoLogo', e.target.checked)}
+                  className="w-4 h-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-950"
+                />
+                <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                  Temporarily hide video logo (use static image logo instead)
+                </span>
+              </label>
+            </div>
+
+            {formData.logoVideoUrl && (
+              <button 
+                type="button"
+                onClick={() => handleChange('logoVideoUrl', '')}
+                className="text-xs font-extrabold text-red-600 hover:underline uppercase text-center pt-2"
+              >
+                REMOVE VIDEO LOGO
+              </button>
+            )}
+          </div>
+
+          {/* COLUMN 2: STATIC IMAGE LOGO */}
+          <div className="border-2 border-zinc-900/15 rounded-xl p-6 bg-zinc-50/70 space-y-5 flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-200 pb-2.5">
+                <span className="text-sm font-black text-zinc-950 uppercase tracking-widest flex items-center gap-2">
+                  <ImageIcon size={18} className="text-zinc-950" />
+                  <span>2. STATIC IMAGE LOGO (JPG / PNG / WEBP)</span>
+                </span>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-zinc-200 text-zinc-800 rounded font-mono">
+                  FALLBACK
+                </span>
+              </div>
+
+              {/* Image Preview Box */}
+              <div className="h-48 sm:h-56 w-full bg-white rounded-xl overflow-hidden border border-zinc-300 flex items-center justify-center relative shadow-inner p-4">
+                {formData.logoUrl ? (
+                  <img 
+                    src={formData.logoUrl} 
+                    alt="Logo Preview" 
+                    className="max-h-full max-w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-zinc-400 space-y-2 text-center">
+                    <ImageIcon size={36} />
+                    <span className="text-xs font-black uppercase tracking-wider">NO STATIC LOGO IMAGE</span>
+                    <span className="text-[11px] text-zinc-500 max-w-xs">Defaulting to standard 'STYLUXE' typography</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Upload & Preset Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <label className="flex-1 py-3.5 bg-zinc-950 text-white text-xs font-black uppercase tracking-wider rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-xs">
+                  <Upload size={16} />
+                  <span>UPLOAD LOGO IMAGE</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={e => handleFileUpload(e, (url) => handleChange('logoUrl', url))}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => handleChange('logoUrl', '/logo.jpg')}
+                  className="px-4 py-3.5 bg-white hover:bg-zinc-100 text-zinc-950 border-2 border-zinc-300 rounded-lg text-xs font-black tracking-wider uppercase transition-colors cursor-pointer shadow-xs"
+                  title="Reset to default /logo.jpg"
+                >
+                  <span>DEFAULT LOGO</span>
+                </button>
+              </div>
+
+              {/* Direct Image URL Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                  Static Logo Image URL:
+                </label>
+                <input 
+                  type="text" 
+                  value={formData.logoUrl || ''} 
+                  onChange={e => handleChange('logoUrl', e.target.value.trim())} 
+                  placeholder="e.g. /logo.jpg or https://..."
+                  className="w-full p-3.5 border-2 border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
+                />
+              </div>
+
+              <div className="pt-2 text-[11px] text-zinc-500">
+                Recommended dimensions: Transparent PNG or high-res JPG, 300x80px or higher.
+              </div>
+            </div>
+
+            {formData.logoUrl && (
+              <button 
+                type="button"
+                onClick={() => handleChange('logoUrl', '')}
+                className="text-xs font-extrabold text-red-600 hover:underline uppercase text-center pt-2"
+              >
+                REMOVE STATIC LOGO
+              </button>
+            )}
+          </div>
+
+        </div>
+      </div>
+
+      {/* 3. PER-DEPARTMENT WHATSAPP & INSTAGRAM SETTINGS (20% ENLARGED FONTS) */}
       <div className="border border-zinc-300 rounded-xl p-6 sm:p-8 bg-white shadow-sm space-y-6">
         <div className="border-b border-zinc-200 pb-4 flex items-center gap-2.5">
           <Phone className="text-zinc-950" size={24} />
@@ -301,44 +576,208 @@ export function SettingsManager() {
           </div>
 
         </div>
+
+        {/* GLOBAL SOCIAL MEDIA CHANNELS (FACEBOOK & TIKTOK) */}
+        <div className="border-t border-zinc-200 pt-6 mt-2">
+          <span className="text-xs font-black text-zinc-950 uppercase tracking-widest block mb-4 flex items-center gap-2">
+            <span>🌐</span> GLOBAL SOCIAL MEDIA PAGES (FACEBOOK & TIKTOK)
+          </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* FACEBOOK URL */}
+            <div className="border border-zinc-300 rounded-xl p-5 bg-zinc-50/70 space-y-2">
+              <label className="text-sm font-black text-zinc-950 uppercase tracking-wider block flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-[#1877F2] text-white flex items-center justify-center font-bold text-xs">f</span>
+                <span>Official Facebook Page Link</span>
+              </label>
+              <input 
+                type="text" 
+                value={formData.facebookUrl || ''} 
+                onChange={e => handleChange('facebookUrl', e.target.value)} 
+                placeholder="https://facebook.com/styluxelb"
+                className="w-full p-4 border-2 border-zinc-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
+              />
+              <span className="text-[11px] text-zinc-500 block">
+                Displayed in the luxury website footer and connected to Meta Commerce.
+              </span>
+            </div>
+
+            {/* TIKTOK URL */}
+            <div className="border border-zinc-300 rounded-xl p-5 bg-zinc-50/70 space-y-2">
+              <label className="text-sm font-black text-zinc-950 uppercase tracking-wider block flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center font-bold text-xs">t</span>
+                <span>Official TikTok Account Link</span>
+              </label>
+              <input 
+                type="text" 
+                value={formData.tiktokUrl || ''} 
+                onChange={e => handleChange('tiktokUrl', e.target.value)} 
+                placeholder="https://tiktok.com/@styluxelb"
+                className="w-full p-4 border-2 border-zinc-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
+              />
+              <span className="text-[11px] text-zinc-500 block">
+                Direct link to your TikTok profile for runway reels and style videos.
+              </span>
+            </div>
+
+          </div>
+        </div>
       </div>
 
-      {/* 3. HERO SLIDESHOW IMAGES (20% ENLARGED FONTS & BUTTONS) */}
+      {/* 4. HERO BANNER SLIDESHOW (VIDEOS & IMAGES) */}
       <div className="border border-zinc-300 rounded-xl p-6 sm:p-8 bg-white shadow-sm space-y-6">
         <div className="border-b border-zinc-200 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <ImageIcon className="text-zinc-950" size={24} />
-            <h2 className="font-serif text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
-              HERO BANNER SLIDESHOW (5 IMAGES MAX)
-            </h2>
+            <Film className="text-zinc-950" size={24} />
+            <div>
+              <h2 className="font-serif text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
+                HERO BANNER & MAIN HOMEPAGE SLIDESHOW (VIDEOS & IMAGES)
+              </h2>
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block pt-0.5">
+                Customize hero slideshow with MP4 videos and luxury images (Slide #1 is primary)
+              </span>
+            </div>
           </div>
-          <span className="text-sm font-bold text-zinc-500 uppercase tracking-wider">
-            UPLOAD COMPUTER FILES OR PASTE URLS
-          </span>
+
+          <button
+            type="button"
+            onClick={() => handleSaveAll()}
+            className={`px-6 py-3 rounded text-xs font-black tracking-widest uppercase flex items-center gap-2 transition-all shadow-sm ${
+              isSaved ? 'bg-emerald-600 text-white' : 'bg-zinc-950 text-white hover:bg-zinc-800'
+            }`}
+          >
+            {isSaved ? <Check size={16} /> : <Save size={16} />}
+            <span>{isSaved ? 'HERO SAVED!' : 'SAVE HERO BANNER'}</span>
+          </button>
         </div>
 
+        {/* Banner Visibility Toggle */}
+        <div className="bg-zinc-50 border border-zinc-200 p-4 rounded-lg flex items-center justify-between">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={!formData.hideHeroBanner}
+              onChange={e => handleChange('hideHeroBanner', !e.target.checked)}
+              className="w-5 h-5 accent-zinc-950 rounded cursor-pointer"
+            />
+            <div>
+              <span className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                SHOW HERO BANNER ON HOMEPAGE
+              </span>
+              <span className="text-[11px] font-semibold text-zinc-500 block">
+                Uncheck if you wish to hide the hero banner entirely from the top of the storefront.
+              </span>
+            </div>
+          </label>
+        </div>
+
+        {/* Hero Title, Subtitle, Description Customization */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-zinc-50/70 p-5 rounded-xl border border-zinc-200">
+          <div className="space-y-1.5">
+            <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+              1. Subtitle (Small Top Headline)
+            </label>
+            <input
+              type="text"
+              value={formData.heroSubtitle !== undefined ? formData.heroSubtitle : 'NEW ARRIVALS / COLLECTION 2026'}
+              onChange={e => handleChange('heroSubtitle', e.target.value)}
+              placeholder="NEW ARRIVALS / COLLECTION 2026"
+              className="w-full p-3 border-2 border-zinc-300 rounded-lg text-xs font-bold uppercase bg-white focus:border-zinc-950 focus:outline-none"
+            />
+            <span className="text-[10px] text-zinc-400 block">
+              Displays above the hero title in refined tracking
+            </span>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+              2. Main Title (Primary Headline)
+            </label>
+            <textarea
+              rows={2}
+              value={formData.heroTitle !== undefined ? formData.heroTitle : 'REDEFINING\nLUXURY'}
+              onChange={e => handleChange('heroTitle', e.target.value)}
+              placeholder="REDEFINING&#10;LUXURY"
+              className="w-full p-3 border-2 border-zinc-300 rounded-lg font-serif font-bold text-xs uppercase bg-white focus:border-zinc-950 focus:outline-none resize-none leading-relaxed"
+            />
+            <span className="text-[10px] text-zinc-400 block">
+              Press Enter to create multiple lines (e.g., REDEFINING then LUXURY)
+            </span>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+              3. Description Text
+            </label>
+            <textarea
+              rows={2}
+              value={formData.heroDescription !== undefined ? formData.heroDescription : 'Clean silhouettes, oversized fits, and permanent fabrications designed to elevate your daily archives.'}
+              onChange={e => handleChange('heroDescription', e.target.value)}
+              placeholder="Clean silhouettes, oversized fits..."
+              className="w-full p-3 border-2 border-zinc-300 rounded-lg text-xs bg-white focus:border-zinc-950 focus:outline-none resize-none leading-relaxed"
+            />
+            <span className="text-[10px] text-zinc-400 block">
+              Descriptive subtitle paragraph beneath the main title
+            </span>
+          </div>
+        </div>
+
+        {/* 5 Slots Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           {[0, 1, 2, 3, 4].map(idx => {
             const currentImg = (formData.heroImages && formData.heroImages[idx]) || '';
+            const hasCustomImg = !!(formData.heroImages && formData.heroImages[idx]);
+            const lower = currentImg.toLowerCase();
+            const isVideo = lower.startsWith('data:video') ||
+              lower.endsWith('.mp4') ||
+              lower.endsWith('.webm') ||
+              lower.endsWith('.mov') ||
+              lower.endsWith('.ogg') ||
+              lower.includes('/video') ||
+              lower.includes('video/mp4');
+
             return (
               <div key={idx} className="border border-zinc-300 rounded-xl p-4 space-y-3 bg-zinc-50/70 flex flex-col justify-between">
                 
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-black text-zinc-950 uppercase tracking-wider">
-                      IMAGE #{idx + 1} {idx === 0 ? '(MAIN)' : ''}
+                    <span className="text-sm font-black text-zinc-950 uppercase tracking-wider flex items-center gap-1.5">
+                      {isVideo ? <Film size={15} className="text-amber-600" /> : <ImageIcon size={15} className="text-zinc-600" />}
+                      <span>SLIDE #{idx + 1} {idx === 0 ? '(PRIMARY)' : ''}</span>
                     </span>
                     {currentImg && (
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
                     )}
                   </div>
 
-                  {/* Image Preview Slot */}
-                  <div className="aspect-[16/9] w-full bg-zinc-200 rounded-lg overflow-hidden border border-zinc-300 relative group">
+                  {/* Media Preview Slot */}
+                  <div className="aspect-[16/9] w-full bg-zinc-950 rounded-lg overflow-hidden border border-zinc-300 relative group flex items-center justify-center">
                     {currentImg ? (
-                      <img src={currentImg} alt={`Hero ${idx + 1}`} className="w-full h-full object-cover" />
+                      isVideo ? (
+                        <div className="relative w-full h-full bg-black flex items-center justify-center">
+                          <video 
+                            src={currentImg} 
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                            className="w-full h-full object-cover" 
+                          />
+                          <span className="absolute bottom-1.5 left-1.5 bg-black/85 text-amber-300 font-mono text-[9px] font-black uppercase px-2 py-0.5 rounded flex items-center gap-1 shadow-sm">
+                            <Film size={10} />
+                            <span>VIDEO SLIDE</span>
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="relative w-full h-full">
+                          <img src={currentImg} alt={`Hero ${idx + 1}`} className="w-full h-full object-cover" />
+                          <span className="absolute bottom-1.5 left-1.5 bg-black/75 text-white font-mono text-[9px] font-bold uppercase px-2 py-0.5 rounded shadow-sm">
+                            IMAGE SLIDE
+                          </span>
+                        </div>
+                      )
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-1">
+                      <div className="flex flex-col items-center justify-center h-full text-zinc-400 space-y-1 bg-zinc-200 w-full">
                         <ImageIcon size={28} />
                         <span className="text-xs font-bold uppercase">EMPTY SLOT</span>
                       </div>
@@ -348,31 +787,44 @@ export function SettingsManager() {
                   {/* Easy Upload Button */}
                   <label className="w-full py-3 bg-zinc-950 text-white text-xs font-extrabold uppercase tracking-wider rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-xs">
                     <Upload size={16} />
-                    <span>UPLOAD FILE</span>
+                    <span>UPLOAD IMAGE OR VIDEO</span>
                     <input 
                       type="file" 
-                      accept="image/*" 
+                      accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime" 
                       className="hidden" 
-                      onChange={e => handleFileUpload(e, (url) => handleHeroImageChange(idx, url))}
+                      onChange={e => handleHeroMediaUpload(e, (url) => handleHeroImageChange(idx, url))}
                     />
                   </label>
 
                   {/* Or Paste URL */}
-                  <input 
-                    type="text" 
-                    value={currentImg} 
-                    onChange={e => handleHeroImageChange(idx, e.target.value)}
-                    placeholder="Or paste image URL..."
-                    className="w-full p-2.5 border border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-white focus:outline-none"
-                  />
+                  <div className="space-y-1">
+                    <input 
+                      type="text" 
+                      value={(formData.heroImages && formData.heroImages[idx]) || ''} 
+                      onChange={e => handleHeroImageChange(idx, e.target.value)}
+                      placeholder="Paste image or video URL (e.g. /logo-video.mp4)..."
+                      className="w-full p-2.5 border border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-white focus:outline-none"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleHeroImageChange(idx, '/logo-video.mp4')}
+                        className="text-[10px] text-amber-700 hover:text-amber-900 font-bold uppercase tracking-wider hover:underline cursor-pointer"
+                        title="Use preloaded store video"
+                      >
+                        + USE PRELOADED VIDEO
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                {currentImg && (
+                {hasCustomImg && (
                   <button 
+                    type="button"
                     onClick={() => handleHeroImageChange(idx, '')}
                     className="text-xs font-extrabold text-red-600 hover:underline uppercase text-center pt-2"
                   >
-                    CLEAR IMAGE #{idx + 1}
+                    CLEAR SLIDE #{idx + 1}
                   </button>
                 )}
 
@@ -382,7 +834,7 @@ export function SettingsManager() {
         </div>
       </div>
 
-      {/* 4. GENERAL STORE & CURRENCY SETTINGS (20% ENLARGED FONTS) */}
+      {/* 5. GENERAL STORE & CURRENCY SETTINGS (20% ENLARGED FONTS) */}
       <div className="border border-zinc-300 rounded-xl p-6 sm:p-8 bg-white shadow-sm space-y-6">
         <div className="border-b border-zinc-200 pb-4 flex items-center gap-2.5">
           <DollarSign className="text-zinc-950" size={24} />
@@ -454,11 +906,26 @@ export function SettingsManager() {
               className="w-full p-4 border-2 border-zinc-300 rounded-lg font-black text-sm text-emerald-600"
             />
           </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-black text-zinc-950 uppercase tracking-wider block">
+              Active Storefront Season
+            </label>
+            <select
+              value={formData.activeSeason || 'all'}
+              onChange={e => handleChange('activeSeason', e.target.value as any)}
+              className="w-full p-4 border-2 border-zinc-300 rounded-lg font-black text-sm text-zinc-950 bg-white focus:outline-none focus:border-zinc-950 uppercase"
+            >
+              <option value="all">ALL SEASONS (SHOW ALL PRODUCTS)</option>
+              <option value="summer">☀️ SUMMER COLLECTION ONLY</option>
+              <option value="winter">❄️ WINTER COLLECTION ONLY</option>
+            </select>
+          </div>
         </div>
 
       </div>
 
-      {/* 5. CLIENT SERVICES FOOTER CONTACT INFO (ADDRESS, PHONE, EMAIL) */}
+      {/* 6. CLIENT SERVICES FOOTER CONTACT INFO (ADDRESS, PHONE, EMAIL) */}
       <div className="border border-zinc-300 rounded-xl p-6 sm:p-8 bg-white shadow-sm space-y-6">
         <div className="border-b border-zinc-200 pb-4 flex items-center gap-2.5">
           <Globe className="text-zinc-950" size={24} />
@@ -514,7 +981,148 @@ export function SettingsManager() {
         </div>
       </div>
 
-      {/* 6. CENTRAL CLOUD DATABASE SYNC (SUPABASE) */}
+      {/* 7. MARKETING & TRACKING PIXELS (META / INSTAGRAM, TIKTOK, GOOGLE, SNAPCHAT) */}
+      <div className="border border-zinc-300 rounded-xl p-6 sm:p-8 bg-white shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-200 pb-4 gap-2">
+          <div className="flex items-center gap-3">
+            <Target className="text-zinc-950" size={24} />
+            <div>
+              <h2 className="font-serif text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
+                MARKETING & TRACKING PIXELS (META, TIKTOK, GOOGLE)
+              </h2>
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest block pt-0.5">
+                Tracking Pixels & Analytics for advertising and attribution
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {formData.metaPixelId ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300 uppercase">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                META PIXEL ACTIVE
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wider bg-zinc-100 text-zinc-600 border border-zinc-300 uppercase">
+                <Radio size={12} className="text-zinc-400" />
+                READY FOR SETUP
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Informational Guidance Banner */}
+        <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-lg text-xs leading-relaxed text-zinc-700 space-y-1">
+          <p className="font-bold text-zinc-950">
+            ✦ Tracking Pixels in STYLUXE
+          </p>
+          <p>
+            Once configured, STYLUXE automatically fires events on customer actions:
+            Page Views (<span className="font-mono text-zinc-900 font-bold">PageView</span>), 
+            Product Views (<span className="font-mono text-zinc-900 font-bold">ViewContent</span>), 
+            Add to Bag (<span className="font-mono text-zinc-900 font-bold">AddToCart</span>), 
+            Initiate Checkout (<span className="font-mono text-zinc-900 font-bold">InitiateCheckout</span>), 
+            and Confirmed Orders (<span className="font-mono text-zinc-900 font-bold">Purchase</span> with value & currency).
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* META (FACEBOOK & INSTAGRAM) PIXEL */}
+          <div className="border-2 border-zinc-900/15 rounded-xl p-5 bg-white space-y-3 relative hover:border-zinc-950 transition-colors">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-black text-zinc-950 uppercase tracking-wider flex items-center gap-2">
+                <Instagram size={18} className="text-pink-600" />
+                <span>Meta Pixel ID (Instagram & Facebook)</span>
+              </label>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-mono">
+                RECOMMENDED
+              </span>
+            </div>
+            <input 
+              type="text" 
+              value={formData.metaPixelId || ''} 
+              onChange={e => handleChange('metaPixelId', e.target.value.trim())} 
+              placeholder="e.g. 123456789012345 (15-16 digits)"
+              className="w-full p-4 border-2 border-zinc-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
+            />
+            <p className="text-[11px] text-zinc-500 leading-normal">
+              💡 <strong>Where to find:</strong> Meta Business Suite ➔ Events Manager ➔ Data Sources ➔ Copy Pixel ID.
+            </p>
+          </div>
+
+          {/* TIKTOK PIXEL */}
+          <div className="border-2 border-zinc-900/15 rounded-xl p-5 bg-white space-y-3 relative hover:border-zinc-950 transition-colors">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-black text-zinc-950 uppercase tracking-wider flex items-center gap-2">
+                <BarChart3 size={18} className="text-zinc-950" />
+                <span>TikTok Pixel ID</span>
+              </label>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded font-mono">
+                OPTIONAL
+              </span>
+            </div>
+            <input 
+              type="text" 
+              value={formData.tiktokPixelId || ''} 
+              onChange={e => handleChange('tiktokPixelId', e.target.value.trim())} 
+              placeholder="e.g. CXXXXXXXXXXXXXX"
+              className="w-full p-4 border-2 border-zinc-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
+            />
+            <p className="text-[11px] text-zinc-500 leading-normal">
+              💡 <strong>Where to find:</strong> TikTok Ads Manager ➔ Assets ➔ Events ➔ Web Events ➔ Copy Pixel ID.
+            </p>
+          </div>
+
+          {/* GOOGLE ANALYTICS (GA4) */}
+          <div className="border-2 border-zinc-900/15 rounded-xl p-5 bg-white space-y-3 relative hover:border-zinc-950 transition-colors">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-black text-zinc-950 uppercase tracking-wider flex items-center gap-2">
+                <Globe size={18} className="text-blue-600" />
+                <span>Google Analytics (GA4 / Tag ID)</span>
+              </label>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded font-mono">
+                OPTIONAL
+              </span>
+            </div>
+            <input 
+              type="text" 
+              value={formData.googleAnalyticsId || ''} 
+              onChange={e => handleChange('googleAnalyticsId', e.target.value.trim())} 
+              placeholder="e.g. G-XXXXXXXXXX"
+              className="w-full p-4 border-2 border-zinc-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950 uppercase"
+            />
+            <p className="text-[11px] text-zinc-500 leading-normal">
+              💡 <strong>Where to find:</strong> Google Analytics ➔ Admin ➔ Data Streams ➔ Copy Measurement ID (starts with G-).
+            </p>
+          </div>
+
+          {/* SNAPCHAT PIXEL */}
+          <div className="border-2 border-zinc-900/15 rounded-xl p-5 bg-white space-y-3 relative hover:border-zinc-950 transition-colors">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-black text-zinc-950 uppercase tracking-wider flex items-center gap-2">
+                <Radio size={18} className="text-amber-500" />
+                <span>Snapchat Pixel ID</span>
+              </label>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded font-mono">
+                OPTIONAL
+              </span>
+            </div>
+            <input 
+              type="text" 
+              value={formData.snapchatPixelId || ''} 
+              onChange={e => handleChange('snapchatPixelId', e.target.value.trim())} 
+              placeholder="e.g. xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              className="w-full p-4 border-2 border-zinc-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
+            />
+            <p className="text-[11px] text-zinc-500 leading-normal">
+              💡 <strong>Where to find:</strong> Snapchat Ads Manager ➔ Events Manager ➔ Copy Pixel ID.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      {/* 8. CENTRAL CLOUD DATABASE SYNC (SUPABASE) */}
       <div className="border border-zinc-300 rounded-xl p-6 sm:p-8 bg-white shadow-sm space-y-6">
         <div className="flex items-center justify-between border-b border-zinc-200 pb-4">
           <div className="flex items-center gap-3">
@@ -599,7 +1207,7 @@ export function SettingsManager() {
             <span className="text-[11px] font-mono tracking-widest uppercase text-zinc-400">IT & SYSTEM DEVELOPER</span>
           </div>
           <h3 className="text-lg font-bold font-serif text-white">DEVELOPED BY: CONTACT DEVELOPER</h3>
-          <p className="text-xs text-zinc-400">لأي استفسار تقني، صيانة، تعديل في المتجر أو إضافة ميزات جديدة، يرجى التواصل مباشرة مع المبرمج.</p>
+          <p className="text-xs text-zinc-400">For technical assistance, maintenance, or feature additions, reach out directly via WhatsApp.</p>
         </div>
         <a
           href="https://wa.me/96181713408"
@@ -608,7 +1216,7 @@ export function SettingsManager() {
           className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold tracking-wider uppercase rounded-lg flex items-center gap-2 transition-all shadow-lg shrink-0"
         >
           <Phone size={14} />
-          <span>CONTACT DEVELOPER (واتساب)</span>
+          <span>CONTACT DEVELOPER</span>
         </a>
       </div>
 

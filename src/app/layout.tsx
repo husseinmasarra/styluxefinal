@@ -7,6 +7,8 @@ import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { ToastNotification } from "@/components/storefront/ToastNotification";
 import { SizeGuideModal } from "@/components/storefront/SizeGuideModal";
 import { FloatingActions } from "@/components/storefront/FloatingActions";
+import { VisitorTracker } from "@/components/storefront/VisitorTracker";
+import { PixelTracker } from "@/components/storefront/PixelTracker";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -72,33 +74,13 @@ export default function RootLayout({
       <head>
         <link rel="icon" type="image/jpeg" href="/logo.jpg?v=2" />
         <link rel="shortcut icon" href="/logo.jpg?v=2" />
-        <link rel="apple-touch-icon" href="/logo.jpg?v=2" />
-        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-        <meta httpEquiv="Pragma" content="no-cache" />
-        <meta httpEquiv="Expires" content="0" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  if ('caches' in window) {
-                    caches.keys().then(function(names) {
-                      for (var name of names) caches.delete(name);
-                    });
-                  }
-                  if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.getRegistrations().then(function(regs) {
-                      for (var r of regs) r.unregister();
-                    });
-                  }
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="bg-white text-zinc-950 min-h-screen flex flex-col antialiased">
         <CartProvider>
+          <VisitorTracker />
+          <PixelTracker />
           <Header />
           <CartDrawer />
           <ToastNotification />

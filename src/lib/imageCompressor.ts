@@ -17,9 +17,9 @@ export function compressImageFile(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const {
-      maxWidth = 1200,
-      maxHeight = 1200,
-      quality = 0.84,
+      maxWidth = 800,
+      maxHeight = 800,
+      quality = 0.72,
       mimeType = 'image/jpeg'
     } = options;
 

@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, ShieldCheck, Truck, Banknote, ArrowLeft, Printer, Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, Truck, Banknote, ArrowLeft, Printer, Trash2, Plus, Minus, ShoppingBag, MessageCircle } from 'lucide-react';
 import { useCart } from '@/lib/CartContext';
-import { DataService, formatCurrency } from '@/lib/store';
+import { DataService, formatCurrency, getProductDisplayPrices, getCustomerTier } from '@/lib/store';
 import { Order, OrderItem } from '@/lib/types';
+import { trackPixelInitiateCheckout, trackPixelPurchase } from '@/lib/pixelEvents';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -59,6 +60,13 @@ export default function CheckoutPage() {
         setIsAuthModalOpen(true);
       }
     }
+    if (cart.length > 0) {
+      trackPixelInitiateCheckout({
+        numItems: cart.length,
+        value: totalUSD,
+        currency: currency || 'USD',
+      });
+    }
   }, []);
 
   const handleSaveCustomerAuthModal = (e: React.FormEvent) => {
@@ -84,23 +92,71 @@ export default function CheckoutPage() {
     setCouponError('');
     if (!couponInput.trim()) return;
 
-    const found = DataService.getCouponByCode(couponInput);
+    const allCoupons = DataService.getCoupons();
+    const clean = couponInput.trim().toLowerCase();
+    const found = allCoupons.find(c => c.code.toLowerCase() === clean);
+
     if (!found) {
-      setCouponError('INVALID OR EXPIRED PROMO CODE');
+      setCouponError('INVALID PROMO CODE');
       return;
     }
-    const currentSubtotal = cart.reduce((acc, item) => acc + (item.product.salePrice || item.product.price) * item.quantity, 0);
+
+    if (!found.active) {
+      setCouponError('THIS PROMO CODE IS INACTIVE OR EXPIRED');
+      return;
+    }
+
+    if (found.usageLimit && found.usageLimit > 0 && (found.usedCount || 0) >= found.usageLimit) {
+      setCouponError(`Sorry, this promo code has reached its maximum usage limit (${found.usageLimit} uses)`);
+      return;
+    }
+
+    const currentSubtotal = cart.reduce((acc, item) => {
+      const { currentPrice } = getProductDisplayPrices(item.product.price, item.product.salePrice);
+      return acc + currentPrice * item.quantity;
+    }, 0);
     if (found.minSpendUSD && currentSubtotal < found.minSpendUSD) {
       setCouponError(`MINIMUM SPEND OF $${found.minSpendUSD} REQUIRED FOR THIS COUPON`);
       return;
+    }
+
+    // Check department restrictions (MEN / WOMEN)
+    if (found.department && found.department !== 'all') {
+      const matchingItems = cart.filter(item => {
+        const itemDept = (item.product.department || 'all').toLowerCase();
+        return itemDept === found.department?.toLowerCase() || itemDept === 'all';
+      });
+
+      if (matchingItems.length === 0) {
+        if (found.department === 'men') {
+          setCouponError("Sorry, this promo code is valid for Men's department only (MEN ONLY)");
+        } else {
+          setCouponError("Sorry, this promo code is valid for Women's department only (WOMEN ONLY)");
+        }
+        return;
+      }
     }
 
     setAppliedCoupon(found);
     showToast(`Coupon ${found.code} applied: ${found.discountPercent}% OFF!`, 'success');
   };
 
-  const subtotalUSD = cart.reduce((acc, item) => acc + (item.product.salePrice || item.product.price) * item.quantity, 0);
-  const discountUSD = appliedCoupon ? Math.round((subtotalUSD * appliedCoupon.discountPercent) / 100) : 0;
+  const subtotalUSD = cart.reduce((acc, item) => {
+    const { currentPrice } = getProductDisplayPrices(item.product.price, item.product.salePrice);
+    return acc + currentPrice * item.quantity;
+  }, 0);
+  const eligibleSubtotal = appliedCoupon && appliedCoupon.department && appliedCoupon.department !== 'all'
+    ? cart
+        .filter(item => {
+          const itemDept = (item.product.department || 'all').toLowerCase();
+          return itemDept === appliedCoupon.department.toLowerCase() || itemDept === 'all';
+        })
+        .reduce((acc, item) => {
+          const { currentPrice } = getProductDisplayPrices(item.product.price, item.product.salePrice);
+          return acc + currentPrice * item.quantity;
+        }, 0)
+    : subtotalUSD;
+  const discountUSD = appliedCoupon ? Math.round((eligibleSubtotal * appliedCoupon.discountPercent) / 100) : 0;
   const freeShippingThreshold = settings.freeShippingThresholdUSD || 500;
   const shippingFeeUSD = subtotalUSD >= freeShippingThreshold ? 0 : (settings.defaultShippingFeeUSD || 25);
   const totalUSD = Math.max(0, subtotalUSD - discountUSD + shippingFeeUSD);
@@ -119,7 +175,7 @@ export default function CheckoutPage() {
       brandName: item.product.brandName,
       size: item.size,
       color: item.color,
-      priceUSD: item.product.salePrice || item.product.price,
+      priceUSD: getProductDisplayPrices(item.product.price, item.product.salePrice).currentPrice,
       quantity: item.quantity,
       imageUrl: item.product.images[0] || ''
     }));
@@ -135,6 +191,19 @@ export default function CheckoutPage() {
       exchangeRate = settings.eurRate || 0.92;
       totalInCurrency = Number((totalUSD * exchangeRate).toFixed(2));
     }
+
+    // Look up customer CRM profile to compute current tier level
+    const existingCustomers = DataService.getCustomers();
+    const cleanCustomerPhone = (customerPhone || '').replace(/[^0-9]/g, '');
+    const foundCust = existingCustomers.find(c => 
+      (customerEmail && c.email && c.email.toLowerCase() === customerEmail.toLowerCase()) ||
+      (cleanCustomerPhone.length >= 6 && c.phone && c.phone.replace(/[^0-9]/g, '').includes(cleanCustomerPhone))
+    );
+    const priorSpend = foundCust?.totalSpentUSD || 0;
+    const priorOrders = foundCust?.totalOrders || 0;
+    const newTotalSpent = priorSpend + totalUSD;
+    const newTotalOrders = priorOrders + 1;
+    const tierInfo = getCustomerTier(newTotalSpent, newTotalOrders);
 
     const newOrder: Order = {
       id: `ord-${Date.now()}`,
@@ -155,11 +224,26 @@ export default function CheckoutPage() {
       totalInCurrency,
       status: 'pending',
       paymentMethod,
+      customerTier: tierInfo.tier,
       createdAt: new Date().toISOString(),
       notes
     };
 
     DataService.saveOrder(newOrder);
+    if (appliedCoupon) {
+      DataService.useCoupon(appliedCoupon.id);
+    }
+    trackPixelPurchase({
+      orderNumber: newOrder.orderNumber,
+      value: newOrder.totalUSD,
+      currency: newOrder.currency || 'USD',
+      items: newOrder.items.map(i => ({
+        id: i.productId,
+        title: i.productTitle,
+        price: i.priceUSD,
+        quantity: i.quantity,
+      })),
+    });
     setCompletedOrder(newOrder);
     clearCart();
     showToast(`Order ${orderNumber} placed successfully!`, 'success');
@@ -179,13 +263,52 @@ export default function CheckoutPage() {
             <span className="text-xs font-black tracking-[0.25em] text-emerald-600 uppercase block">
               ORDER CONFIRMED & RECEIVED ✦
             </span>
-            <h1 className="font-serif text-3xl sm:text-4xl font-black tracking-[0.2em] text-zinc-950 uppercase leading-snug">
+            <h1 className="font-serif text-2xl sm:text-3xl font-normal tracking-[0.25em] text-zinc-950 uppercase leading-snug">
               THANK YOU FOR YOUR ORDER
             </h1>
             <p className="text-xs font-bold text-zinc-600 uppercase tracking-widest pt-2">
               ORDER NUMBER: <span className="font-black text-zinc-950 font-mono text-base">{completedOrder.orderNumber}</span>
             </p>
           </div>
+
+          {/* VIP CRM CLIENT TIER BADGE & STORE PHONE CONNECTION */}
+          {(() => {
+            const customers = DataService.getCustomers();
+            const clean = (completedOrder.customerPhone || '').replace(/[^0-9]/g, '');
+            const cust = customers.find(c => 
+              (completedOrder.customerEmail && c.email && c.email.toLowerCase() === completedOrder.customerEmail.toLowerCase()) ||
+              (clean.length >= 6 && c.phone && c.phone.replace(/[^0-9]/g, '').includes(clean))
+            );
+            const totalSpent = cust?.totalSpentUSD || completedOrder.totalUSD;
+            const totalOrders = cust?.totalOrders || 1;
+            const tierInfo = getCustomerTier(totalSpent, totalOrders);
+
+            return (
+              <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-black text-white p-5 border border-amber-500/30 text-left space-y-3 rounded">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{tierInfo.icon}</span>
+                    <div>
+                      <span className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase block">
+                        BOUTIQUE CRM LOYALTY STATUS / مستوى العميل
+                      </span>
+                      <span className="text-sm font-black tracking-widest text-amber-400 uppercase">
+                        {tierInfo.label} • {tierInfo.arabicLabel}
+                      </span>
+                    </div>
+                  </div>
+                  <span className={`px-3 py-1 rounded text-[10px] font-black tracking-widest uppercase ${tierInfo.badgeClass}`}>
+                    LEVEL: {tierInfo.label}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center justify-between text-xs text-zinc-300 gap-2">
+                  <span>Total Orders: <strong className="text-white font-mono">{totalOrders}</strong></span>
+                  <span>CRM Total Value: <strong className="text-emerald-400 font-mono">${totalSpent} USD</strong></span>
+                  <span className="text-[11px] text-amber-300/90 font-medium">✨ Priority White-Glove Dispatch Enabled</span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Customer Summary Card */}
           <div className="bg-zinc-50 p-6 border border-zinc-200 text-left space-y-3 text-xs uppercase tracking-wider rounded">
@@ -210,13 +333,54 @@ export default function CheckoutPage() {
           </div>
 
           <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider leading-relaxed">
-            Our luxury concierge team has received your order and will contact you via WhatsApp for express courier dispatch.
+            Our luxury concierge team has received your order and synchronized your CRM profile for express courier dispatch.
           </p>
 
-          <div className="pt-4 flex justify-center">
+          {/* 1-CLICK WHATSAPP CONFIRMATION BUTTON -> SENDS ORDER & CLIENT CRM TIER TO STORE PHONE */}
+          {(() => {
+            const rawPhone = settings.whatsappNumber || settings.menWhatsappNumber || '96181713408';
+            const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+            const phoneWithCode = cleanPhone.startsWith('961') ? cleanPhone : `961${cleanPhone.replace(/^0+/, '')}`;
+
+            const customers = DataService.getCustomers();
+            const cleanCustPhone = (completedOrder.customerPhone || '').replace(/[^0-9]/g, '');
+            const cust = customers.find(c => 
+              (completedOrder.customerEmail && c.email && c.email.toLowerCase() === completedOrder.customerEmail.toLowerCase()) ||
+              (cleanCustPhone.length >= 6 && c.phone && c.phone.replace(/[^0-9]/g, '').includes(cleanCustPhone))
+            );
+            const totalSpent = cust?.totalSpentUSD || completedOrder.totalUSD;
+            const totalOrders = cust?.totalOrders || 1;
+            const tierInfo = getCustomerTier(totalSpent, totalOrders);
+
+            const itemsList = completedOrder.items.map(i => `• ${i.productTitle} (Size: ${i.size}, Qty: ${i.quantity}) - $${i.priceUSD}`).join('\n');
+            const waText = encodeURIComponent(
+              `👑 *STYLUXE CRM - NEW ORDER RECEIVED* 👑\n━━━━━━━━━━━━━━━━━━━━\n🎖️ *CLIENT TIER (مستوى العميل):* ${tierInfo.icon} *${tierInfo.label}* (${tierInfo.arabicLabel})\n📊 *CLIENT HISTORY:* Order #${totalOrders} | Lifetime Value: $${totalSpent} USD\n━━━━━━━━━━━━━━━━━━━━\n🧾 *Order Number:* #${completedOrder.orderNumber}\n👤 *Client Name:* ${completedOrder.customerName}\n📞 *Client Phone:* ${completedOrder.customerPhone}\n📍 *Shipping Address:* ${completedOrder.shippingAddress}, ${completedOrder.city}\n💰 *Order Amount:* $${completedOrder.totalUSD} USD\n💳 *Payment Method:* Cash On Delivery (COD)\n\n📦 *Order Items:*\n${itemsList}\n━━━━━━━━━━━━━━━━━━━━\n⚡ *Concierge Note:* Client categorized into ${tierInfo.label} VIP tier. Please confirm dispatch with client. Thank you!`
+            );
+            return (
+              <div className="space-y-3 pt-2">
+                <a
+                  href={`https://wa.me/${phoneWithCode}?text=${waText}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2.5 px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black tracking-[0.2em] uppercase transition-all shadow-lg rounded-none"
+                >
+                  <MessageCircle size={18} />
+                  <span>CONFIRM ORDER VIA WHATSAPP (SEND TO STORE PHONE)</span>
+                </a>
+              </div>
+            );
+          })()}
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link 
+              href="/account" 
+              className="w-full sm:w-auto px-8 py-3.5 border-2 border-zinc-950 text-zinc-950 hover:bg-zinc-950 hover:text-white text-xs font-black tracking-[0.2em] uppercase transition-all shadow-sm rounded-none text-center"
+            >
+              VIEW IN MY ACCOUNT & ORDERS
+            </Link>
             <Link 
               href="/shop" 
-              className="px-10 py-5 bg-zinc-950 hover:bg-black text-white text-xs font-black tracking-[0.25em] uppercase transition-all shadow-xl rounded-none"
+              className="w-full sm:w-auto px-8 py-3.5 bg-zinc-950 hover:bg-black text-white text-xs font-black tracking-[0.2em] uppercase transition-all shadow-md rounded-none text-center"
             >
               CONTINUE SHOPPING
             </Link>
@@ -238,7 +402,7 @@ export default function CheckoutPage() {
           <span className="text-[10px] font-black tracking-pradaWide text-zinc-400 uppercase block">
             YOUR BAG IS EMPTY
           </span>
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-prada text-zinc-950 uppercase">
+          <h2 className="font-serif text-2xl sm:text-3xl font-normal tracking-[0.25em] text-zinc-950 uppercase">
             NO ITEMS IN SHOPPING BAG
           </h2>
           <p className="text-xs text-zinc-500 uppercase tracking-widest max-w-md mx-auto pt-1">
@@ -405,9 +569,9 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (window.confirm('Clear all items from your bag? / هل تريد تفريغ السلة؟')) {
+                    if (window.confirm('Clear all items from your bag?')) {
                       clearCart();
-                      showToast('Shopping bag emptied / تم تفريغ السلة', 'info');
+                      showToast('Shopping bag emptied', 'info');
                     }
                   }}
                   className="text-[10px] font-bold tracking-wider text-red-600 hover:text-red-700 uppercase cursor-pointer"
@@ -419,7 +583,7 @@ export default function CheckoutPage() {
 
             <div className="space-y-4 max-h-80 overflow-y-auto pr-1 divide-y divide-zinc-100">
               {cart.map((item, idx) => {
-                const itemPrice = item.product.salePrice || item.product.price;
+                const { currentPrice: itemPrice } = getProductDisplayPrices(item.product.price, item.product.salePrice);
                 return (
                   <div key={`${item.product.id}-${item.size}-${item.color || ''}-${idx}`} className="pt-3 first:pt-0 flex gap-3 text-xs">
                     <Link href={`/product/${item.product.id}`} className="shrink-0 group">
@@ -444,7 +608,7 @@ export default function CheckoutPage() {
                             type="button"
                             onClick={() => {
                               removeFromCart(item.product.id, item.size, item.color);
-                              showToast(`Removed "${item.product.title}" / تم الحذف`, 'info');
+                              showToast(`Removed "${item.product.title}" `, 'info');
                             }}
                             className="text-zinc-400 hover:text-red-600 p-1 transition-colors cursor-pointer shrink-0 ml-1"
                             title="Remove item"
@@ -455,7 +619,7 @@ export default function CheckoutPage() {
                         </div>
                         <p className="text-[10px] text-zinc-500 mt-0.5">
                           Size: <span className="font-semibold text-zinc-800 uppercase">{item.size}</span>
-                          {item.color && (
+                          {item.color && item.color.toLowerCase() !== 'default' && item.color.toLowerCase() !== 'standard' && (
                             <> | Color: <span className="font-semibold text-zinc-800">{item.color}</span></>
                           )}
                         </p>
@@ -533,8 +697,15 @@ export default function CheckoutPage() {
                 <p className="text-[10px] font-bold text-red-600 uppercase">{couponError}</p>
               )}
               {appliedCoupon && (
-                <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold uppercase flex justify-between items-center rounded">
-                  <span>✓ {appliedCoupon.code} ({appliedCoupon.discountPercent}% OFF)</span>
+                <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold uppercase flex justify-between items-center rounded">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span>✓ {appliedCoupon.code} ({appliedCoupon.discountPercent}% OFF)</span>
+                    {appliedCoupon.department && appliedCoupon.department !== 'all' && (
+                      <span className="text-[9px] px-2 py-0.5 bg-emerald-200/80 text-emerald-950 font-black rounded uppercase">
+                        {appliedCoupon.department === 'men' ? 'MEN ONLY' : 'WOMEN ONLY'}
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => { setAppliedCoupon(null); setCouponInput(''); }}
@@ -597,7 +768,7 @@ export default function CheckoutPage() {
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-amber-500" />
 
             <div className="text-center space-y-2.5 border-b border-zinc-200 pb-6">
-              <h2 className="font-serif text-3xl sm:text-4xl font-black tracking-[0.25em] text-zinc-950 uppercase leading-none">
+              <h2 className="font-serif text-2xl sm:text-3xl font-normal tracking-[0.25em] text-zinc-950 uppercase leading-snug">
                 CLIENT CHECKOUT DETAILS
               </h2>
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest pt-1">

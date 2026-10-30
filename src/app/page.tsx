@@ -3,40 +3,58 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Layers } from 'lucide-react';
-import { DataService, isProductMatchingCategory } from '@/lib/store';
-import { Product, Category, HomepageCard } from '@/lib/types';
+import { DataService, isProductMatchingCategory, isProductMatchingSeason } from '@/lib/store';
+import { Product, Category, HomepageCard, StoreSettings, Department } from '@/lib/types';
 import { ProductCard } from '@/components/storefront/ProductCard';
 import { useCart } from '@/lib/CartContext';
 import { fetchSupabaseCloudData } from '@/lib/supabase';
+import { setActiveDepartment } from '@/lib/departmentContext';
 
 export default function HomePage() {
   const { currency, settings } = useCart();
+  const [currentSettings, setCurrentSettings] = useState<StoreSettings>(settings);
+  const [selectedDept, setSelectedDept] = useState<Department>('women');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [homepageCards, setHomepageCards] = useState<HomepageCard[]>([]);
-  const [selectedDept, setSelectedDept] = useState<'women' | 'men'>('women');
-  const [activeCategory, setActiveCategory] = useState<string>('all');
   const [heroIndex, setHeroIndex] = useState<number>(0);
 
   useEffect(() => {
+    setCurrentSettings(DataService.getSettings());
+  }, [settings]);
+
+  useEffect(() => {
+    // Initial load
     setAllProducts(DataService.getProducts());
     setCategories(DataService.getCategories());
     setHomepageCards(DataService.getCards());
+    setCurrentSettings(DataService.getSettings());
 
-    // Immediate direct live sync from Supabase cloud
+    // Background cloud sync
     fetchSupabaseCloudData().then(cloud => {
       if (cloud.hasData) {
-        if (cloud.products !== undefined) {
+        if (cloud.products !== undefined && cloud.products.length > 0) {
           setAllProducts(cloud.products);
-          localStorage.setItem('styluxe_products_v1', JSON.stringify(cloud.products));
+          DataService.saveAllProducts(cloud.products);
         }
         if (cloud.categories !== undefined) {
           setCategories(cloud.categories);
-          localStorage.setItem('styluxe_categories_v1', JSON.stringify(cloud.categories));
+          DataService.saveAllCategories(cloud.categories);
         }
         if (cloud.cards !== undefined) {
           setHomepageCards(cloud.cards);
-          localStorage.setItem('styluxe_cards_v1', JSON.stringify(cloud.cards));
+          try {
+            localStorage.setItem('styluxe_cards_v1', JSON.stringify(cloud.cards));
+          } catch (_) {}
+        }
+        if (cloud.settings !== undefined && cloud.settings) {
+          const currentLocal = DataService.getSettings();
+          const merged = { ...currentLocal, ...cloud.settings };
+          setCurrentSettings(merged);
+          try {
+            localStorage.setItem('styluxe_settings_v1', JSON.stringify(merged));
+          } catch (_) {}
         }
       }
     });
@@ -45,15 +63,16 @@ export default function HomePage() {
       setAllProducts(DataService.getProducts());
       setCategories(DataService.getCategories());
       setHomepageCards(DataService.getCards());
+      setCurrentSettings(DataService.getSettings());
     };
     window.addEventListener('styluxe_data_updated', handleUpdate);
     return () => window.removeEventListener('styluxe_data_updated', handleUpdate);
   }, []);
 
   // Hero Slideshow Automatic Rotation
-  const heroImagesList = (settings.heroImages && settings.heroImages.filter(Boolean).length > 0)
-    ? settings.heroImages.filter(Boolean)
-    : ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1800&auto=format&fit=crop&q=80'];
+  const heroImagesList = (currentSettings.heroImages && currentSettings.heroImages.filter(Boolean).length > 0)
+    ? currentSettings.heroImages.filter(Boolean)
+    : [];
 
   useEffect(() => {
     if (heroImagesList.length <= 1) return;
@@ -61,7 +80,7 @@ export default function HomePage() {
       setHeroIndex(prev => (prev + 1) % heroImagesList.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [heroImagesList]);
+  }, [heroImagesList.length]);
 
   // ALL Categories created by user in Admin > Manage Categories for this department or all departments
   const catItemsForDept = categories
@@ -79,8 +98,11 @@ export default function HomePage() {
   // ALWAYS DISPLAY CATEGORIES CREATED IN MANAGE CATEGORIES!
   const allDisplayCards = catItemsForDept.length > 0 ? catItemsForDept : customCards;
 
-  // STRICT SEPARATION: ONLY SHOW PRODUCTS THAT BELONG TO THIS DEPARTMENT OR BOTH!
-  const displayedProducts = allProducts.filter(p => p.department === selectedDept || p.department === 'all');
+  // STRICT SEPARATION & SEASONAL FILTERING: ONLY SHOW PRODUCTS THAT BELONG TO THIS DEPARTMENT AND ACTIVE SEASON!
+  const displayedProducts = allProducts.filter(p => {
+    if (p.department !== selectedDept && p.department !== 'all') return false;
+    return isProductMatchingSeason(p.season, currentSettings.activeSeason);
+  });
 
   const sectionHeadingText = selectedDept === 'women' 
     ? "WOMEN'S COLLECTION" 
@@ -96,90 +118,139 @@ export default function HomePage() {
   return (
     <div className="bg-white relative">
       
-      {/* Hero Section MATCHING REFERENCE SCREENSHOT 100% WITH 5-SLIDE CAROUSEL */}
-      <section className="relative w-full min-h-[460px] sm:min-h-[520px] lg:min-h-[580px] max-w-[1400px] mx-auto overflow-hidden bg-zinc-950 flex items-center justify-start border-b border-zinc-200">
-        
-        {/* Hero Background Display Image */}
-        <img 
-          src={currentHeroImage} 
-          alt="REDEFINING LUXURY" 
-          className="absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000"
-        />
-        {/* Left Dark Gradient Overlay for Ultra-High Readability */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/65 to-transparent" />
-
-        {/* 5 Slide Indicators Dots */}
-        {heroImagesList.length > 1 && (
-          <div className="absolute top-6 right-8 z-20 flex items-center gap-2">
-            {heroImagesList.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setHeroIndex(idx)}
-                className={`h-2 rounded-full transition-all ${
-                  heroIndex === idx ? 'w-8 bg-amber-400' : 'w-2 bg-white/40 hover:bg-white'
-                }`}
-                title={`Slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Hero Content Overlay (LEFT ALIGNED 100% MATCHING SCREENSHOT) */}
-        <div className="relative z-10 w-full max-w-3xl text-left text-white px-5 sm:px-12 lg:px-20 py-8 sm:py-12 space-y-3 sm:space-y-4">
+      {/* Hero Section: Enlarge by 20% */}
+      {!currentSettings.hideHeroBanner && (
+        <section className="relative w-full min-h-[300px] sm:min-h-[350px] lg:min-h-[400px] max-w-[1400px] mx-auto overflow-hidden bg-zinc-950 flex items-center justify-start border-b border-zinc-200">
           
-          {/* Subtitle Tag matching screenshot: NEW ARRIVALS / COLLECTION 2026 */}
-          <span className="font-sans text-xs sm:text-sm font-bold tracking-[0.22em] text-white uppercase block drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
-            {settings.heroSubtitle || 'NEW ARRIVALS / COLLECTION 2026'}
-          </span>
+          {/* Slideshow with Ken Burns Zoom Transition Effect & Video Support */}
+          {heroImagesList.length > 0 && (
+            <div className="absolute inset-0 w-full h-full overflow-hidden">
+              {heroImagesList.map((mediaUrl, idx) => {
+                const isActive = heroIndex === idx;
+                const lower = (mediaUrl || '').toLowerCase();
+                const isVideo = lower.startsWith('data:video') ||
+                  lower.endsWith('.mp4') ||
+                  lower.endsWith('.webm') ||
+                  lower.endsWith('.mov') ||
+                  lower.endsWith('.ogg') ||
+                  lower.includes('/video') ||
+                  lower.includes('video/mp4');
 
-          {/* Main Title matching screenshot: REDEFINING \n LUXURY (CINZEL SERIF) */}
-          <h1 className="font-serif text-3xl xs:text-4xl sm:text-6xl md:text-7xl font-bold tracking-[0.15em] text-white uppercase leading-[1.1] drop-shadow-[0_4px_20px_rgba(0,0,0,0.95)]">
-            REDEFINING<br />LUXURY
-          </h1>
+                return (
+                  <div
+                    key={idx}
+                    className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out ${
+                      isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                    }`}
+                  >
+                    {isVideo ? (
+                      <video 
+                        src={mediaUrl} 
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="auto"
+                        className="w-full h-full object-cover object-center"
+                      />
+                    ) : (
+                      <img 
+                        src={mediaUrl} 
+                        alt={currentSettings.heroTitle || "REDEFINING LUXURY"} 
+                        loading={idx === 0 ? "eager" : "lazy"}
+                        decoding="async"
+                        className={`w-full h-full object-cover object-center ${
+                          isActive ? 'hero-slide-zoom-active' : 'scale-100'
+                        }`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
-          {/* Description Paragraph matching screenshot */}
-          <p className="font-sans text-[13px] sm:text-base font-medium text-white/95 max-w-xl leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.95)] pt-0.5">
-            {settings.heroDescription || 'Clean silhouettes, oversized fits, and permanent fabrications designed to elevate your daily archives.'}
-          </p>
+          {/* Soft, Elegant Vignette Gradient Overlay */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/85 via-black/45 to-black/10" />
 
-          {/* Left-Aligned Text Link WITH CINZEL LUXURY SERIF FONT */}
-          <div className="pt-2 sm:pt-4">
-            <Link 
-              href={`/shop?department=${selectedDept}`} 
-              className="inline-block font-serif text-sm sm:text-lg md:text-xl font-bold tracking-[0.2em] uppercase text-white hover:text-amber-300 transition-all border-b-2 border-white hover:border-amber-300 pb-1 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]"
-            >
-              SHOP {selectedDept.toUpperCase()} &rarr;
-            </Link>
+          {/* Slide Indicators (Delicate Dots) */}
+          {heroImagesList.length > 1 && (
+            <div className="absolute top-4 sm:top-5 right-6 sm:right-8 z-20 flex items-center gap-2">
+              {heroImagesList.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setHeroIndex(idx)}
+                  className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                    heroIndex === idx ? 'w-6 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
+                  }`}
+                  title={`Slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Hero Content Overlay (Softer Typography, Balanced Proportions) */}
+          <div className="relative z-20 w-full max-w-2xl text-left text-white px-6 sm:px-12 lg:px-16 py-8 sm:py-12 space-y-2.5 sm:space-y-3 antialiased">
+            
+            {/* Subtitle: Soft, refined, letter-spaced */}
+            <span className="font-sans text-[10px] sm:text-[11px] font-light tracking-[0.3em] text-zinc-300 uppercase block">
+              {currentSettings.heroSubtitle || `NEW ARRIVALS / COLLECTION ${new Date().getFullYear()}`}
+            </span>
+
+            {/* Main Title: Refined Cinzel Serif, Soft Weight, Balanced Line Height */}
+            <h1 className="font-serif text-2xl xs:text-3xl sm:text-4xl lg:text-[44px] font-normal tracking-[0.2em] text-white uppercase leading-[1.18]">
+              {currentSettings.heroTitle ? (
+                <span className="whitespace-pre-line">{currentSettings.heroTitle}</span>
+              ) : (
+                <>REDEFINING<br />LUXURY</>
+              )}
+            </h1>
+
+            {/* Description Paragraph: Light, Elegant */}
+            <p className="font-sans text-[11px] sm:text-xs font-light text-zinc-200/90 max-w-md leading-relaxed line-clamp-2 sm:line-clamp-none pt-0.5">
+              {currentSettings.heroDescription || 'Clean silhouettes, oversized fits, and permanent fabrications designed to elevate your daily archives.'}
+            </p>
+
+            {/* Shop Call to Action Link: Soft, Understated Elegance */}
+            <div className="pt-2">
+              <Link 
+                href={`/shop?department=${selectedDept}`} 
+                className="inline-flex items-center gap-2 font-serif text-xs sm:text-sm font-normal tracking-[0.24em] uppercase text-white hover:text-amber-200 transition-colors border-b border-white/70 hover:border-amber-200 pb-0.5"
+              >
+                <span>SHOP {selectedDept.toUpperCase()}</span>
+                <span className="text-xs">&rarr;</span>
+              </Link>
+            </div>
+
           </div>
 
-        </div>
+          {/* Hero Department Switcher Links (Softer, Refined Luxury Styling) */}
+          <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-4 sm:gap-8 w-full px-4 antialiased">
+            <button 
+              onClick={() => { setSelectedDept('women'); setActiveDepartment('women'); }} 
+              className={`font-serif text-xs sm:text-sm tracking-[0.22em] uppercase transition-all pb-0.5 cursor-pointer ${
+                selectedDept === 'women' 
+                  ? 'text-white font-normal border-b border-white' 
+                  : 'text-zinc-400 font-light hover:text-white'
+              }`}
+            >
+              FOR HER
+            </button>
 
-        {/* Hero Department Switcher Links WITH CINZEL LUXURY SERIF FONT */}
-        <div className="absolute bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-6 sm:gap-14 w-full px-4">
-          <button 
-            onClick={() => setSelectedDept('women')} 
-            className={`font-serif text-sm sm:text-xl tracking-[0.18em] sm:tracking-[0.2em] uppercase transition-all pb-1 ${
-              selectedDept === 'women' 
-                ? 'text-white font-bold border-b-2 border-white scale-105 sm:scale-110 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]' 
-                : 'text-zinc-300 font-semibold hover:text-white hover:scale-105 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]'
-            }`}
-          >
-            FOR HER
-          </button>
+            <button 
+              onClick={() => { setSelectedDept('men'); setActiveDepartment('men'); }} 
+              className={`font-serif text-xs sm:text-sm tracking-[0.22em] uppercase transition-all pb-0.5 cursor-pointer ${
+                selectedDept === 'men' 
+                  ? 'text-white font-normal border-b border-white' 
+                  : 'text-zinc-400 font-light hover:text-white'
+              }`}
+            >
+              FOR HIM
+            </button>
+          </div>
 
-          <button 
-            onClick={() => setSelectedDept('men')} 
-            className={`font-serif text-sm sm:text-xl tracking-[0.18em] sm:tracking-[0.2em] uppercase transition-all pb-1 ${
-              selectedDept === 'men' 
-                ? 'text-white font-bold border-b-2 border-white scale-105 sm:scale-110 drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]' 
-                : 'text-zinc-300 font-semibold hover:text-white hover:scale-105 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]'
-            }`}
-          >
-            FOR HIM
-          </button>
-        </div>
-
-      </section>
+        </section>
+      )}
 
       {/* CATEGORIES COLLECTION: CARD INSIDE CARD WITH PRODUCTS INSIDE */}
       <section className="section-container">
@@ -190,14 +261,18 @@ export default function HomePage() {
           <div className="section-line" />
         </div>
 
-        {(() => {
+{(() => {
           const deptCats = categories.filter(c => c.department === selectedDept || c.department === 'all');
+          const cleanName = (raw: string) => raw.split(/[>/]+/).pop()?.trim() || raw.trim();
 
-          // Collect all distinct category names that have products in this department
-          const categoriesWithProducts = Array.from(new Set([
-            ...deptCats.map(c => c.name),
-            ...displayedProducts.map(p => p.category?.trim()).filter(Boolean)
-          ]));
+          // Collect all distinct category names that have products in this department (using clean leaf names so sections aren't duplicate)
+          const leafNamesWithProducts = Array.from(new Set(
+            displayedProducts.map(p => cleanName(p.category || '')).filter(Boolean)
+          ));
+
+          const categoriesWithProducts = leafNamesWithProducts.length > 0
+            ? leafNamesWithProducts
+            : deptCats.map(c => c.name);
 
           const handleCategoryClick = (catName: string) => {
             if (activeCategory.toLowerCase().trim() === catName.toLowerCase().trim()) {
@@ -259,9 +334,9 @@ export default function HomePage() {
                             />
                           </div>
 
-                          {/* PRADA CLEAN BOLD TITLE BELOW IMAGE */}
+                          {/* PRADA REFINED LUXURY TITLE BELOW IMAGE */}
                           <div className="py-3 sm:py-5 px-2 sm:px-3 bg-white text-center border-t border-zinc-100 flex items-center justify-center min-h-[46px] sm:min-h-[56px]">
-                            <span className="text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline">
+                            <span className="font-serif text-xs sm:text-sm font-normal text-zinc-950 tracking-[0.22em] uppercase group-hover:underline">
                               {formattedTitle}
                             </span>
                           </div>
@@ -315,7 +390,7 @@ export default function HomePage() {
                             </div>
 
                             <div className="py-3 sm:py-5 px-2 sm:px-3 bg-white text-center border-t border-zinc-100 flex flex-col items-center justify-center min-h-[46px] sm:min-h-[56px]">
-                              <span className="text-xs sm:text-sm font-bold text-zinc-950 tracking-normal sm:tracking-wide group-hover:underline">
+                              <span className="font-serif text-xs sm:text-sm font-normal text-zinc-950 tracking-[0.22em] uppercase group-hover:underline">
                                 {sub.name}
                               </span>
                               <span className="text-[10px] text-zinc-400 uppercase tracking-widest mt-0.5">
@@ -330,35 +405,28 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* QUICK CATEGORY FILTER TABS PILL BAR */}
+              {/* QUICK CATEGORY NAVIGATION PILLS */}
               <div className="flex items-center justify-center flex-wrap gap-2 pt-2 border-t border-zinc-100">
-                <button
-                  onClick={() => setActiveCategory('all')}
-                  className={`px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-full transition-all ${
-                    activeCategory === 'all'
-                      ? 'bg-zinc-950 text-white shadow-sm scale-105'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                  }`}
+                <Link
+                  href={`/shop?department=${selectedDept}`}
+                  className="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-full transition-all bg-zinc-100 text-zinc-600 hover:bg-zinc-950 hover:text-white"
                 >
                   ALL CATEGORIES
-                </button>
+                </Link>
                 {categoriesWithProducts.map(cName => {
-                  const isSelected = activeCategory !== 'all' && isProductMatchingCategory(cName, activeCategory);
+                  const matchedCat = deptCats.find(c => isProductMatchingCategory(c.name, cName));
+                  const slug = matchedCat?.slug || encodeURIComponent(cName.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
                   const count = displayedProducts.filter(p => isProductMatchingCategory(p.category, cName)).length;
-                  if (count === 0 && activeCategory !== cName) return null;
+                  if (count === 0) return null;
 
                   return (
-                    <button
+                    <Link
                       key={cName}
-                      onClick={() => handleCategoryClick(cName)}
-                      className={`px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-full transition-all ${
-                        isSelected
-                          ? 'bg-zinc-950 text-white shadow-sm scale-105'
-                          : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-                      }`}
+                      href={`/category/${slug}?department=${selectedDept}`}
+                      className="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded-full transition-all bg-zinc-100 text-zinc-600 hover:bg-zinc-950 hover:text-white"
                     >
-                      {cName}
-                    </button>
+                      {cName} ({count})
+                    </Link>
                   );
                 })}
               </div>
@@ -377,7 +445,7 @@ export default function HomePage() {
                           <span className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 block">
                             CATEGORY SHOWCASE
                           </span>
-                          <h3 className="font-serif text-2xl sm:text-3xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
+                          <h3 className="font-serif text-xl sm:text-2xl font-normal tracking-[0.25em] text-zinc-950 uppercase">
                             {activeCategory}
                           </h3>
                         </div>
@@ -415,8 +483,36 @@ export default function HomePage() {
                   /* CASE B: ALL CATEGORIES - DISPLAY EACH CATEGORY WITH ITS OWN STRICT PRODUCTS LIST */
                   if (displayedProducts.length === 0) {
                     return (
-                      <div className="text-center py-16 bg-zinc-50 border border-zinc-200 rounded text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                        NO PRODUCTS RECORDED FOR THIS DEPARTMENT YET.
+                      <div className="text-center py-16 px-4 bg-zinc-50 border border-zinc-200 rounded max-w-2xl mx-auto space-y-4">
+                        <span className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 block">
+                          {selectedDept === 'women' ? "WOMEN'S COLLECTION" : "MEN'S COLLECTION"}
+                        </span>
+                        <h3 className="font-serif text-xl sm:text-2xl font-normal tracking-[0.2em] text-zinc-950 uppercase">
+                          {selectedDept === 'women' ? "NEW ARCHIVE IN CURATION" : "COLLECTION REFRESH IN PROGRESS"}
+                        </h3>
+                        <p className="text-xs text-zinc-500 uppercase tracking-widest max-w-md mx-auto leading-relaxed">
+                          {selectedDept === 'women' 
+                            ? "Exclusive designer selections for women are currently arriving. Explore our Men's Collection or contact our VIP Concierge for bespoke sourcing."
+                            : "New designer arrivals are updating. Inquire via our WhatsApp VIP Concierge for incoming luxury drops."}
+                        </p>
+                        <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                          {selectedDept === 'women' && (
+                            <button
+                              onClick={() => { setSelectedDept('men'); setActiveDepartment('men'); }}
+                              className="px-6 py-3 bg-zinc-950 hover:bg-black text-white text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer"
+                            >
+                              EXPLORE MEN'S COLLECTION &rarr;
+                            </button>
+                          )}
+                          <a
+                            href={`https://wa.me/${(selectedDept === 'women' ? (currentSettings.womenWhatsappNumber || currentSettings.whatsappNumber || '96178709321') : (currentSettings.menWhatsappNumber || currentSettings.whatsappNumber || '96179024934')).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello STYLUXE Concierge, I would like to inquire about the ${selectedDept === 'women' ? "Women's" : "Men's"} Collection arrivals.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-widest transition-all inline-flex items-center gap-1.5"
+                          >
+                            <span>VIP WHATSAPP CONCIERGE</span>
+                          </a>
+                        </div>
                       </div>
                     );
                   }
@@ -444,7 +540,7 @@ export default function HomePage() {
                               <span className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 block">
                                 CATEGORY COLLECTION
                               </span>
-                              <h3 className="font-serif text-xl sm:text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
+                              <h3 className="font-serif text-lg sm:text-xl font-normal tracking-[0.25em] text-zinc-950 uppercase">
                                 {group.name}
                               </h3>
                             </div>
@@ -467,7 +563,7 @@ export default function HomePage() {
                       {orphanProducts.length > 0 && (
                         <div className="space-y-6 pt-6 border-t border-zinc-200">
                           <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
-                            <h3 className="font-serif text-xl sm:text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
+                            <h3 className="font-serif text-lg sm:text-xl font-normal tracking-[0.25em] text-zinc-950 uppercase">
                               MORE SELECTIONS
                             </h3>
                           </div>

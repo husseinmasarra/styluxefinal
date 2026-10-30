@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ShoppingBag, Package, Tag, LayoutDashboard, Folder, Image, Sparkles,
   Menu as MenuIcon, Users, UserCheck, Truck, Settings, ExternalLink,
-  LogOut, Lock, User
+  LogOut, Lock, User, ShieldAlert, Clock, AlertTriangle
 } from 'lucide-react';
 
 import { PosTerminal } from '@/components/admin/PosTerminal';
@@ -25,6 +25,7 @@ import { useCart } from '@/lib/CartContext';
 import { DataService } from '@/lib/store';
 import { StaffMember } from '@/lib/types';
 import { getStaffAllowedTabs } from '@/lib/permissions';
+import { SecurityService, MAX_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES } from '@/lib/security';
 
 type AdminTab =
   | 'pos'
@@ -53,19 +54,75 @@ export default function AdminPage() {
   const [loggedInUsername, setLoggedInUsername] = useState<string>('');
   const [currentStaff, setCurrentStaff] = useState<StaffMember | null>(null);
 
+  // BRUTE-FORCE SECURITY & LOCKOUT STATE
+  const [isLockedOut, setIsLockedOut] = useState<boolean>(false);
+  const [remainingLockoutSeconds, setRemainingLockoutSeconds] = useState<number>(0);
+  const [remainingAttempts, setRemainingAttempts] = useState<number>(MAX_LOGIN_ATTEMPTS);
+  const [honeypotValue, setHoneypotValue] = useState<string>('');
+
   useEffect(() => {
-    // Check session storage
-    if (typeof window !== 'undefined') {
-      const savedUser = sessionStorage.getItem('styluxe_auth_username');
-      if (savedUser) {
-        setIsAuthenticated(true);
-        setLoggedInUsername(savedUser);
-        const staffList = DataService.getStaff();
-        const member = staffList.find(s => s.username.toLowerCase() === savedUser.toLowerCase()) || null;
-        setCurrentStaff(member);
-      }
+    // Check security lockout state on load
+    const locked = SecurityService.isLockedOut();
+    setIsLockedOut(locked);
+    if (locked) {
+      setRemainingLockoutSeconds(SecurityService.getRemainingLockoutSeconds());
+    } else {
+      const failed = SecurityService.getFailedAttempts();
+      setRemainingAttempts(Math.max(0, MAX_LOGIN_ATTEMPTS - failed));
     }
+
+    // Check cryptographic session token
+    const verifySession = async () => {
+      if (typeof window !== 'undefined') {
+        const token = sessionStorage.getItem('styluxe_auth_token');
+        const savedUser = sessionStorage.getItem('styluxe_auth_username');
+        if (token) {
+          const verified = await SecurityService.verifySecureSessionToken(token);
+          if (verified.valid && verified.username) {
+            setIsAuthenticated(true);
+            setLoggedInUsername(verified.username);
+            const staffList = DataService.getStaff();
+            const member = staffList.find(s => s.username.toLowerCase() === verified.username.toLowerCase()) || null;
+            setCurrentStaff(member);
+            return;
+          }
+        }
+        if (savedUser) {
+          setIsAuthenticated(true);
+          setLoggedInUsername(savedUser);
+          const staffList = DataService.getStaff();
+          const member = staffList.find(s => s.username.toLowerCase() === savedUser.toLowerCase()) || null;
+          setCurrentStaff(member);
+        }
+      }
+    };
+    verifySession();
   }, []);
+
+  // Live countdown timer while account is locked out
+  useEffect(() => {
+    if (!isLockedOut) return;
+
+    const interval = setInterval(() => {
+      const remaining = SecurityService.getRemainingLockoutSeconds();
+      if (remaining <= 0) {
+        setIsLockedOut(false);
+        setRemainingLockoutSeconds(0);
+        setRemainingAttempts(MAX_LOGIN_ATTEMPTS);
+        setLoginError('');
+      } else {
+        setRemainingLockoutSeconds(remaining);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isLockedOut]);
+
+  const formatLockoutTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   const allowedTabIds = React.useMemo(() => {
     if (!isAuthenticated) return [];
@@ -81,41 +138,84 @@ export default function AdminPage() {
     }
   }, [isAuthenticated, allowedTabIds, activeTab]);
 
-  const handleLoginWithUsername = (e: React.FormEvent) => {
+  const handleLoginWithUsername = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+
+    // 1. BOT TRAP / HONEYPOT CHECK
+    if (honeypotValue && honeypotValue.trim() !== '') {
+      setLoginError('ACCESS DENIED: AUTOMATED BOT DETECTED');
+      return;
+    }
+
+    // 2. CHECK IF CURRENTLY LOCKED OUT
+    if (SecurityService.isLockedOut()) {
+      setIsLockedOut(true);
+      const remaining = SecurityService.getRemainingLockoutSeconds();
+      setRemainingLockoutSeconds(remaining);
+      setLoginError(`⛔ Login temporarily locked for security after 5 failed attempts. Please wait (${formatLockoutTime(remaining)}).`);
+      return;
+    }
 
     const cleanUsername = usernameInput.trim().toLowerCase();
     const cleanPassword = passwordInput.trim();
 
     if (!cleanUsername) {
-      setLoginError('ACCESS DENIED: PLEASE ENTER USERNAME');
+      setLoginError('Please enter username');
       return;
     }
     if (!cleanPassword) {
-      setLoginError('ACCESS DENIED: PLEASE ENTER PASSWORD');
+      setLoginError('Please enter password');
       return;
     }
 
-    // STRICT AUTHENTICATION AGAINST REGISTERED STAFF ACCOUNTS
+    // 3. AUTHENTICATE AGAINST REGISTERED STAFF ACCOUNTS
     const staffList = DataService.getStaff();
     const staffMember = staffList.find(s => s.username.toLowerCase() === cleanUsername);
 
     if (!staffMember) {
-      setLoginError(`ACCESS DENIED: USERNAME "${cleanUsername.toUpperCase()}" IS NOT REGISTERED`);
+      const sec = SecurityService.recordFailedAttempt(cleanUsername);
+      if (sec.isLocked) {
+        setIsLockedOut(true);
+        setRemainingLockoutSeconds(sec.lockoutSeconds);
+        setLoginError(`⛔ Login locked for ${LOCKOUT_DURATION_MINUTES} minutes for system security after 5 failed attempts.`);
+      } else {
+        setRemainingAttempts(sec.remainingAttempts);
+        setLoginError(`Username "${cleanUsername.toUpperCase()}" not found. ${sec.remainingAttempts} attempt(s) remaining before temporary lockout.`);
+      }
       return;
     }
 
     if (staffMember.status === 'INACTIVE') {
-      setLoginError(`ACCESS DENIED: ACCOUNT "${cleanUsername.toUpperCase()}" IS INACTIVE`);
+      setLoginError(`Account "${cleanUsername.toUpperCase()}" is currently suspended by administration.`);
       return;
     }
 
-    // Check exact password match
-    const expectedPassword = staffMember.password || '123';
-    const fallbackMasterPassword = settings.posPasscode || 'admin123';
+    // 4. CHECK STRICT PASSWORD MATCH WITH CRYPTOGRAPHIC VERIFICATION
+    const expectedPassword = staffMember.password;
+    const fallbackMasterPassword = settings.posPasscode;
 
-    if (cleanPassword === expectedPassword || cleanPassword === fallbackMasterPassword || cleanPassword === '123' || cleanPassword === 'admin123') {
+    const isMemberMatch = await SecurityService.verifyPassword(cleanPassword, expectedPassword);
+    const isMasterMatch = fallbackMasterPassword ? await SecurityService.verifyPassword(cleanPassword, fallbackMasterPassword) : false;
+
+    const isPasswordCorrect = isMemberMatch || isMasterMatch;
+
+    if (isPasswordCorrect) {
+      // Upgrade plaintext password to SHA-256 hash if not yet hashed
+      if (expectedPassword && !expectedPassword.startsWith('sha256$')) {
+        const secureHash = await SecurityService.hashPassword(cleanPassword);
+        DataService.saveStaff({
+          ...staffMember,
+          password: secureHash
+        });
+      }
+
+      // SUCCESSFUL LOGIN: RESET SECURITY COUNTERS
+      SecurityService.recordSuccessfulLogin(staffMember.username);
+      setIsLockedOut(false);
+      setRemainingAttempts(MAX_LOGIN_ATTEMPTS);
+      setRemainingLockoutSeconds(0);
+
       setIsAuthenticated(true);
       setLoggedInUsername(staffMember.username);
       setCurrentStaff(staffMember);
@@ -126,11 +226,23 @@ export default function AdminPage() {
         setActiveTab(allowed[0] as AdminTab);
       }
 
+      // Store cryptographically signed session token
       if (typeof window !== 'undefined') {
+        const token = await SecurityService.createSecureSessionToken(staffMember.username);
+        sessionStorage.setItem('styluxe_auth_token', token);
         sessionStorage.setItem('styluxe_auth_username', staffMember.username);
       }
     } else {
-      setLoginError('ACCESS DENIED: INCORRECT PASSWORD FOR THIS USERNAME');
+      // FAILED ATTEMPT: INCREMENT COUNTER & LOCK IF 5 REACHED
+      const sec = SecurityService.recordFailedAttempt(cleanUsername);
+      if (sec.isLocked) {
+        setIsLockedOut(true);
+        setRemainingLockoutSeconds(sec.lockoutSeconds);
+        setLoginError(`⛔ Login locked for ${LOCKOUT_DURATION_MINUTES} minutes due to repeated incorrect password attempts.`);
+      } else {
+        setRemainingAttempts(sec.remainingAttempts);
+        setLoginError(`Incorrect password. ${sec.remainingAttempts} attempt(s) remaining before security lockout.`);
+      }
     }
   };
 
@@ -139,6 +251,7 @@ export default function AdminPage() {
     setLoggedInUsername('');
     setCurrentStaff(null);
     if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('styluxe_auth_token');
       sessionStorage.removeItem('styluxe_auth_username');
     }
   };
@@ -150,7 +263,7 @@ export default function AdminPage() {
     { id: 'coupons', label: 'Coupons & Promos', icon: Tag },
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'categories', label: 'Categories', icon: Folder },
-    { id: 'cards', label: 'Homepage Cards', icon: Image },
+    { id: 'cards', label: 'Hero Banner & Cards', icon: Image },
     { id: 'brands', label: 'Brands', icon: Sparkles },
     { id: 'menu', label: 'Menu Builder', icon: MenuIcon },
     { id: 'customers', label: 'Customers', icon: Users },
@@ -181,6 +294,40 @@ export default function AdminPage() {
 
           <form onSubmit={handleLoginWithUsername} className="space-y-6">
             
+            {/* HONEYPOT ANTI-BOT INVISIBLE FIELD */}
+            <div className="hidden opacity-0 absolute -z-50 pointer-events-none" aria-hidden="true">
+              <input 
+                type="text" 
+                name="website_protection_trap" 
+                tabIndex={-1} 
+                autoComplete="off" 
+                value={honeypotValue} 
+                onChange={e => setHoneypotValue(e.target.value)} 
+              />
+            </div>
+
+            {/* LIVE LOCKOUT WARNING & COUNTDOWN BANNER */}
+            {isLockedOut ? (
+              <div className="p-6 bg-red-600 text-white border-2 border-red-800 space-y-3 text-center shadow-xl animate-pulse">
+                <div className="flex items-center justify-center gap-2 text-sm font-black uppercase tracking-wider">
+                  <ShieldAlert size={22} className="text-yellow-300" />
+                  <span>LOGIN FROZEN FOR SYSTEM SECURITY</span>
+                </div>
+                <p className="text-xs font-semibold text-red-100 leading-relaxed">
+                  Maximum login attempts reached (5 failed attempts). Please wait until the lockout timer expires:
+                </p>
+                <div className="text-3xl font-mono font-black text-yellow-300 tracking-widest pt-1 flex items-center justify-center gap-2">
+                  <Clock size={24} />
+                  <span>{formatLockoutTime(remainingLockoutSeconds)}</span>
+                </div>
+              </div>
+            ) : remainingAttempts < MAX_LOGIN_ATTEMPTS ? (
+              <div className="p-3.5 bg-amber-50 border-2 border-amber-400 text-amber-900 text-xs font-black uppercase text-center tracking-wider flex items-center justify-center gap-2">
+                <AlertTriangle size={16} className="text-amber-600 shrink-0" />
+                <span>Security warning: {remainingAttempts} attempt(s) remaining before system lockout</span>
+              </div>
+            ) : null}
+
             {/* USERNAME FIELD */}
             <div className="space-y-2">
               <label className="text-xs font-black text-zinc-950 uppercase tracking-[0.2em] block">
@@ -193,8 +340,13 @@ export default function AdminPage() {
                   onChange={e => setUsernameInput(e.target.value)} 
                   placeholder="e.g. admin or staff username" 
                   required 
-                  autoFocus
-                  className="w-full p-4 border-2 border-zinc-300 rounded-none text-base font-bold text-zinc-950 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-950 focus:bg-zinc-50/50 transition-all"
+                  autoFocus={!isLockedOut}
+                  disabled={isLockedOut}
+                  className={`w-full p-4 border-2 rounded-none text-base font-bold transition-all ${
+                    isLockedOut
+                      ? 'bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed opacity-60'
+                      : 'border-zinc-300 text-zinc-950 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-950 focus:bg-zinc-50/50'
+                  }`}
                 />
               </div>
             </div>
@@ -210,23 +362,42 @@ export default function AdminPage() {
                 onChange={e => setPasswordInput(e.target.value)} 
                 placeholder="••••••••" 
                 required 
-                className="w-full p-4 border-2 border-zinc-300 rounded-none text-base font-bold text-zinc-950 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-950 focus:bg-zinc-50/50 transition-all"
+                disabled={isLockedOut}
+                className={`w-full p-4 border-2 rounded-none text-base font-bold transition-all ${
+                  isLockedOut
+                    ? 'bg-zinc-100 border-zinc-200 text-zinc-400 cursor-not-allowed opacity-60'
+                    : 'border-zinc-300 text-zinc-950 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-950 focus:bg-zinc-50/50'
+                }`}
               />
             </div>
 
-            {loginError && (
+            {loginError && !isLockedOut && (
               <div className="p-4 bg-red-50 border border-red-300 text-red-700 text-xs font-black uppercase text-center rounded-none tracking-wider">
                 {loginError}
               </div>
             )}
 
-            {/* FULL WIDTH SOLID BLACK LUXURY BUTTON WITH GOLD HOVER */}
+            {/* FULL WIDTH BUTTON WITH LOCKOUT STATUS */}
             <button 
               type="submit" 
-              className="w-full py-5 bg-zinc-950 hover:bg-black text-white hover:text-amber-300 text-xs sm:text-sm font-black tracking-[0.3em] uppercase transition-all shadow-xl rounded-none flex items-center justify-center gap-2 group"
+              disabled={isLockedOut}
+              className={`w-full py-5 text-xs sm:text-sm font-black tracking-[0.3em] uppercase transition-all shadow-xl rounded-none flex items-center justify-center gap-2 ${
+                isLockedOut
+                  ? 'bg-zinc-300 text-zinc-500 cursor-not-allowed border border-zinc-300'
+                  : 'bg-zinc-950 hover:bg-black text-white hover:text-amber-300 group cursor-pointer'
+              }`}
             >
-              <span>AUTHENTICATE & ENTER PORTAL</span>
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
+              {isLockedOut ? (
+                <>
+                  <Lock size={16} className="text-red-600" />
+                  <span>LOCKED ({formatLockoutTime(remainingLockoutSeconds)})</span>
+                </>
+              ) : (
+                <>
+                  <span>AUTHENTICATE & ENTER PORTAL</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </>
+              )}
             </button>
 
             {/* SECURITY BADGE & DEVELOPER CONTACT & RETURN LINK */}
@@ -247,7 +418,7 @@ export default function AdminPage() {
                   className="inline-flex items-center justify-center gap-2 mt-1.5 text-xs font-mono font-bold text-zinc-900 hover:text-amber-600 transition-colors uppercase"
                 >
                   <span>CONTACT DEVELOPER</span>
-                  <span className="text-[10px] px-1.5 py-0.5 bg-emerald-600 text-white rounded-sm font-sans font-bold">واتساب</span>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-emerald-600 text-white rounded-sm font-sans font-bold">WhatsApp</span>
                 </a>
               </div>
 
@@ -340,7 +511,7 @@ export default function AdminPage() {
               className="flex items-center justify-between text-xs font-mono font-bold text-amber-400 hover:text-amber-300 transition-colors uppercase"
             >
               <span>CONTACT DEVELOPER</span>
-              <span className="text-[10px] px-1.5 py-0.5 bg-emerald-700/60 text-emerald-200 rounded border border-emerald-600/40 font-sans">واتساب</span>
+              <span className="text-[10px] px-1.5 py-0.5 bg-emerald-700/60 text-emerald-200 rounded border border-emerald-600/40 font-sans">WhatsApp</span>
             </a>
           </div>
 
@@ -364,16 +535,16 @@ export default function AdminPage() {
             <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
               <Lock size={24} />
             </div>
-            <h2 className="font-serif text-xl font-bold text-zinc-950 uppercase">قسم غير مصرح به</h2>
+            <h2 className="font-serif text-xl font-bold text-zinc-950 uppercase">UNAUTHORIZED SECTION</h2>
             <p className="text-xs text-zinc-500 leading-relaxed">
-              تم حصر صلاحيات هذا الحساب وفقاً لاختصاصك المحدد من قِبل إدارة المتجر.
+              Your access is restricted based on your role assigned by store management.
             </p>
             {allowedTabIds[0] && (
               <button
                 onClick={() => setActiveTab(allowedTabIds[0] as AdminTab)}
                 className="px-6 py-2.5 bg-zinc-950 hover:bg-black text-white text-xs font-bold uppercase rounded shadow"
               >
-                الانتقال إلى قسمك المسموح
+                GO TO AUTHORIZED SECTION
               </button>
             )}
           </div>

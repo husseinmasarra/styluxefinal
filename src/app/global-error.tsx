@@ -18,6 +18,11 @@ export default function GlobalError({
         <p className="text-xs text-zinc-500">
           A critical error occurred. Click below to reload.
         </p>
+        {error?.message && (
+          <div className="max-w-lg p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-mono break-words rounded">
+            {error.message}
+          </div>
+        )}
         <button
           onClick={() => reset()}
           className="px-6 py-2.5 bg-zinc-950 text-white text-xs font-bold uppercase tracking-widest"

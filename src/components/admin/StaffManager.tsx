@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Shield, Key, Check, UserCheck, Lock, CheckSquare, Square, ShieldCheck, Sparkles } from 'lucide-react';
 import { DataService } from '@/lib/store';
 import { StaffMember } from '@/lib/types';
 import { ADMIN_TABS, ROLE_PRESETS, getStaffAllowedTabs } from '@/lib/permissions';
+import { SecurityService } from '@/lib/security';
 
 export function StaffManager() {
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
@@ -15,7 +16,7 @@ export function StaffManager() {
     name: '',
     username: '',
     password: '',
-    role: 'POS CASHIER (كاشير نقطة البيع)',
+    role: 'POS CASHIER',
     permissions: ['pos'] as string[],
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE'
   });
@@ -51,7 +52,7 @@ export function StaffManager() {
       name: '',
       username: '',
       password: '123',
-      role: 'POS CASHIER (كاشير نقطة البيع)',
+      role: 'POS CASHIER',
       permissions: ['pos'],
       status: 'ACTIVE'
     });
@@ -64,7 +65,7 @@ export function StaffManager() {
     setFormData({
       name: staff.name,
       username: staff.username,
-      password: staff.password || '123',
+      password: '', // leave empty to preserve existing hashed password
       role: staff.role || 'STAFF',
       permissions: allowed,
       status: staff.status
@@ -103,14 +104,25 @@ export function StaffManager() {
   const handleSelectOnlyPOS = () => {
     setFormData(prev => ({
       ...prev,
-      role: 'POS CASHIER (كاشير نقطة البيع)',
+      role: 'POS CASHIER',
       permissions: ['pos']
     }));
   };
 
-  const handleSaveStaff = (e: React.FormEvent) => {
+  const handleSaveStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.username.trim() || !formData.password.trim()) return;
+    if (!formData.name.trim() || !formData.username.trim()) return;
+
+    let securePassword = formData.password.trim();
+    if (editingStaff && !securePassword) {
+      securePassword = editingStaff.password || '';
+    } else if (securePassword) {
+      if (!securePassword.startsWith('sha256$')) {
+        securePassword = await SecurityService.hashPassword(securePassword);
+      }
+    } else {
+      return; // new staff requires password
+    }
 
     const finalPermissions = formData.permissions.length > 0 ? formData.permissions : ['pos'];
 
@@ -118,7 +130,7 @@ export function StaffManager() {
       id: editingStaff ? editingStaff.id : `stf-${Date.now()}`,
       name: formData.name,
       username: formData.username.toLowerCase().replace(/\s+/g, ''),
-      password: formData.password,
+      password: securePassword,
       role: formData.role,
       permissions: finalPermissions,
       status: formData.status
@@ -130,7 +142,7 @@ export function StaffManager() {
   };
 
   const handleDeleteStaff = (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا الموظف؟')) {
+    if (confirm('Are you sure you want to delete this staff member?')) {
       const updated = DataService.deleteStaff(id);
       setStaffList(updated);
     }
@@ -146,7 +158,7 @@ export function StaffManager() {
             STAFF & PERMISSIONS
           </h1>
           <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider pt-1.5">
-            نظام حصر صلاحيات الموظفين حسب الاختصاص المحدد من قِبل المدير العام.
+            Staff permission matrix governed by General Administration.
           </p>
         </div>
 
@@ -155,7 +167,7 @@ export function StaffManager() {
           className="px-6 py-3.5 bg-zinc-950 text-white text-xs font-black tracking-widest uppercase hover:bg-zinc-800 transition-all rounded-none shadow-md flex items-center gap-2 self-start sm:self-auto shrink-0 cursor-pointer"
         >
           <Plus size={18} strokeWidth={3} />
-          <span>إضافة موظف وتحديد اختصاصه</span>
+          <span>ADD STAFF MEMBER</span>
         </button>
       </div>
 
@@ -165,13 +177,13 @@ export function StaffManager() {
           <table className="w-full text-left border-collapse min-w-[750px]">
             <thead>
               <tr className="border-b border-zinc-300 bg-zinc-100/80">
-                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">الموظف (STAFF)</th>
-                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">اسم المستخدم</th>
-                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">كلمة المرور</th>
-                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">المسمى / الاختصاص</th>
-                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">الأقسام المسموح بها</th>
-                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">الحالة</th>
-                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">إجراءات</th>
+                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">STAFF NAME</th>
+                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">USERNAME</th>
+                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">PASSWORD</th>
+                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">ROLE</th>
+                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">PERMISSIONS</th>
+                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">STATUS</th>
+                <th className="py-4 px-6 text-xs font-black tracking-[0.15em] text-zinc-950 uppercase text-center">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -198,11 +210,11 @@ export function StaffManager() {
                       {isFull ? (
                         <span className="px-2.5 py-1 bg-purple-100 text-purple-900 rounded font-black text-[11px] tracking-wide inline-flex items-center gap-1">
                           <ShieldCheck size={13} />
-                          <span>كامل الصلاحيات (الكل)</span>
+                          <span>FULL ACCESS (ALL)</span>
                         </span>
                       ) : allowed.length === 1 && allowed[0] === 'pos' ? (
                         <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 rounded font-black text-[11px] tracking-wide inline-block">
-                          نقطة البيع (POS) فقط
+                          POS Terminal Only
                         </span>
                       ) : (
                         <div className="flex flex-wrap gap-1 justify-center max-w-xs mx-auto">
@@ -221,7 +233,7 @@ export function StaffManager() {
                       <span className={`px-2.5 py-1 text-[11px] font-black uppercase rounded-full ${
                         staff.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-zinc-200 text-zinc-700'
                       }`}>
-                        {staff.status === 'ACTIVE' ? 'نشط' : 'معطل'}
+                        {staff.status === 'ACTIVE' ? 'ACTIVE' : 'DISABLED'}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-center">
@@ -230,13 +242,13 @@ export function StaffManager() {
                           onClick={() => handleOpenEditModal(staff)}
                           className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold uppercase rounded flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <Edit2 size={12} /> تعديل
+                          <Edit2 size={12} /> EDIT
                         </button>
                         <button
                           onClick={() => handleDeleteStaff(staff.id)}
                           className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase rounded flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <Trash2 size={12} /> حذف
+                          <Trash2 size={12} /> DELETE
                         </button>
                       </div>
                     </td>
@@ -262,10 +274,10 @@ export function StaffManager() {
 
             <div className="text-center space-y-1">
               <h2 className="font-serif text-2xl sm:text-3xl font-black tracking-[0.2em] text-zinc-950 uppercase">
-                {editingStaff ? 'تعديل بيانات وصلاحيات الموظف' : 'إضافة موظف وتحديد اختصاصه'}
+                {editingStaff ? 'Edit Staff Permissions' : 'Add Staff Member'}
               </h2>
               <p className="text-xs text-zinc-500 font-bold">
-                لن يتمكن الموظف من رؤية أو دخول أي قسم غير الأقسام المحددة له في هذه الشاشة.
+                The staff member will only be able to access the modules selected in this panel.
               </p>
             </div>
 
@@ -274,50 +286,52 @@ export function StaffManager() {
               {/* Account Credentials */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-50 p-4 border border-zinc-200">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-700 block">اسم الموظف الثلاثي *</label>
+                  <label className="text-xs font-bold text-zinc-700 block">Full Staff Name *</label>
                   <input 
                     type="text" 
                     value={formData.name} 
                     onChange={e => setFormData({ ...formData, name: e.target.value })} 
-                    placeholder="مثال: أحمد كاشير" 
+                    placeholder="e.g. John Doe" 
                     required 
                     className="w-full p-3 border border-zinc-300 rounded-none text-sm text-zinc-950 bg-white focus:outline-none focus:border-zinc-950 font-bold"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-700 block">اسم المستخدم للدخول (Username) *</label>
+                  <label className="text-xs font-bold text-zinc-700 block">Login Username *</label>
                   <input 
                     type="text" 
                     value={formData.username} 
                     onChange={e => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/\s+/g, '') })} 
-                    placeholder="مثال: cashier1" 
+                    placeholder="e.g. cashier1" 
                     required 
                     className="w-full p-3 border border-zinc-900 rounded-none text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:ring-1 focus:ring-zinc-950 lowercase"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-700 block">كلمة المرور (Password) *</label>
+                  <label className="text-xs font-bold text-zinc-700 block">
+                    Password {editingStaff ? '(Leave blank to keep current)' : '*'}
+                  </label>
                   <input 
-                    type="text" 
+                    type="password" 
                     value={formData.password} 
                     onChange={e => setFormData({ ...formData, password: e.target.value })} 
-                    placeholder="مثال: 123456" 
-                    required 
+                    placeholder={editingStaff ? "•••••••• (Keep current password)" : "Enter new password"} 
+                    required={!editingStaff} 
                     className="w-full p-3 border border-zinc-900 rounded-none text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:ring-1 focus:ring-zinc-950 font-mono"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-zinc-700 block">حالة الحساب *</label>
+                  <label className="text-xs font-bold text-zinc-700 block">Account Status *</label>
                   <select
                     value={formData.status}
                     onChange={e => setFormData({ ...formData, status: e.target.value as any })}
                     className="w-full p-3 border border-zinc-300 rounded-none text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
                   >
-                    <option value="ACTIVE">حساب نشط (ACTIVE)</option>
-                    <option value="INACTIVE">حساب معطل وموقوف (INACTIVE)</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="INACTIVE">INACTIVE</option>
                   </select>
                 </div>
               </div>
@@ -326,7 +340,7 @@ export function StaffManager() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-zinc-900 uppercase tracking-wider block">
-                    اختيار نموذج اختصاص سريع (Presets):
+                    Quick Role Presets:
                   </label>
                   <div className="flex items-center gap-2">
                     <button
@@ -334,7 +348,7 @@ export function StaffManager() {
                       onClick={handleSelectAll}
                       className="text-[11px] font-bold text-purple-700 hover:underline cursor-pointer"
                     >
-                      تحديد الكل
+                      SELECT ALL
                     </button>
                     <span className="text-zinc-300">|</span>
                     <button
@@ -342,7 +356,7 @@ export function StaffManager() {
                       onClick={handleSelectOnlyPOS}
                       className="text-[11px] font-bold text-amber-700 hover:underline cursor-pointer"
                     >
-                      كاشير فقط
+                      CASHIER ONLY
                     </button>
                   </div>
                 </div>
@@ -378,7 +392,7 @@ export function StaffManager() {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
                   <span className="text-xs font-black text-zinc-950 uppercase tracking-wider">
-                    تحديد الأقسام المسموح للموظف بدخولها ({formData.permissions.length} من {ADMIN_TABS.length} محددة):
+                    Select Authorized Modules ({formData.permissions.length} of {ADMIN_TABS.length} selected):
                   </span>
                 </div>
 
@@ -423,7 +437,7 @@ export function StaffManager() {
                 className="w-full py-4 bg-zinc-950 hover:bg-black text-white text-xs sm:text-sm font-black tracking-[0.2em] uppercase transition-all rounded-none shadow-xl mt-6 cursor-pointer flex items-center justify-center gap-2"
               >
                 <Check size={16} />
-                <span>حفظ بيانات واختصاص الموظف</span>
+                <span>SAVE STAFF MEMBER</span>
               </button>
 
             </form>
