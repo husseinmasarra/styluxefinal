@@ -29,6 +29,7 @@ export function PixelTracker() {
   const tiktokInitializedRef = useRef<string | null>(null);
   const gaInitializedRef = useRef<string | null>(null);
   const snapchatInitializedRef = useRef<string | null>(null);
+  const isFirstMountRef = useRef(true);
 
   // 1. Initialize Meta (Facebook & Instagram) Pixel
   useEffect(() => {
@@ -37,6 +38,12 @@ export function PixelTracker() {
     if (metaInitializedRef.current === pixelId) return;
 
     try {
+      if ((window as any)._fbqLoadedFromLayout && pixelId === '1644089083922873') {
+        metaInitializedRef.current = pixelId;
+        console.log(`[PixelTracker] Meta Pixel layout instance confirmed: ${pixelId}`);
+        return;
+      }
+
       if (!window.fbq) {
         const n: any = function (...args: any[]) {
           if (n.callMethod) {
@@ -184,6 +191,10 @@ export function PixelTracker() {
 
   // 5. Track PageView on route changes
   useEffect(() => {
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return;
+    }
     if (metaInitializedRef.current && window.fbq) {
       window.fbq('track', 'PageView');
     }

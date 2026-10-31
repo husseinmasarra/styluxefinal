@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { CartProvider } from "@/lib/CartContext";
 import { Header } from "@/components/storefront/Header";
@@ -77,8 +78,37 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/logo.jpg?v=2" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Meta (Facebook & Instagram) Pixel Code */}
+        <Script
+          id="fb-pixel"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              !function(f,b,e,v,n,t,s)
+              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)}(window, document,'script',
+              'https://connect.facebook.net/en_US/fbevents.js');
+              fbq('init', '1644089083922873');
+              fbq('track', 'PageView');
+              window._fbqLoadedFromLayout = true;
+            `,
+          }}
+        />
       </head>
       <body className="bg-white text-zinc-950 min-h-screen flex flex-col antialiased">
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src="https://www.facebook.com/tr?id=1644089083922873&ev=PageView&noscript=1"
+            alt="facebook pixel"
+          />
+        </noscript>
         <CartProvider>
           <VideoIntroSplash />
           <VisitorTracker />
