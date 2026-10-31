@@ -529,7 +529,7 @@ export default function AdminPage() {
       </aside>
 
       {/* MAIN WORKSPACE (STRICT ROLE PERMISSION GUARD) */}
-      <main className="flex-1 bg-white p-8 sm:p-12 overflow-y-auto min-h-screen">
+      <main className="flex-1 bg-white p-4 sm:p-6 lg:p-8 overflow-y-auto min-h-screen min-w-0">
         {!allowedTabIds.includes(activeTab) ? (
           <div className="max-w-md mx-auto my-20 p-8 text-center bg-zinc-50 border border-zinc-200 rounded-xl space-y-4">
             <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">

@@ -7,7 +7,7 @@ import { useCart } from '@/lib/CartContext';
 import { 
   Search, Mail, Phone, MapPin, Calendar, DollarSign, Trash2, Edit2, X, 
   User, Download, Send, MessageSquare, Share2, Sparkles, ExternalLink, Check, ShieldCheck, Award,
-  Plus, ShoppingBag, Eye, Package
+  Plus, ShoppingBag, Eye, Package, Copy, CheckCheck, Users
 } from 'lucide-react';
 
 function WhatsAppIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -63,6 +63,14 @@ export function CustomersManager() {
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>('vip_welcome_ar');
   const [customMessage, setCustomMessage] = useState<string>('');
 
+  // Bulk WhatsApp Broadcast modal state
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkTierFilter, setBulkTierFilter] = useState<'all' | 'platinum' | 'gold' | 'silver'>('all');
+  const [bulkMessage, setBulkMessage] = useState<string>(
+    'مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com/shop'
+  );
+  const [copiedNumbers, setCopiedNumbers] = useState(false);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -86,16 +94,17 @@ export function CustomersManager() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (isBulkModalOpen) setIsBulkModalOpen(false);
         if (isWhatsAppModalOpen) setIsWhatsAppModalOpen(false);
         if (isOrdersModalOpen) setIsOrdersModalOpen(false);
         if (isModalOpen) setIsModalOpen(false);
       }
     };
-    if (isModalOpen || isWhatsAppModalOpen || isOrdersModalOpen) {
+    if (isModalOpen || isWhatsAppModalOpen || isOrdersModalOpen || isBulkModalOpen) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isModalOpen, isWhatsAppModalOpen, isOrdersModalOpen]);
+  }, [isModalOpen, isWhatsAppModalOpen, isOrdersModalOpen, isBulkModalOpen]);
 
   // Standard full CSV export
   const handleExportCustomersCSV = () => {
@@ -276,6 +285,39 @@ export function CustomersManager() {
     const waUrl = `https://wa.me/${cleanPhone}?text=${encoded}`;
     window.open(waUrl, '_blank');
     setIsWhatsAppModalOpen(false);
+  };
+
+  const getBulkTargetCustomers = (): Customer[] => {
+    if (bulkTierFilter === 'all') return customers;
+    return customers.filter(c => {
+      const tier = getCustomerTier(c.totalSpentUSD, c.totalOrders);
+      return tier.tier === bulkTierFilter;
+    });
+  };
+
+  const handleCopyBulkNumbers = () => {
+    const list = getBulkTargetCustomers();
+    const phones = list.map(c => normalizePhoneForWhatsApp(c.phone)).filter(Boolean).join(', ');
+    if (!phones) {
+      showToast('No valid phone numbers found for this tier.', 'error');
+      return;
+    }
+    navigator.clipboard.writeText(phones);
+    setCopiedNumbers(true);
+    showToast(`Copied ${list.length} phone numbers! Paste into WhatsApp Broadcast List.`, 'success');
+    setTimeout(() => setCopiedNumbers(false), 3000);
+  };
+
+  const handleSendSingleBulk = (cust: Customer) => {
+    const cleanPhone = normalizePhoneForWhatsApp(cust.phone);
+    if (!cleanPhone) {
+      showToast(`${cust.name} does not have a valid phone number.`, 'error');
+      return;
+    }
+    const personalized = bulkMessage.replace(/مرحباً/g, `مرحباً ${cust.name}`);
+    const encoded = encodeURIComponent(personalized.trim());
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encoded}`;
+    window.open(waUrl, '_blank');
   };
 
   const handleSaveCustomer = (e: React.FormEvent) => {
@@ -464,6 +506,16 @@ export function CustomersManager() {
             <span>EXPORT CLIENTS (CSV)</span>
           </button>
 
+          {/* Bulk Broadcast New Arrivals Button */}
+          <button
+            onClick={() => setIsBulkModalOpen(true)}
+            className="px-4 py-3 bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-black tracking-wider uppercase rounded shadow-sm flex items-center gap-2 transition-all shrink-0 cursor-pointer"
+            title="Send bulk WhatsApp message to customers about new arrivals"
+          >
+            <WhatsAppIcon className="w-4 h-4 text-white" />
+            <span>BROADCAST NEW ARRIVALS (رسائل جماعية)</span>
+          </button>
+
           {/* Add New VIP Client Button */}
           <button
             onClick={handleOpenCreateModal}
@@ -546,23 +598,23 @@ export function CustomersManager() {
       </div>
 
       {/* 3. CUSTOMERS DATA TABLE */}
-      <div className="border border-zinc-300 rounded overflow-hidden shadow-sm bg-white">
+      <div className="border border-zinc-300 rounded overflow-x-auto shadow-sm bg-white">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-zinc-300 bg-zinc-100/70">
-              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">NAME</th>
-              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">TIER / المستوى</th>
-              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">EMAIL</th>
-              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">PHONE</th>
-              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">ADDRESS</th>
-              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">LIFETIME VALUE</th>
-              <th className="py-4 px-4 text-xs font-black tracking-[0.2em] text-zinc-950 uppercase text-center">CRM ACTIONS</th>
+            <tr className="border-b border-zinc-300 bg-zinc-100/70 text-[11px]">
+              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">NAME</th>
+              <th className="py-3 px-1.5 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">TIER / المستوى</th>
+              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center">EMAIL</th>
+              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">PHONE</th>
+              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center">ADDRESS</th>
+              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">LIFETIME VALUE</th>
+              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">CRM ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {filteredCustomers.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-20 text-center text-xs font-extrabold text-zinc-400 tracking-wider uppercase">
+                <td colSpan={7} className="py-16 text-center text-xs font-extrabold text-zinc-400 tracking-wider uppercase">
                   NO REGISTERED CUSTOMERS FOUND IN THIS CATEGORY.
                 </td>
               </tr>
@@ -573,96 +625,96 @@ export function CustomersManager() {
                   <tr key={cust.id} className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors text-xs">
                     
                     {/* NAME */}
-                    <td className="py-4 px-4 font-extrabold text-zinc-950 text-center uppercase tracking-wider">
+                    <td className="py-3 px-2 font-bold text-zinc-950 text-center uppercase tracking-wider whitespace-nowrap text-xs">
                       {cust.name}
                     </td>
 
                     {/* CLIENT TIER */}
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex flex-col items-center justify-center gap-1">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-wider ${tier.badgeClass}`}>
+                    <td className="py-3 px-1.5 text-center whitespace-nowrap">
+                      <div className="flex flex-col items-center justify-center gap-0.5">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${tier.badgeClass}`}>
                           <span>{tier.icon}</span>
                           <span>{tier.label}</span>
                         </span>
-                        <span className="text-[10px] font-bold text-zinc-500 font-mono">
+                        <span className="text-[9px] font-bold text-zinc-500 font-mono">
                           {cust.totalOrders || 0} Orders
                         </span>
                       </div>
                     </td>
 
                     {/* EMAIL */}
-                    <td className="py-4 px-4 font-medium text-zinc-700 text-center">
+                    <td className="py-3 px-2 font-medium text-zinc-700 text-center text-[11px] max-w-[140px] truncate" title={cust.email || 'N/A'}>
                       {cust.email || 'N/A'}
                     </td>
 
                     {/* PHONE */}
-                    <td className="py-4 px-4 font-mono font-bold text-zinc-800 text-center">
+                    <td className="py-3 px-2 font-mono font-bold text-zinc-800 text-center text-[11px] whitespace-nowrap">
                       {cust.phone || 'N/A'}
                     </td>
 
                     {/* ADDRESS */}
-                    <td className="py-4 px-4 font-medium text-zinc-600 text-center uppercase">
+                    <td className="py-3 px-2 font-medium text-zinc-600 text-center uppercase text-[11px] max-w-[130px] truncate" title={cust.address || 'BEIRUT, LEBANON'}>
                       {cust.address || 'BEIRUT, LEBANON'}
                     </td>
 
                     {/* LIFETIME VALUE */}
-                    <td className="py-4 px-4 text-center">
-                      <span className="font-black text-emerald-600 text-sm block">
+                    <td className="py-3 px-2 text-center whitespace-nowrap">
+                      <span className="font-black text-emerald-600 text-xs block font-mono">
                         {formatCurrency(cust.totalSpentUSD, currency, settings.lbpRate, settings.eurRate)}
                       </span>
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase">
-                        {cust.totalOrders || 0} COMPLETED ORDER(S)
+                      <span className="text-[9px] font-bold text-zinc-500 uppercase">
+                        {cust.totalOrders || 0} ORDER(S)
                       </span>
                     </td>
 
-                    {/* ACTIONS: WHATSAPP, EDIT & DELETE */}
-                    <td className="py-4 px-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      
-                      {/* Customer Orders History Button */}
-                      <button
-                        onClick={() => handleOpenOrdersModal(cust)}
-                        className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-[11px] font-black uppercase rounded flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
-                        title={`View order history for ${cust.name}`}
-                      >
-                        <ShoppingBag size={12} className="text-blue-200" />
-                        <span>ORDERS ({getCustomerOrders(cust).length || cust.totalOrders || 0})</span>
-                      </button>
+                    {/* ACTIONS: ORDERS, WHATSAPP, EDIT & DELETE */}
+                    <td className="py-3 px-2 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1 whitespace-nowrap">
+                        
+                        {/* Customer Orders History Button */}
+                        <button
+                          onClick={() => handleOpenOrdersModal(cust)}
+                          className="px-2 py-1 bg-blue-700 hover:bg-blue-800 text-white text-[10px] font-black uppercase rounded flex items-center gap-1 transition-colors shadow-2xs cursor-pointer shrink-0"
+                          title={`View order history for ${cust.name}`}
+                        >
+                          <ShoppingBag size={11} className="text-blue-200" />
+                          <span>ORDERS ({getCustomerOrders(cust).length || cust.totalOrders || 0})</span>
+                        </button>
 
-                      {/* WhatsApp Direct Concierge Button */}
-                      <button
-                        onClick={() => handleOpenWhatsAppModal(cust)}
-                        className="px-3 py-1.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] font-black uppercase rounded flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
-                        title={`Message ${cust.name} on WhatsApp`}
-                      >
-                        <WhatsAppIcon className="w-3.5 h-3.5" />
-                        <span>WHATSAPP</span>
-                      </button>
+                        {/* WhatsApp Direct Concierge Button */}
+                        <button
+                          onClick={() => handleOpenWhatsAppModal(cust)}
+                          className="px-2 py-1 bg-[#25D366] hover:bg-[#20ba59] text-white text-[10px] font-black uppercase rounded flex items-center gap-1 transition-colors shadow-2xs cursor-pointer shrink-0"
+                          title={`Message ${cust.name} on WhatsApp`}
+                        >
+                          <WhatsAppIcon className="w-3 h-3" />
+                          <span>WHATSAPP</span>
+                        </button>
 
-                      <button
-                        onClick={() => handleOpenEditModal(cust)}
-                        className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-[11px] font-bold uppercase rounded flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
-                        title="Edit Customer Profile"
-                      >
-                        <Edit2 size={12} />
-                        <span>EDIT</span>
-                      </button>
+                        <button
+                          onClick={() => handleOpenEditModal(cust)}
+                          className="px-2 py-1 bg-zinc-900 hover:bg-black text-white text-[10px] font-bold uppercase rounded flex items-center gap-0.5 transition-colors shadow-2xs cursor-pointer shrink-0"
+                          title="Edit Customer Profile"
+                        >
+                          <Edit2 size={11} />
+                          <span>EDIT</span>
+                        </button>
 
-                      <button
-                        onClick={() => handleDeleteCustomer(cust.id)}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold uppercase rounded flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
-                        title="Delete Customer Profile"
-                      >
-                        <Trash2 size={12} />
-                        <span>DELETE</span>
-                      </button>
+                        <button
+                          onClick={() => handleDeleteCustomer(cust.id)}
+                          className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold uppercase rounded flex items-center gap-0.5 transition-colors shadow-2xs cursor-pointer shrink-0"
+                          title="Delete Customer Profile"
+                        >
+                          <Trash2 size={11} />
+                          <span>DELETE</span>
+                        </button>
 
-                    </div>
-                  </td>
-                </tr>
-              );
-            })
-          )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -1116,6 +1168,188 @@ export function CustomersManager() {
                 className="px-6 py-3 bg-zinc-950 hover:bg-black text-white text-xs font-black uppercase tracking-widest rounded cursor-pointer"
               >
                 CLOSE ARCHIVES
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 7. BULK WHATSAPP BROADCAST MODAL */}
+      {isBulkModalOpen && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsBulkModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
+          <div className="bg-white border border-zinc-300 p-6 sm:p-8 max-w-2xl w-full space-y-5 relative shadow-2xl animate-fadeIn rounded-xl max-h-[90vh] flex flex-col">
+            
+            <button 
+              onClick={() => setIsBulkModalOpen(false)} 
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Modal Header */}
+            <div className="border-b border-zinc-200 pb-3 flex items-center gap-2.5">
+              <div className="p-2 bg-[#25D366]/20 text-[#25D366] rounded-lg">
+                <WhatsAppIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="font-serif text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
+                  VIP WHATSAPP BROADCAST
+                </h2>
+                <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider block">
+                  إرسال رسائل جماعية للعملاء مع صور وروابط التشكيلة الجديدة
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto space-y-4 pr-1 flex-1">
+              
+              {/* Guidance Info Box */}
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs leading-relaxed text-emerald-950 space-y-2">
+                <p className="font-bold flex items-center gap-1.5 text-emerald-900">
+                  <span>📸</span>
+                  <span>كيف ترسل الصور مع الرسالة الجماعية؟</span>
+                </p>
+                <p className="text-[11px] text-emerald-800">
+                  <strong>الخيار 1 (الأسرع للصور الجماعية):</strong> اضغط على <strong>&ldquo;نسخ جميع الأرقام&rdquo;</strong> أدناه، وافتح تطبيق واتساب على هاتفك ➔ أنشئ <strong>قائمة رسائل جماعية (Broadcast List)</strong> والصق الأرقام، وأرفق صور البضائع الجديدة بضغطة واحدة لتصل لكل زبون في محادثته الخاصة!
+                </p>
+                <p className="text-[11px] text-emerald-800">
+                  <strong>الخيار 2 (إرسال مخصص مباشر):</strong> اضغط على زر <strong>&ldquo;إرسال إلى العميل&rdquo;</strong> بجانب كل اسم أدناه، وسيفتح واتساب فوراً بالرسالة باسم العميل لتُرفق معه الصور مباشرة!
+                </p>
+              </div>
+
+              {/* Target Tier Filter */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                  Target Customer Tier (الفئة المستهدفة):
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBulkTierFilter('all')}
+                    className={`px-3 py-1.5 text-xs font-black uppercase rounded transition-all cursor-pointer ${
+                      bulkTierFilter === 'all'
+                        ? 'bg-zinc-950 text-white shadow-xs'
+                        : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                    }`}
+                  >
+                    ALL CLIENTS ({customers.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkTierFilter('platinum')}
+                    className={`px-3 py-1.5 text-xs font-black uppercase rounded transition-all cursor-pointer ${
+                      bulkTierFilter === 'platinum'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'bg-amber-50 text-amber-900 border border-amber-200'
+                    }`}
+                  >
+                    👑 VIP PLATINUM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkTierFilter('gold')}
+                    className={`px-3 py-1.5 text-xs font-black uppercase rounded transition-all cursor-pointer ${
+                      bulkTierFilter === 'gold'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'bg-amber-50 text-amber-900 border border-amber-200'
+                    }`}
+                  >
+                    ⭐ VIP GOLD
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkTierFilter('silver')}
+                    className={`px-3 py-1.5 text-xs font-black uppercase rounded transition-all cursor-pointer ${
+                      bulkTierFilter === 'silver'
+                        ? 'bg-slate-700 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-800 border border-slate-300'
+                    }`}
+                  >
+                    💎 VIP SILVER
+                  </button>
+                </div>
+              </div>
+
+              {/* Broadcast Message Content */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                  Broadcast Message Text (نص الرسالة):
+                </label>
+                <textarea
+                  rows={4}
+                  value={bulkMessage}
+                  onChange={(e) => setBulkMessage(e.target.value)}
+                  className="w-full p-3.5 border-2 border-zinc-300 rounded-lg text-xs text-zinc-950 font-medium leading-relaxed focus:outline-none focus:border-[#25D366] bg-zinc-50/50"
+                  placeholder="Type broadcast message..."
+                />
+              </div>
+
+              {/* Action Buttons: Copy Numbers */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCopyBulkNumbers}
+                  className="w-full sm:w-auto px-5 py-3 bg-zinc-900 hover:bg-black text-white text-xs font-black tracking-wider uppercase rounded flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                >
+                  {copiedNumbers ? <CheckCheck size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                  <span>{copiedNumbers ? 'COPIED TO CLIPBOARD (تم النسخ)!' : 'COPY ALL NUMBERS (نسخ أرقام الهواتف)'}</span>
+                </button>
+                <span className="text-[11px] font-bold text-zinc-500 font-mono">
+                  {getBulkTargetCustomers().length} Customer(s) in this segment
+                </span>
+              </div>
+
+              {/* Customer Direct Send List */}
+              <div className="space-y-2 pt-2">
+                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                  1-Click Direct WhatsApp Messaging:
+                </label>
+                <div className="border border-zinc-200 rounded-lg divide-y divide-zinc-100 max-h-56 overflow-y-auto bg-zinc-50/50">
+                  {getBulkTargetCustomers().length === 0 ? (
+                    <div className="p-6 text-center text-xs font-bold text-zinc-400 uppercase">
+                      No customers found in this tier.
+                    </div>
+                  ) : (
+                    getBulkTargetCustomers().map(c => {
+                      const tier = getCustomerTier(c.totalSpentUSD, c.totalOrders);
+                      return (
+                        <div key={c.id} className="p-3 flex items-center justify-between gap-3 hover:bg-white transition-colors">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-sm">{tier.icon}</span>
+                            <div>
+                              <span className="text-xs font-bold text-zinc-950 uppercase block">{c.name}</span>
+                              <span className="text-[10px] text-zinc-500 font-mono">{c.phone || 'No phone'}</span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSendSingleBulk(c)}
+                            className="px-3 py-1.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-[10px] font-black uppercase rounded flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                          >
+                            <WhatsAppIcon className="w-3.5 h-3.5" />
+                            <span>SEND TO {c.name.split(' ')[0]} ➔</span>
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-zinc-200 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsBulkModalOpen(false)}
+                className="px-6 py-2.5 border-2 border-zinc-300 text-zinc-700 hover:text-zinc-950 text-xs font-black tracking-widest uppercase rounded cursor-pointer"
+              >
+                CLOSE
               </button>
             </div>
 
