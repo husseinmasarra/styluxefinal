@@ -441,6 +441,30 @@ export function CustomersManager() {
     setTimeout(() => setCopiedNumbers(false), 3000);
   };
 
+  const handleDownloadVCF = () => {
+    const list = getBulkTargetCustomers();
+    if (list.length === 0) {
+      showToast('No customers found in this tier.', 'error');
+      return;
+    }
+    let vcfContent = '';
+    list.forEach(c => {
+      const cleanPhone = normalizePhoneForWhatsApp(c.phone || '');
+      if (cleanPhone) {
+        vcfContent += `BEGIN:VCARD\nVERSION:3.0\nFN:${c.name}\nTEL;TYPE=CELL:+${cleanPhone}\nEND:VCARD\n`;
+      }
+    });
+    const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `styluxe_vip_contacts_${bulkTierFilter}.vcf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`Downloaded VCF contacts file for ${list.length} customers!`, 'success');
+  };
+
   const handleSendSingleBulk = (cust: Customer) => {
     const cleanPhone = normalizePhoneForWhatsApp(cust.phone);
     if (!cleanPhone) {
@@ -1422,16 +1446,26 @@ export function CustomersManager() {
             <div className="overflow-y-auto space-y-4 pr-1 flex-1">
               
               {/* Guidance Info Box */}
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs leading-relaxed text-emerald-950 space-y-2">
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs leading-relaxed text-emerald-950 space-y-2.5">
                 <p className="font-bold flex items-center gap-1.5 text-emerald-900">
                   <span>📸</span>
-                  <span>كيف ترسل الصور مع الرسالة الجماعية؟</span>
+                  <span>طريقتان سهلتان لإرسال الصور والرسالة للزبائن:</span>
+                </p>
+                
+                <div className="p-2.5 bg-amber-50 border border-amber-300 rounded text-amber-900 text-[11px] font-medium flex items-start gap-2">
+                  <span className="text-sm">⚠️</span>
+                  <div>
+                    <strong>ملاحظة لتطبيق واتساب على الكمبيوتر (WhatsApp Desktop):</strong>
+                    <br />
+                    شريط البحث في واتساب الكمبيوتر لا يقبل عدة أرقام معاً. <strong>للإرسال من الكمبيوتر:</strong> استخدم الأزرار الخضراء <strong>(SEND TO ➔)</strong> في الجدول أدناه، حيث يفتح كل محادثة جاهزة بنقرة واحدة لترفق الصور وترسلها فوراً!
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-emerald-800">
+                  <strong>الخيار 1 (إرسال جماعي بالصور من الهاتف - Broadcast List):</strong> اضغط على زر <strong>&ldquo;تحميل جهات الاتصال (VCF)&rdquo;</strong> أدناه لحفظ الأرقام في هاتفك بضغطة واحدة، ثم افتح واتساب من هاتفك ➔ النقاط الثلاث ➔ <strong>رسالة جماعية جديدة (New Broadcast)</strong> وحدد الأرقام وأرسل الصور لتصل للجميع بضغطة واحدة!
                 </p>
                 <p className="text-[11px] text-emerald-800">
-                  <strong>الخيار 1 (الأسرع للصور الجماعية):</strong> اضغط على <strong>&ldquo;نسخ جميع الأرقام&rdquo;</strong> أدناه، وافتح تطبيق واتساب على هاتفك ➔ أنشئ <strong>قائمة رسائل جماعية (Broadcast List)</strong> والصق الأرقام، وأرفق صور البضائع الجديدة بضغطة واحدة لتصل لكل زبون في محادثته الخاصة!
-                </p>
-                <p className="text-[11px] text-emerald-800">
-                  <strong>الخيار 2 (إرسال مخصص مباشر):</strong> اضغط على زر <strong>&ldquo;إرسال إلى العميل&rdquo;</strong> بجانب كل اسم أدناه، وسيفتح واتساب فوراً بالرسالة باسم العميل لتُرفق معه الصور مباشرة!
+                  <strong>الخيار 2 (إرسال فردي سريع من الكمبيوتر):</strong> اضغط على زر <strong>&ldquo;SEND TO ➔&rdquo;</strong> بجانب كل اسم أدناه، وسيفتح واتساب على الكمبيوتر محادثة الزبون مع الرسالة لتُرفق الصور وتضغط Enter!
                 </p>
               </div>
 
@@ -1502,18 +1536,29 @@ export function CustomersManager() {
                 />
               </div>
 
-              {/* Action Buttons: Copy Numbers */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              {/* Action Buttons: Copy Numbers & Download VCF */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
                 <button
                   type="button"
                   onClick={handleCopyBulkNumbers}
-                  className="w-full sm:w-auto px-5 py-3 bg-zinc-900 hover:bg-black text-white text-xs font-black tracking-wider uppercase rounded flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                  className="px-4 py-2.5 bg-zinc-900 hover:bg-black text-white text-xs font-black tracking-wider uppercase rounded flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
                 >
                   {copiedNumbers ? <CheckCheck size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                  <span>{copiedNumbers ? 'COPIED TO CLIPBOARD (تم النسخ)!' : 'COPY ALL NUMBERS (نسخ أرقام الهواتف)'}</span>
+                  <span>{copiedNumbers ? 'COPIED (تم النسخ)!' : 'COPY NUMBERS (نسخ الأرقام)'}</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadVCF}
+                  className="px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-black tracking-wider uppercase rounded flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                  title="تحميل ملف جهات اتصال VCF لحفظ الأرقام في الهاتف دفعة واحدة"
+                >
+                  <Download size={16} />
+                  <span>DOWNLOAD CONTACTS (.VCF) / حفظ في الهاتف</span>
+                </button>
+
                 <span className="text-[11px] font-bold text-zinc-500 font-mono">
-                  {getBulkTargetCustomers().length} Customer(s) in this segment
+                  {getBulkTargetCustomers().length} Customer(s)
                 </span>
               </div>
 
