@@ -7,7 +7,7 @@ import { useCart } from '@/lib/CartContext';
 import { 
   Search, Mail, Phone, MapPin, Calendar, DollarSign, Trash2, Edit2, X, 
   User, Download, Send, MessageSquare, Share2, Sparkles, ExternalLink, Check, ShieldCheck, Award,
-  Plus, ShoppingBag, Eye, Package, Copy, CheckCheck, Users
+  Plus, ShoppingBag, Eye, Package, Copy, CheckCheck, Users, Upload, Instagram, FileText, CheckCircle2, AlertCircle
 } from 'lucide-react';
 
 function WhatsAppIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -30,15 +30,129 @@ function MetaIcon({ className = "w-4 h-4" }: { className?: string }) {
 function normalizePhoneForWhatsApp(phoneStr: string): string {
   if (!phoneStr) return '';
   let cleaned = phoneStr.replace(/[^0-9]/g, '');
+  if (cleaned.startsWith('00')) {
+    cleaned = cleaned.substring(2);
+  }
   // Lebanese 8-digit mobile (e.g. 03XXXXXX, 70XXXXXX, 71XXXXXX, 76XXXXXX, 78XXXXXX, 79XXXXXX, 81XXXXXX)
   if (cleaned.length === 8 && cleaned.startsWith('0')) {
     cleaned = '961' + cleaned.substring(1);
-  } else if (cleaned.length === 8) {
+  } else if (cleaned.length === 8 && (cleaned.startsWith('70') || cleaned.startsWith('71') || cleaned.startsWith('76') || cleaned.startsWith('78') || cleaned.startsWith('79') || cleaned.startsWith('81') || cleaned.startsWith('03'))) {
     cleaned = '961' + cleaned;
-  } else if (cleaned.length === 7) {
+  } else if (cleaned.length === 7 && cleaned.startsWith('3')) {
     cleaned = '961' + cleaned;
   }
   return cleaned;
+}
+
+export interface ParsedLead {
+  id: string;
+  raw: string;
+  name: string;
+  phone: string;
+  normalizedPhone: string;
+  isDuplicate: boolean;
+  duplicateName?: string;
+  isValid: boolean;
+}
+
+export function parsePhoneNumbersFromText(
+  text: string, 
+  source: 'instagram' | 'whatsapp' | 'file',
+  existingCustomers: Customer[]
+): ParsedLead[] {
+  if (!text || !text.trim()) return [];
+
+  // Lookup of existing normalized numbers
+  const existingMap = new Map<string, string>();
+  existingCustomers.forEach(c => {
+    const norm = normalizePhoneForWhatsApp(c.phone || '');
+    if (norm) existingMap.set(norm, c.name);
+  });
+
+  const leads: ParsedLead[] = [];
+  const seenInBatch = new Set<string>();
+
+  // Check if vCard format (.vcf)
+  if (text.includes('BEGIN:VCARD')) {
+    const vcardBlocks = text.split('BEGIN:VCARD');
+    for (const block of vcardBlocks) {
+      if (!block.trim()) continue;
+      const fnMatch = block.match(/FN(?:;[^:]*)?:(.*)/i);
+      const telMatch = block.match(/TEL(?:;[^:]*)?:(.*)/i);
+      if (telMatch && telMatch[1]) {
+        const rawPhone = telMatch[1].trim();
+        const norm = normalizePhoneForWhatsApp(rawPhone);
+        if (norm && !seenInBatch.has(norm)) {
+          seenInBatch.add(norm);
+          const rawName = fnMatch && fnMatch[1] ? fnMatch[1].trim() : `Contact ${norm.slice(-4)}`;
+          const isDuplicate = existingMap.has(norm);
+          leads.push({
+            id: `lead-${Date.now()}-${leads.length}`,
+            raw: `VCARD: ${rawName} - ${rawPhone}`,
+            name: rawName || `Contact ${norm.slice(-4)}`,
+            phone: rawPhone,
+            normalizedPhone: norm,
+            isDuplicate,
+            duplicateName: isDuplicate ? existingMap.get(norm) : undefined,
+            isValid: true,
+          });
+        }
+      }
+    }
+    if (leads.length > 0) return leads;
+  }
+
+  // General line-by-line parsing
+  const lines = text.split(/[\r\n]+/);
+  const phonePattern = /(?:\+?00?\d{1,4}[-.\s/]*)?(?:\(?\d{1,4}\)?[-.\s/]*)?\d{2,4}[-.\s/]*\d{3,4}[-.\s/]*\d{2,4}|\b\d{7,14}\b/g;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const matches = line.match(phonePattern);
+    if (!matches) continue;
+
+    for (const match of matches) {
+      const digitsOnly = match.replace(/[^0-9]/g, '');
+      if (digitsOnly.length < 7 || digitsOnly.length > 15) continue;
+
+      const norm = normalizePhoneForWhatsApp(match);
+      if (!norm || seenInBatch.has(norm)) continue;
+      seenInBatch.add(norm);
+
+      // Clean name from the line
+      let candidateName = line
+        .replace(match, '')
+        .replace(/\[?\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4},?\s*\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM|am|pm)?\]?/gi, '')
+        .replace(/[,\-:|–—•~_=+*#]/g, ' ')
+        .trim();
+
+      // Remove email if present in candidate name
+      candidateName = candidateName.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '').trim();
+      candidateName = candidateName.replace(/\s+/g, ' ');
+
+      let finalName = candidateName;
+      if (!finalName || finalName.length < 2 || /^[\d\s]+$/.test(finalName)) {
+        const sourceLabel = source === 'instagram' ? 'Instagram Lead' : source === 'whatsapp' ? 'WhatsApp Contact' : 'Imported Client';
+        finalName = `${sourceLabel} ${norm.slice(-4)}`;
+      }
+
+      const isDuplicate = existingMap.has(norm);
+      leads.push({
+        id: `lead-${Date.now()}-${leads.length}`,
+        raw: line,
+        name: finalName,
+        phone: match.trim(),
+        normalizedPhone: norm,
+        isDuplicate,
+        duplicateName: isDuplicate ? existingMap.get(norm) : undefined,
+        isValid: true,
+      });
+    }
+  }
+
+  return leads;
 }
 
 export function CustomersManager() {
@@ -71,6 +185,14 @@ export function CustomersManager() {
   );
   const [copiedNumbers, setCopiedNumbers] = useState(false);
 
+  // Import Leads (Instagram & WhatsApp) modal state
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importSource, setImportSource] = useState<'instagram' | 'whatsapp' | 'file'>('instagram');
+  const [importRawText, setImportRawText] = useState<string>('');
+  const [importDefaultTier, setImportDefaultTier] = useState<CustomerTier>('bronze');
+  const [importParsedList, setImportParsedList] = useState<ParsedLead[]>([]);
+  const [skipDuplicates, setSkipDuplicates] = useState<boolean>(true);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -94,17 +216,28 @@ export function CustomersManager() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (isImportModalOpen) setIsImportModalOpen(false);
         if (isBulkModalOpen) setIsBulkModalOpen(false);
         if (isWhatsAppModalOpen) setIsWhatsAppModalOpen(false);
         if (isOrdersModalOpen) setIsOrdersModalOpen(false);
         if (isModalOpen) setIsModalOpen(false);
       }
     };
-    if (isModalOpen || isWhatsAppModalOpen || isOrdersModalOpen || isBulkModalOpen) {
+    if (isModalOpen || isWhatsAppModalOpen || isOrdersModalOpen || isBulkModalOpen || isImportModalOpen) {
       window.addEventListener('keydown', handleKeyDown);
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isModalOpen, isWhatsAppModalOpen, isOrdersModalOpen, isBulkModalOpen]);
+  }, [isModalOpen, isWhatsAppModalOpen, isOrdersModalOpen, isBulkModalOpen, isImportModalOpen]);
+
+  // Real-time parser for import leads
+  useEffect(() => {
+    if (!importRawText.trim()) {
+      setImportParsedList([]);
+      return;
+    }
+    const parsed = parsePhoneNumbersFromText(importRawText, importSource, customers);
+    setImportParsedList(parsed);
+  }, [importRawText, importSource, customers]);
 
   // Standard full CSV export
   const handleExportCustomersCSV = () => {
@@ -320,6 +453,74 @@ export function CustomersManager() {
     window.open(waUrl, '_blank');
   };
 
+  // Import Leads Handlers
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setImportRawText(content);
+        showToast(`Uploaded ${file.name} successfully!`, 'info');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleUpdateParsedName = (id: string, newName: string) => {
+    setImportParsedList(prev => prev.map(p => p.id === id ? { ...p, name: newName } : p));
+  };
+
+  const handleRemoveParsedLead = (id: string) => {
+    setImportParsedList(prev => prev.filter(p => p.id !== id));
+  };
+
+  const handlePasteSampleData = () => {
+    let sample = '';
+    if (importSource === 'instagram') {
+      sample = `Ahmad Al-Hajj: 03 123456\nNour Mansour - 71 556677\n76 889900 (asked about Dior sneakers)\nZeina K.: 03 998877\n+961 70 445566`;
+    } else if (importSource === 'whatsapp') {
+      sample = `[12/10/24, 14:22] +961 70 123 456: مرحباً بدي اطلب تيشيرت\n[12/10/24, 15:40] Karim: 03 445566\n+961 71 998877: السلام عليكم\n03 223344`;
+    } else {
+      sample = `Full Name, Phone Number, City\nOmar Haddad, 03 112233, Beirut\nLara Khoury, +961 70 334455, Jounieh\nSami Azar, 71 889900, Tripoli`;
+    }
+    setImportRawText(sample);
+  };
+
+  const handleConfirmImport = () => {
+    const validToImport = importParsedList.filter(l => l.isValid && (!skipDuplicates || !l.isDuplicate));
+    if (validToImport.length === 0) {
+      showToast('No eligible leads to import. Please check your numbers.', 'error');
+      return;
+    }
+
+    const newCustomers: Customer[] = validToImport.map((lead, idx) => {
+      const cleanDigits = lead.normalizedPhone.replace(/[^0-9]/g, '');
+      return {
+        id: `cust-lead-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+        name: lead.name.trim(),
+        email: `${cleanDigits}@styluxelead.com`,
+        phone: lead.normalizedPhone,
+        address: 'Beirut, Lebanon',
+        city: 'Beirut',
+        notes: `Imported via ${importSource.toUpperCase()} Lead Import on ${new Date().toLocaleDateString()}`,
+        tier: importDefaultTier,
+        totalSpentUSD: 0,
+        totalOrders: 0,
+        createdAt: new Date().toISOString(),
+      };
+    });
+
+    const updated = DataService.saveBulkCustomers(newCustomers);
+    setCustomers(updated);
+    setIsImportModalOpen(false);
+    setImportRawText('');
+    setImportParsedList([]);
+    showToast(`Successfully imported ${newCustomers.length} leads into your CRM database!`, 'success');
+  };
+
   const handleSaveCustomer = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim()) return;
@@ -504,6 +705,19 @@ export function CustomersManager() {
           >
             <Download size={16} />
             <span>EXPORT CLIENTS (CSV)</span>
+          </button>
+
+          {/* Import Leads (Instagram & WhatsApp) */}
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-4 py-3 bg-gradient-to-r from-purple-800 via-pink-700 to-rose-700 hover:from-purple-900 hover:to-rose-800 text-white text-xs font-black tracking-wider uppercase rounded shadow-sm flex items-center gap-2 transition-all shrink-0 cursor-pointer"
+            title="Import phone numbers directly from Instagram DMs, WhatsApp chats, or uploaded files"
+          >
+            <div className="flex items-center -space-x-0.5">
+              <Instagram className="w-4 h-4 text-pink-200" />
+              <WhatsAppIcon className="w-4 h-4 text-emerald-300 ml-1" />
+            </div>
+            <span>IMPORT LEADS (استيراد أرقام)</span>
           </button>
 
           {/* Bulk Broadcast New Arrivals Button */}
@@ -1351,6 +1565,335 @@ export function CustomersManager() {
               >
                 CLOSE
               </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 8. IMPORT LEADS (INSTAGRAM & WHATSAPP & FILES) MODAL */}
+      {isImportModalOpen && (
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsImportModalOpen(false); }}
+          className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto"
+        >
+          <div className="bg-white border border-zinc-300 p-6 sm:p-8 max-w-4xl w-full space-y-5 relative shadow-2xl animate-fadeIn rounded-xl max-h-[92vh] flex flex-col">
+            
+            <button 
+              onClick={() => setIsImportModalOpen(false)} 
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-950 p-2 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Modal Header */}
+            <div className="border-b border-zinc-200 pb-3 flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-purple-600 via-pink-600 to-emerald-500 text-white rounded-lg shadow-xs flex items-center gap-1.5">
+                <Instagram className="w-5 h-5 text-white" />
+                <WhatsAppIcon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-serif text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase flex items-center gap-2">
+                  <span>IMPORT LEADS & PHONE NUMBERS</span>
+                  <span className="text-xs bg-zinc-950 text-white font-sans px-2.5 py-0.5 rounded-full font-black">
+                    INSTAGRAM & WHATSAPP
+                  </span>
+                </h2>
+                <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider block">
+                  استيراد أرقام الهواتف مباشرة من محادثات انستغرام، واتساب، أو ملفات جهات الاتصال إلى قاعدة بيانات العملاء
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto space-y-5 pr-1 flex-1">
+              
+              {/* Source Tabs */}
+              <div className="flex flex-wrap gap-2 border-b border-zinc-200 pb-3">
+                <button
+                  type="button"
+                  onClick={() => setImportSource('instagram')}
+                  className={`px-4 py-2.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer ${
+                    importSource === 'instagram'
+                      ? 'bg-gradient-to-r from-purple-700 to-pink-600 text-white shadow-xs'
+                      : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                  }`}
+                >
+                  <Instagram size={16} />
+                  <span>Instagram DMs / Leads (إنستغرام)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setImportSource('whatsapp')}
+                  className={`px-4 py-2.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer ${
+                    importSource === 'whatsapp'
+                      ? 'bg-[#25D366] text-white shadow-xs'
+                      : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                  }`}
+                >
+                  <WhatsAppIcon className="w-4 h-4" />
+                  <span>WhatsApp Chats / Groups (واتساب)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setImportSource('file')}
+                  className={`px-4 py-2.5 rounded-lg text-xs font-black tracking-wider uppercase transition-all flex items-center gap-2 cursor-pointer ${
+                    importSource === 'file'
+                      ? 'bg-zinc-950 text-white shadow-xs'
+                      : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
+                  }`}
+                >
+                  <Upload size={16} />
+                  <span>Upload File (.csv, .txt, .vcf) (رفع ملف)</span>
+                </button>
+              </div>
+
+              {/* Instructions Banner */}
+              <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-lg text-xs space-y-1.5 leading-relaxed">
+                <div className="font-bold text-zinc-900 flex items-center gap-2">
+                  <Sparkles size={16} className="text-amber-500" />
+                  <span>
+                    {importSource === 'instagram' && 'كيفية استيراد الأرقام من إنستغرام (Instagram DMs & Comments):'}
+                    {importSource === 'whatsapp' && 'كيفية استيراد الأرقام من واتساب (WhatsApp Chats & Contacts):'}
+                    {importSource === 'file' && 'رفع ملف جهات الاتصال (Contacts / Excel CSV / vCard):'}
+                  </span>
+                </div>
+                <p className="text-zinc-600 text-[11px]">
+                  {importSource === 'instagram' && 'انسخ رسائل الزبائن أو استفسارات الطلبات من الـ Direct أو التعليقات في إنستغرام والصقها هنا في المربع أدناه. سيتعرف النظام التلقائي على الأرقام اللبنانية والدولية (03, 70, 71, 76, 81...) ويستخرج أسماء العملاء تلقائياً لتكون جاهزة للمراسلة وحملات Meta Ads!'}
+                  {importSource === 'whatsapp' && 'انسخ أي محادثة، أو قائمة أرقام من دردشة أو مجموعة واتساب والصقها هنا. النظام يستخرج الأرقام حتى لو كانت تحتوي على تواريخ أو أوقات مثل [12/10/24, 15:30] وينظفها بدقة.'}
+                  {importSource === 'file' && 'اختر ملف CSV، أو ملف نصي TXT، أو ملف جهات اتصال vCard (.vcf) من جهازك أو هاتفك. سيتم تحليل الملف فوراً واستخراج جميع الأرقام.'}
+                </p>
+              </div>
+
+              {/* File Upload Box (if file tab selected) */}
+              {importSource === 'file' && (
+                <div className="border-2 border-dashed border-zinc-300 rounded-lg p-6 text-center hover:border-zinc-950 transition-colors bg-zinc-50/50">
+                  <label className="cursor-pointer flex flex-col items-center justify-center gap-2">
+                    <div className="p-3 bg-zinc-100 rounded-full text-zinc-700">
+                      <Upload size={24} />
+                    </div>
+                    <span className="text-xs font-black uppercase text-zinc-900">
+                      Click to choose file or drag & drop (.csv, .txt, .vcf)
+                    </span>
+                    <span className="text-[11px] text-zinc-500">
+                      يدعم ملفات إكسل CSV، ملفات النصوص TXT، وملفات جهات اتصال الهاتف VCF
+                    </span>
+                    <input
+                      type="file"
+                      accept=".txt,.csv,.vcf"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Text Area Input */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                    Paste Raw Text / Numbers (الصق النصوص أو الأرقام هنا):
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handlePasteSampleData}
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
+                    >
+                      📋 تجربة عينة أرقام (Sample)
+                    </button>
+                    {importRawText && (
+                      <button
+                        type="button"
+                        onClick={() => setImportRawText('')}
+                        className="text-[11px] font-bold text-red-600 hover:text-red-800 underline cursor-pointer"
+                      >
+                        مسح النص (Clear)
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <textarea
+                  rows={5}
+                  value={importRawText}
+                  onChange={(e) => setImportRawText(e.target.value)}
+                  placeholder={`الصق هنا أي قائمة أرقام، مثلاً:\nAhmad Al-Hajj: 03123456\n+961 70 889900\nNour - 71 556677\n03 998877\n76123456`}
+                  className="w-full p-3.5 border-2 border-zinc-300 rounded-lg text-xs font-mono text-zinc-950 focus:border-zinc-950 focus:outline-none bg-zinc-50/30"
+                />
+              </div>
+
+              {/* Configuration Controls: Default Tier & Skip Duplicates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-100/70 p-4 rounded-lg border border-zinc-200">
+                <div>
+                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block mb-1.5">
+                    Assign VIP Tier (تصنيف الفئة للعملاء المستوردين):
+                  </label>
+                  <select
+                    value={importDefaultTier}
+                    onChange={(e) => setImportDefaultTier(e.target.value as CustomerTier)}
+                    className="w-full p-2.5 border border-zinc-300 rounded bg-white text-xs font-bold text-zinc-900 focus:border-zinc-950"
+                  >
+                    <option value="bronze">🥉 BRONZE (New Client / زبون جديد)</option>
+                    <option value="silver">💎 SILVER VIP (عميل فضي)</option>
+                    <option value="gold">⭐ GOLD VIP (عميل ذهبي)</option>
+                    <option value="platinum">👑 PLATINUM VIP (عميل بلاتيني)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col justify-center">
+                  <label className="flex items-center gap-2 cursor-pointer mt-2 sm:mt-4">
+                    <input
+                      type="checkbox"
+                      checked={skipDuplicates}
+                      onChange={(e) => setSkipDuplicates(e.target.checked)}
+                      className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 border-zinc-300 cursor-pointer"
+                    />
+                    <span className="text-xs font-black text-zinc-900 uppercase tracking-wider">
+                      Skip Existing Duplicates (تخطي الأرقام الموجودة مسبقاً)
+                    </span>
+                  </label>
+                  <span className="text-[10px] text-zinc-500 mt-1">
+                    يحميك من تكرار العملاء ويحافظ على بياناتهم المسجلة السابقة
+                  </span>
+                </div>
+              </div>
+
+              {/* Live Detection Summary Pills */}
+              {importParsedList.length > 0 && (
+                <div className="flex flex-wrap items-center gap-3 p-3 bg-zinc-900 text-white rounded-lg text-xs font-black tracking-wider uppercase">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
+                    <span>TOTAL DETECTED: {importParsedList.length}</span>
+                  </div>
+                  <span className="text-zinc-600">|</span>
+                  <div className="flex items-center gap-1.5 text-emerald-400">
+                    <CheckCircle2 size={14} />
+                    <span>NEW LEADS TO IMPORT: {importParsedList.filter(l => !l.isDuplicate).length}</span>
+                  </div>
+                  <span className="text-zinc-600">|</span>
+                  <div className="flex items-center gap-1.5 text-amber-400">
+                    <AlertCircle size={14} />
+                    <span>EXISTING DUPLICATES: {importParsedList.filter(l => l.isDuplicate).length}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Parsed Leads Table Preview */}
+              {importParsedList.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                      Live Preview & Edit ({importParsedList.length} Records):
+                    </label>
+                    <span className="text-[11px] text-zinc-500 font-medium">
+                      يمكنك تعديل اسم العميل مباشرة قبل الحفظ، أو حذف أي رقم غير مرغوب فيه
+                    </span>
+                  </div>
+
+                  <div className="border border-zinc-200 rounded-lg overflow-hidden max-h-64 overflow-y-auto bg-white">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead className="bg-zinc-100 text-zinc-700 uppercase font-black tracking-wider text-[10px] sticky top-0 z-10 border-b border-zinc-200">
+                        <tr>
+                          <th className="p-2.5 w-12 text-center">#</th>
+                          <th className="p-2.5 w-36">STATUS</th>
+                          <th className="p-2.5">CLIENT NAME (EDITABLE)</th>
+                          <th className="p-2.5">PHONE (FORMATTED)</th>
+                          <th className="p-2.5 hidden md:table-cell">ORIGINAL SNIPPET</th>
+                          <th className="p-2.5 w-16 text-center">ACTION</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-100 font-medium">
+                        {importParsedList.map((lead, idx) => (
+                          <tr 
+                            key={lead.id} 
+                            className={`hover:bg-zinc-50 transition-colors ${
+                              lead.isDuplicate && skipDuplicates ? 'opacity-50 bg-zinc-50/50' : ''
+                            }`}
+                          >
+                            <td className="p-2.5 text-center font-mono text-zinc-400 text-[11px]">
+                              {idx + 1}
+                            </td>
+                            <td className="p-2.5">
+                              {lead.isDuplicate ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 block truncate" title={`Already in database as ${lead.duplicateName}`}>
+                                  EXISTING ({lead.duplicateName || 'Client'})
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 block text-center">
+                                  NEW LEAD
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-2.5">
+                              <input
+                                type="text"
+                                value={lead.name}
+                                onChange={(e) => handleUpdateParsedName(lead.id, e.target.value)}
+                                className="w-full px-2.5 py-1 text-xs font-bold border border-zinc-200 rounded focus:border-zinc-950 focus:outline-none bg-white"
+                                placeholder="Client name..."
+                              />
+                            </td>
+                            <td className="p-2.5 font-mono font-bold text-zinc-950 whitespace-nowrap">
+                              {lead.normalizedPhone}
+                            </td>
+                            <td className="p-2.5 hidden md:table-cell text-zinc-400 text-[11px] truncate max-w-[200px] font-mono">
+                              {lead.raw}
+                            </td>
+                            <td className="p-2.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveParsedLead(lead.id)}
+                                className="text-zinc-400 hover:text-red-600 p-1 cursor-pointer transition-colors"
+                                title="Remove this entry"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-3 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <span className="text-xs font-bold text-zinc-600">
+                {importParsedList.length > 0 ? (
+                  <>
+                    جاهز للاستيراد: <strong className="text-emerald-700">{importParsedList.filter(l => !skipDuplicates || !l.isDuplicate).length}</strong> رقم عميل جديد
+                  </>
+                ) : (
+                  'الصق الأرقام أعلاه لبدء التحليل والاستيراد'
+                )}
+              </span>
+
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsImportModalOpen(false)}
+                  className="w-full sm:w-auto px-5 py-2.5 border-2 border-zinc-300 text-zinc-700 hover:text-zinc-950 text-xs font-black tracking-widest uppercase rounded cursor-pointer"
+                >
+                  CANCEL (إلغاء)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmImport}
+                  disabled={importParsedList.filter(l => !skipDuplicates || !l.isDuplicate).length === 0}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-black tracking-widest uppercase rounded flex items-center justify-center gap-2 shadow-sm cursor-pointer transition-all"
+                >
+                  <CheckCircle2 size={16} />
+                  <span>
+                    CONFIRM & IMPORT ({importParsedList.filter(l => !skipDuplicates || !l.isDuplicate).length}) LEADS / تأكيد الاستيراد
+                  </span>
+                </button>
+              </div>
             </div>
 
           </div>

@@ -600,6 +600,28 @@ export const DataService = {
     setStorageItem(STORAGE_KEYS.CUSTOMERS, updated);
     return updated;
   },
+  saveBulkCustomers(newCustomers: Customer[]): Customer[] {
+    const existing = this.getCustomers();
+    const existingPhones = new Set(existing.map(c => (c.phone || '').replace(/[^0-9]/g, '')));
+    const toAdd: Customer[] = [];
+
+    for (const cust of newCustomers) {
+      const cleanPhone = (cust.phone || '').replace(/[^0-9]/g, '');
+      if (cleanPhone && existingPhones.has(cleanPhone)) {
+        continue;
+      }
+      if (cleanPhone) existingPhones.add(cleanPhone);
+      const tierInfo = getCustomerTier(cust.totalSpentUSD || 0, cust.totalOrders || 0);
+      toAdd.push({
+        ...cust,
+        tier: cust.tier || tierInfo.tier,
+      });
+    }
+
+    const updated = [...toAdd, ...existing];
+    setStorageItem(STORAGE_KEYS.CUSTOMERS, updated);
+    return updated;
+  },
   deleteCustomer(id: string): Customer[] {
     const updated = this.getCustomers().filter(c => c.id !== id);
     setStorageItem(STORAGE_KEYS.CUSTOMERS, updated);
