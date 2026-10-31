@@ -49,7 +49,7 @@ export function Footer() {
     return null;
   }
 
-  const addressText = mounted ? (settings.address || "Downtown Beirut, Allenby Street, Luxury Quarter") : "Downtown Beirut, Allenby Street, Luxury Quarter";
+  const addressText = mounted ? (settings.address || "Lebanon") : "Lebanon";
 
   const isHomePage = pathname === '/' || pathname === '';
 

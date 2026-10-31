@@ -693,7 +693,7 @@ export default function CustomerAccountPage() {
               <div className="bg-zinc-50 border border-zinc-200 p-5 space-y-1">
                 <span className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase block">PRIMARY HUB</span>
                 <span className="font-serif text-base sm:text-lg font-bold text-zinc-950 uppercase truncate block">
-                  {customer.city || 'BEIRUT, LEBANON'}
+                  {customer.city || 'LEBANON'}
                 </span>
               </div>
               {(() => {
@@ -1199,7 +1199,7 @@ export default function CustomerAccountPage() {
             <div className="text-center space-y-1 border-b border-zinc-200 pb-4">
               <h3 className="font-serif text-2xl font-bold tracking-[0.25em] uppercase">STYLUXE</h3>
               <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                {settings.receiptHeader || "LEBANON'S PREMIER LUXURY BOUTIQUE\nBEIRUT - LEBANON | 100% AUTHENTIC GUARANTEED"}
+                {settings.receiptHeader || "LEBANON'S PREMIER LUXURY BOUTIQUE\n100% AUTHENTIC GUARANTEED"}
               </p>
               <div className="pt-2 font-mono text-xs font-black">
                 ORDER #{selectedReceiptOrder.orderNumber}

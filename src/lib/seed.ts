@@ -22,7 +22,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   "supabaseUrl": "",
   "supabaseAnonKey": "",
   "adminPin": "1234",
-  "receiptHeader": "STYLUXE LUXURY BOUTIQUE\nBeirut - Lebanon | Tel: +961 70 123 456\n100% Authentic Luxury Brands Guaranteed",
+  "receiptHeader": "STYLUXE LUXURY BOUTIQUE\nLebanon | Tel: +961 70 123 456\n100% Authentic Luxury Brands Guaranteed",
   "receiptFooter": "Thank you for shopping at STYLUXE.\nItems can be exchanged within 7 days with original receipt.",
   "enablePosBarcodeScanner": true,
   "heroTitle": "REDEFINING\nLUXURY",

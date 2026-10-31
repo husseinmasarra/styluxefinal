@@ -148,7 +148,7 @@ export function VideoIntroSplash() {
         <div className="flex items-center gap-2.5">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
           <span className="font-serif text-xs sm:text-sm font-bold tracking-[0.3em] text-white uppercase">
-            {settings.storeName || 'STYLUXE'} • BEIRUT
+            {settings.storeName || 'STYLUXE'}
           </span>
         </div>
 

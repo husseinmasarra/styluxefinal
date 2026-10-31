@@ -579,7 +579,7 @@ export function OrdersManager() {
               <div id="pos-receipt-print" className="max-w-[80mm] w-full mx-auto bg-white p-4 font-mono text-[11px] leading-snug text-zinc-950 border-2 border-dashed border-zinc-400 space-y-3">
                 <div className="text-center space-y-1 border-b border-dashed border-zinc-400 pb-3">
                   <h3 className="text-sm font-black uppercase tracking-wider">{(settings.storeName || "STYLUXE").replace(/\s+/g, '')} BOUTIQUE</h3>
-                  <p className="text-[9px] uppercase">{settings.address || 'DOWNTOWN BEIRUT, ALLENBY ST'}</p>
+                  <p className="text-[9px] uppercase">{settings.address || 'LEBANON'}</p>
                   <p className="text-[9px]">TEL: {settings.phone || '+961 70 123 456'}</p>
                 </div>
 
@@ -646,7 +646,7 @@ export function OrdersManager() {
                     ✦ OFFICIAL BOUTIQUE INVOICE & PROOF OF PURCHASE ✦
                   </div>
                   <p className="text-xs sm:text-sm font-black text-zinc-800 uppercase tracking-widest pt-1">
-                    {settings.address || 'DOWNTOWN BEIRUT, ALLENBY STREET, LUXURY QUARTER'}
+                    {settings.address || 'LEBANON'}
                   </p>
                   <p className="text-xs sm:text-sm font-black text-zinc-800 uppercase tracking-widest">
                     TEL: {settings.phone || '+961 70 123 456'} | EMAIL: VIP@STYLUXELB.COM

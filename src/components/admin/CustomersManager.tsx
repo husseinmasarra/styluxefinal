@@ -377,19 +377,19 @@ export function CustomersManager() {
     const name = cust.name || 'عميلنا العزيز';
     switch (templateKey) {
       case 'vip_platinum_perks':
-        return `مرحباً ${name} 👑، يسعدنا في STYLUXE Beirut إعلامك بحصولك على تصنيف النخبة البلاتينية VIP Platinum.\n\nبصفتك من عملائنا الأكثر تميزاً، نسعد بتقديم خدمة المساعد الشخصي والتوصيل السريع المجاني لأي طلب خاص من أحدث التشكيلات العالمية.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
+        return `مرحباً ${name} 👑، يسعدنا في STYLUXE إعلامك بحصولك على تصنيف النخبة البلاتينية VIP Platinum.\n\nبصفتك من عملائنا الأكثر تميزاً، نسعد بتقديم خدمة المساعد الشخصي والتوصيل السريع المجاني لأي طلب خاص من أحدث التشكيلات العالمية.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
       case 'vip_gold_perks':
-        return `مرحباً ${name} ⭐، نشكر ثقتك المستمرة بـ STYLUXE Beirut. يسعدنا تصنيفك ضمن عملاء VIP Gold مع أولوية التجهيز وتتبع الشحن المباشر عبر الواتساب لكافة طلبياتك.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
+        return `مرحباً ${name} ⭐، نشكر ثقتك المستمرة بـ STYLUXE. يسعدنا تصنيفك ضمن عملاء VIP Gold مع أولوية التجهيز وتتبع الشحن المباشر عبر الواتساب لكافة طلبياتك.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
       case 'vip_silver_perks':
-        return `مرحباً ${name} 💎، تقديراً لولائك لـ STYLUXE Beirut في تصنيف VIP Silver، نود إطلاعك على أحدث التصاميم الحصرية في متجرنا مع حفظ عنوانك وخياراتك المفضلة.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
+        return `مرحباً ${name} 💎، تقديراً لولائك لـ STYLUXE في تصنيف VIP Silver، نود إطلاعك على أحدث التصاميم الحصرية في متجرنا مع حفظ عنوانك وخياراتك المفضلة.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
       case 'vip_welcome_ar':
-        return `مرحباً ${name}، يسعدنا انضمامك إلى نخبة عملاء STYLUXE Beirut. نحن دائماً في خدمتكم لأي استفسار أو طلب خاص لأحدث الأزياء العالمية الفاخرة.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
+        return `مرحباً ${name}، يسعدنا انضمامك إلى نخبة عملاء STYLUXE. نحن دائماً في خدمتكم لأي استفسار أو طلب خاص لأحدث الأزياء العالمية الفاخرة.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
       case 'vip_welcome_en':
-        return `Dear ${name}, thank you for choosing STYLUXE Beirut. We are at your service for any exclusive inquiries or personal styling assistance across our luxury designer collections.\n\nExplore our archives: https://www.styluxelb.com`;
+        return `Dear ${name}, thank you for choosing STYLUXE. We are at your service for any exclusive inquiries or personal styling assistance across our luxury designer collections.\n\nExplore our archives: https://www.styluxelb.com`;
       case 'order_followup_ar':
-        return `مرحباً ${name}، بخصوص طلبك من STYLUXE Beirut، نود إعلامك بأن فريقنا يتابع تجهيز طلبك لخدمة التوصيل السريع. هل تود تأكيد عنوان التوصيل أو إضافة أي طلب آخر؟`;
+        return `مرحباً ${name}، بخصوص طلبك من STYLUXE، نود إعلامك بأن فريقنا يتابع تجهيز طلبك لخدمة التوصيل السريع. هل تود تأكيد عنوان التوصيل أو إضافة أي طلب آخر؟`;
       case 'order_followup_en':
-        return `Dear ${name}, regarding your order with STYLUXE Beirut, our concierge team is currently preparing your parcel for express delivery. Please let us know if you require any specific scheduling or delivery details.`;
+        return `Dear ${name}, regarding your order with STYLUXE, our concierge team is currently preparing your parcel for express delivery. Please let us know if you require any specific scheduling or delivery details.`;
       case 'new_arrivals_ar':
         return `مرحباً ${name}، وصلتنا للتو تشكيلة جديدة حصرية من تصاميم الماركات العالمية (ZEGNA, BERLUTI, DIOR, LORO PIANA) على موقعنا.\n\nتصفح المجموعة الجديدة حصرياً: https://www.styluxelb.com`;
       case 'new_arrivals_en':
@@ -527,7 +527,7 @@ export function CustomersManager() {
         name: lead.name.trim(),
         email: `${cleanDigits}@styluxelead.com`,
         phone: lead.normalizedPhone,
-        address: 'Beirut, Lebanon',
+        address: 'Lebanon',
         city: 'Beirut',
         notes: `Imported via ${importSource.toUpperCase()} Lead Import on ${new Date().toLocaleDateString()}`,
         tier: importDefaultTier,
@@ -891,8 +891,8 @@ export function CustomersManager() {
                     </td>
 
                     {/* ADDRESS */}
-                    <td className="py-3 px-2 font-medium text-zinc-600 text-center uppercase text-[11px] max-w-[130px] truncate" title={cust.address || 'BEIRUT, LEBANON'}>
-                      {cust.address || 'BEIRUT, LEBANON'}
+                    <td className="py-3 px-2 font-medium text-zinc-600 text-center uppercase text-[11px] max-w-[130px] truncate" title={cust.address || 'LEBANON'}>
+                      {cust.address || 'LEBANON'}
                     </td>
 
                     {/* LIFETIME VALUE */}

@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s | STYLUXE Luxury",
   },
   description: "Lebanon's premier luxury fashion boutique. Curated authentic designer apparel, footwear, and accessories from global fashion houses including Prada, Gucci, Amiri, Off-White, and Dior.",
-  keywords: ["Luxury Fashion", "Prada Lebanon", "Gucci Beirut", "Amiri", "Designer Footwear", "Luxury Ready to Wear", "STYLUXE Boutique"],
+  keywords: ["Luxury Fashion", "Prada Lebanon", "Gucci", "Amiri", "Designer Footwear", "Luxury Ready to Wear", "STYLUXE Boutique"],
   authors: [{ name: "STYLUXE Boutique" }],
   creator: "STYLUXE",
   openGraph: {
