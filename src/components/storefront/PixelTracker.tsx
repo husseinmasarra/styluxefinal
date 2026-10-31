@@ -38,7 +38,7 @@ export function PixelTracker() {
     if (metaInitializedRef.current === pixelId) return;
 
     try {
-      if ((window as any)._fbqLoadedFromLayout && pixelId === '1644089083922873') {
+      if ((window as any)._fbqLoadedFromLayout && (pixelId === '1128799242995614' || pixelId === '1644089083922873')) {
         metaInitializedRef.current = pixelId;
         console.log(`[PixelTracker] Meta Pixel layout instance confirmed: ${pixelId}`);
         return;

@@ -35,7 +35,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   "womenWhatsappNumber": "78709321",
   "menWhatsappNumber": "79024934",
   "whatsappNumber": "78709321",
-  "metaPixelId": "1644089083922873",
+  "metaPixelId": "1128799242995614",
   "tiktokPixelId": "",
   "googleAnalyticsId": "",
   "snapchatPixelId": "",
