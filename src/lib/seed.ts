@@ -9,6 +9,7 @@ export const INITIAL_SETTINGS: StoreSettings = {
   "introVideoUrl": "/logo-video.mp4",
   "hideIntroVideo": false,
   "enableIntroVideo": true,
+  "introVideoMode": "always_on_home",
   "phone": "81713408",
   "email": "",
   "address": "aramon - main streer - kaser haidar ",

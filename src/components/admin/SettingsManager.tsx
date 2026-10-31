@@ -402,7 +402,7 @@ export function SettingsManager() {
               </div>
 
               {/* Enable / Disable Splash Screen Toggle */}
-              <div className="pt-2 border-t border-zinc-800">
+              <div className="pt-3 border-t border-zinc-800 space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input
                     type="checkbox"
@@ -411,12 +411,52 @@ export function SettingsManager() {
                       handleChange('hideIntroVideo', !e.target.checked);
                       handleChange('enableIntroVideo', e.target.checked);
                     }}
-                    className="w-5 h-5 rounded border-zinc-700 text-amber-500 focus:ring-amber-500 bg-zinc-900"
+                    className="w-5 h-5 rounded border-zinc-700 text-amber-500 focus:ring-amber-500 bg-zinc-900 cursor-pointer"
                   />
-                  <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
-                    تفعيل ظهور شاشة المقدمة الفاخرة للزوار عند الدخول للمتجر
+                  <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider">
+                    تفعيل ظهور فيديو المقدمة الفاخر للزوار قبل فتح الصفحة الرئيسية
                   </span>
                 </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-zinc-850">
+                  <label className={`p-2.5 rounded-lg border cursor-pointer flex items-center gap-2.5 transition-all ${
+                    formData.introVideoMode !== 'once_per_session'
+                      ? 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+                      : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="introVideoMode"
+                      value="always_on_home"
+                      checked={formData.introVideoMode !== 'once_per_session'}
+                      onChange={() => handleChange('introVideoMode', 'always_on_home')}
+                      className="text-amber-500 focus:ring-amber-500 cursor-pointer"
+                    />
+                    <div className="text-[11px]">
+                      <span className="font-black uppercase block">في كل مرة تفتح الصفحة الرئيسية (دائم)</span>
+                      <span className="text-[10px] text-zinc-400">يظهر فيديو المقدمة في كل مرة يفتح الزائر الموقع</span>
+                    </div>
+                  </label>
+
+                  <label className={`p-2.5 rounded-lg border cursor-pointer flex items-center gap-2.5 transition-all ${
+                    formData.introVideoMode === 'once_per_session'
+                      ? 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+                      : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  }`}>
+                    <input
+                      type="radio"
+                      name="introVideoMode"
+                      value="once_per_session"
+                      checked={formData.introVideoMode === 'once_per_session'}
+                      onChange={() => handleChange('introVideoMode', 'once_per_session')}
+                      className="text-amber-500 focus:ring-amber-500 cursor-pointer"
+                    />
+                    <div className="text-[11px]">
+                      <span className="font-black uppercase block">مرة واحدة لكل جلسة تصفح</span>
+                      <span className="text-[10px] text-zinc-400">يظهر لمرة واحدة فقط عند أول فتح للتبويب</span>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
           </div>

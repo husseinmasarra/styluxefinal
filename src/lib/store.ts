@@ -200,7 +200,14 @@ export const DataService = {
   // SETTINGS
   getSettings(): StoreSettings {
     const saved = getStorageItem<StoreSettings>(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS);
-    return { ...INITIAL_SETTINGS, ...saved };
+    return {
+      ...INITIAL_SETTINGS,
+      ...saved,
+      introVideoUrl: saved.introVideoUrl || '/logo-video.mp4',
+      enableIntroVideo: saved.enableIntroVideo !== undefined ? saved.enableIntroVideo : true,
+      hideIntroVideo: saved.hideIntroVideo !== undefined ? saved.hideIntroVideo : false,
+      introVideoMode: saved.introVideoMode || 'always_on_home',
+    };
   },
   updateSettings(settings: Partial<StoreSettings>): StoreSettings {
     const current = this.getSettings();

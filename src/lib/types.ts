@@ -206,6 +206,7 @@ export interface StoreSettings {
   introVideoUrl?: string; // Luxury intro splash screen video (MP4/WebM/data URI/URL)
   hideIntroVideo?: boolean; // When true, disable intro splash video
   enableIntroVideo?: boolean; // Explicit toggle for intro splash video
+  introVideoMode?: 'always_on_home' | 'once_per_session'; // Frequency of intro video display
   phone: string;
   email: string;
   address: string;
