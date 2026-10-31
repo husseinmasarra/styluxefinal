@@ -64,7 +64,7 @@ export function Footer() {
         {/* 1. TOP BRAND HEADER IN SOLID BLACK - FULL WIDTH BALANCED */}
         <div className="text-center space-y-4 pb-8 border-b border-zinc-900">
           <Link href="/" className="inline-flex flex-col items-center justify-center group" title={settings.storeName || "STYLUXE"}>
-            <span className="font-serif text-[24px] sm:text-[28px] font-semibold tracking-[0.25em] text-white uppercase group-hover:opacity-85 transition-opacity select-none">
+            <span className="font-serif text-[31px] sm:text-[36px] font-semibold tracking-[0.25em] text-white uppercase group-hover:opacity-85 transition-opacity select-none">
               {settings.storeName || "STYLUXE"}
             </span>
           </Link>

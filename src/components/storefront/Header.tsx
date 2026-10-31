@@ -439,7 +439,7 @@ export function Header() {
               className="flex items-center justify-center py-1 group cursor-pointer" 
               title={settings.storeName || 'STYLUXE'}
             >
-              <span className="font-serif text-[22px] sm:text-[24px] font-semibold tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
+              <span className="font-serif text-[29px] sm:text-[31px] font-semibold tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
                 {settings.storeName || 'STYLUXE'}
               </span>
             </Link>
