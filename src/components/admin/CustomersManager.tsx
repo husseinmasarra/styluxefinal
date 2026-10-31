@@ -181,7 +181,7 @@ export function CustomersManager() {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkTierFilter, setBulkTierFilter] = useState<'all' | 'platinum' | 'gold' | 'silver'>('all');
   const [bulkMessage, setBulkMessage] = useState<string>(
-    'مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com/shop'
+    'مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com'
   );
   const [copiedNumbers, setCopiedNumbers] = useState(false);
 
