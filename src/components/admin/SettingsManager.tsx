@@ -567,11 +567,14 @@ export function SettingsManager() {
 
                 <button
                   type="button"
-                  onClick={() => handleChange('logoUrl', '/logo.jpg')}
+                  onClick={() => {
+                    handleChange('logoUrl', '');
+                    handleChange('logoVideoUrl', '');
+                  }}
                   className="px-4 py-3.5 bg-white hover:bg-zinc-100 text-zinc-950 border-2 border-zinc-300 rounded-lg text-xs font-black tracking-wider uppercase transition-colors cursor-pointer shadow-xs"
-                  title="Reset to default /logo.jpg"
+                  title="الاعتماد على اللوغو النصي STYLUXE"
                 >
-                  <span>DEFAULT LOGO</span>
+                  <span>استعادة اللوغو النصي (STYLUXE)</span>
                 </button>
               </div>
 

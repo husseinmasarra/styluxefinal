@@ -3,9 +3,9 @@ import { Product, Brand, Category, HomepageCard, MenuItem, Order, Customer, Staf
 export const INITIAL_SETTINGS: StoreSettings = {
   "storeName": "STYLUXE",
   "tagline": "Redefining Luxury International Brands",
-  "logoUrl": "/logo.jpg",
-  "logoVideoUrl": "/logo-video.mp4",
-  "hideVideoLogo": false,
+  "logoUrl": "",
+  "logoVideoUrl": "",
+  "hideVideoLogo": true,
   "introVideoUrl": "/logo-video.mp4",
   "hideIntroVideo": false,
   "enableIntroVideo": true,

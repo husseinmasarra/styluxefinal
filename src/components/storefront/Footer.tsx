@@ -64,31 +64,9 @@ export function Footer() {
         {/* 1. TOP BRAND HEADER IN SOLID BLACK - FULL WIDTH BALANCED */}
         <div className="text-center space-y-4 pb-8 border-b border-zinc-900">
           <Link href="/" className="inline-flex flex-col items-center justify-center group" title={settings.storeName || "STYLUXE"}>
-            {settings.logoVideoUrl && !settings.hideVideoLogo ? (
-              <div className="relative flex items-center justify-center h-14 sm:h-20 max-w-[260px] overflow-hidden rounded-md">
-                <video 
-                  src={settings.logoVideoUrl}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  preload="auto"
-                  className="h-full w-auto object-contain transition-transform duration-300 group-hover:scale-105 pointer-events-none select-none"
-                />
-              </div>
-            ) : settings.logoUrl ? (
-              <img 
-                src={settings.logoUrl} 
-                alt={settings.storeName || "STYLUXE"} 
-                className="h-14 sm:h-18 w-auto mx-auto invert object-contain transition-transform duration-300 group-hover:scale-105" 
-              />
-            ) : (
-              <img 
-                src="/logo.jpg" 
-                alt="STYLUXE" 
-                className="h-14 sm:h-18 w-auto mx-auto invert object-contain transition-transform duration-300 group-hover:scale-105" 
-              />
-            )}
+            <span className="font-serif text-[24px] sm:text-[28px] font-semibold tracking-[0.25em] text-white uppercase group-hover:opacity-85 transition-opacity select-none">
+              {settings.storeName || "STYLUXE"}
+            </span>
           </Link>
           <p className="text-xs sm:text-sm font-medium text-zinc-400 max-w-2xl mx-auto tracking-wider uppercase leading-relaxed">
             Lebanon's premier luxury fashion boutique. Curated authentic designer apparel, footwear, and accessories from global fashion houses.

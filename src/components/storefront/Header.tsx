@@ -431,37 +431,17 @@ export function Header() {
             </button>
           </div>
 
-          {/* Center Brand Logo: STYLUXE Video Logo / Image Logo / Text (Secret 5-click access to /admin) */}
+          {/* Center Brand Logo: STYLUXE Typographic Wordmark (Secret 5-click access to /admin) */}
           <div className="brand-logo flex items-center justify-center">
             <Link 
               href="/" 
               onClick={handleSecretLogoClick}
-              className="flex items-center justify-center py-0.5 group cursor-pointer" 
+              className="flex items-center justify-center py-1 group cursor-pointer" 
               title={settings.storeName || 'STYLUXE'}
             >
-              {settings.logoVideoUrl && !settings.hideVideoLogo ? (
-                <div className="relative flex items-center justify-center h-8 sm:h-10 max-h-[44px] overflow-hidden">
-                  <video 
-                    src={settings.logoVideoUrl}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="auto"
-                    className="h-full w-auto max-w-[170px] sm:max-w-[220px] object-contain pointer-events-none select-none group-hover:opacity-90 transition-opacity"
-                  />
-                </div>
-              ) : settings.logoUrl ? (
-                <img 
-                  src={settings.logoUrl} 
-                  alt={settings.storeName || 'STYLUXE'} 
-                  className="h-7 sm:h-9 max-h-[40px] w-auto max-w-[160px] sm:max-w-[200px] object-contain pointer-events-none select-none group-hover:opacity-85 transition-opacity" 
-                />
-              ) : (
-                <span className="font-serif text-[17px] sm:text-[19px] font-semibold tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
-                  {settings.storeName || 'STYLUXE'}
-                </span>
-              )}
+              <span className="font-serif text-[22px] sm:text-[24px] font-semibold tracking-[0.25em] text-zinc-950 uppercase group-hover:opacity-80 transition-opacity select-none">
+                {settings.storeName || 'STYLUXE'}
+              </span>
             </Link>
           </div>
 
