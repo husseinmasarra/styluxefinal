@@ -108,7 +108,7 @@ export function VideoIntroSplash() {
     return () => clearTimeout(timer);
   }, [isOpen]);
 
-  // Listen for manual trigger from Admin panel "معاينة شاشة المقدمة الآن"
+  // Listen for manual trigger from Admin panel "Test Intro Splash"
   useEffect(() => {
     const handleManualTrigger = () => {
       setIsOpen(true);
@@ -158,19 +158,19 @@ export function VideoIntroSplash() {
             type="button"
             onClick={toggleSound}
             className="px-3 sm:px-4 py-2 rounded-full text-[11px] font-sans font-bold tracking-wider uppercase border border-white/20 hover:border-white/60 bg-white/10 hover:bg-white/20 text-white backdrop-blur-md flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
-            title={isMuted ? 'تشغيل الصوت' : 'كتم الصوت'}
+            title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
           >
             {isMuted ? <VolumeX size={15} /> : <Volume2 size={15} className="text-amber-400 animate-pulse" />}
-            <span className="hidden sm:inline">{isMuted ? 'UNMUTE / تشغيل الصوت' : 'SOUND ON'}</span>
+            <span className="hidden sm:inline">{isMuted ? 'UNMUTE' : 'SOUND ON'}</span>
           </button>
 
           <button
             type="button"
             onClick={handleClose}
             className="px-4 py-2 rounded-full text-[11px] font-sans font-bold tracking-[0.25em] text-white uppercase border border-white/25 hover:border-white bg-black/50 hover:bg-white hover:text-black transition-all flex items-center gap-2 cursor-pointer shadow-lg active:scale-95"
-            title="Skip intro / تخطي الدخول"
+            title="Skip Intro"
           >
-            <span>SKIP / تخطي</span>
+            <span>SKIP INTRO</span>
             <span className="text-xs">➔</span>
           </button>
         </div>
@@ -256,7 +256,7 @@ export function VideoIntroSplash() {
           onClick={handleClose}
           className="group px-8 sm:px-10 py-3.5 sm:py-4 bg-white hover:bg-zinc-100 text-black text-xs sm:text-sm font-black tracking-[0.3em] uppercase rounded-full shadow-[0_0_35px_rgba(255,255,255,0.3)] hover:shadow-[0_0_50px_rgba(255,255,255,0.5)] transition-all flex items-center gap-3 cursor-pointer active:scale-95 border-2 border-white"
         >
-          <span>ENTER BOUTIQUE (الدخول للمتجر)</span>
+          <span>ENTER BOUTIQUE</span>
           <ArrowRight size={16} className="transition-transform group-hover:translate-x-1.5" />
         </button>
 
