@@ -379,6 +379,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     "address": "Achrafieh, Sursock Street, Beirut",
     "totalOrders": 3,
     "totalSpentUSD": 5440,
+    "department": "men",
     "notes": "VIP Client.",
     "createdAt": "2026-05-10T10:00:00Z"
   },
@@ -390,6 +391,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     "address": "lebanon\naramoun",
     "totalOrders": 4,
     "totalSpentUSD": 685,
+    "department": "men",
     "createdAt": "2026-09-03T21:52:30.529Z"
   }
 ];

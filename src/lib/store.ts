@@ -388,6 +388,18 @@ export const DataService = {
     });
     setStorageItem(STORAGE_KEYS.PRODUCTS, products);
 
+    // Determine customer department from ordered items
+    let hasMen = false;
+    let hasWomen = false;
+    order.items.forEach(item => {
+      const prod = products.find(p => p.id === item.productId);
+      if (prod) {
+        if (prod.department === 'men') hasMen = true;
+        if (prod.department === 'women') hasWomen = true;
+      }
+    });
+    const orderDept: 'men' | 'women' | 'both' = (hasMen && hasWomen) ? 'both' : hasMen ? 'men' : hasWomen ? 'women' : 'both';
+
     // Update customer stats and assign VIP CRM tier
     const customers = this.getCustomers();
     const cleanPhone = (order.customerPhone || '').replace(/[^0-9]/g, '');
@@ -404,6 +416,14 @@ export const DataService = {
       if (order.shippingAddress) customers[custIndex].address = order.shippingAddress;
       if (order.city) customers[custIndex].city = order.city;
       if (order.customerPhone && !customers[custIndex].phone) customers[custIndex].phone = order.customerPhone;
+      
+      // Update department
+      if (!customers[custIndex].department) {
+        customers[custIndex].department = orderDept;
+      } else if (customers[custIndex].department !== orderDept && orderDept !== 'both') {
+        customers[custIndex].department = 'both';
+      }
+
       order.customerTier = tierInfo.tier;
       updatedCust = customers[custIndex];
     } else {
@@ -419,6 +439,7 @@ export const DataService = {
         totalOrders: 1,
         totalSpentUSD: order.totalUSD,
         tier: tierInfo.tier,
+        department: orderDept,
         createdAt: new Date().toISOString()
       };
       customers.push(updatedCust);

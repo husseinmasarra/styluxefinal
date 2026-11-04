@@ -126,6 +126,8 @@ export interface Order {
   notes?: string;
 }
 
+export type CustomerDepartment = 'men' | 'women' | 'both';
+
 export interface Customer {
   id: string;
   name: string;
@@ -136,6 +138,7 @@ export interface Customer {
   totalOrders: number;
   totalSpentUSD: number;
   tier?: CustomerTier;
+  department?: CustomerDepartment;
   notes?: string;
   createdAt: string;
 }
@@ -148,6 +151,7 @@ export interface CustomerProfile {
   address: string;
   city: string;
   tier?: CustomerTier;
+  department?: CustomerDepartment;
   totalOrders?: number;
   totalSpentUSD?: number;
   notes?: string;

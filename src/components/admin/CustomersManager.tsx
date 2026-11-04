@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DataService, formatCurrency, getCustomerTier } from '@/lib/store';
-import { Customer, CustomerTier, Order } from '@/lib/types';
+import { Customer, CustomerDepartment, CustomerTier, Order } from '@/lib/types';
 import { useCart } from '@/lib/CartContext';
 import { 
   Search, Mail, Phone, MapPin, Calendar, DollarSign, Trash2, Edit2, X, 
@@ -161,6 +161,7 @@ export function CustomersManager() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTierFilter, setSelectedTierFilter] = useState<'all' | 'platinum' | 'gold' | 'silver' | 'bronze'>('all');
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<'all' | 'women' | 'men' | 'both'>('all');
   
   // Create / Edit customer modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -180,6 +181,7 @@ export function CustomersManager() {
   // Bulk WhatsApp Broadcast modal state
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkTierFilter, setBulkTierFilter] = useState<'all' | 'platinum' | 'gold' | 'silver'>('all');
+  const [bulkDepartmentFilter, setBulkDepartmentFilter] = useState<'all' | 'women' | 'men'>('all');
   const [bulkMessage, setBulkMessage] = useState<string>(
     'مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com'
   );
@@ -188,6 +190,7 @@ export function CustomersManager() {
   // Import Leads (Instagram & WhatsApp) modal state
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [importSource, setImportSource] = useState<'instagram' | 'whatsapp' | 'file'>('instagram');
+  const [importDepartment, setImportDepartment] = useState<CustomerDepartment>('both');
   const [importRawText, setImportRawText] = useState<string>('');
   const [importDefaultTier, setImportDefaultTier] = useState<CustomerTier>('bronze');
   const [importParsedList, setImportParsedList] = useState<ParsedLead[]>([]);
@@ -201,6 +204,7 @@ export function CustomersManager() {
     city: 'Beirut',
     notes: '',
     tier: 'auto',
+    department: 'both' as CustomerDepartment,
     totalSpentUSD: 0,
     totalOrders: 0
   });
@@ -265,14 +269,21 @@ export function CustomersManager() {
   };
 
   // Meta Ads / Facebook & Instagram Custom Audience CSV Export
-  const handleExportMetaAudienceCSV = () => {
-    if (customers.length === 0) {
-      showToast('No customers available to export for Meta Audience', 'error');
+  const handleExportMetaAudienceCSV = (targetDept: 'all' | 'women' | 'men' = 'all') => {
+    let list = customers;
+    if (targetDept !== 'all') {
+      list = customers.filter(c => {
+        const dept = getCustomerEffectiveDepartment(c);
+        return targetDept === 'women' ? (dept === 'women' || dept === 'both') : (dept === 'men' || dept === 'both');
+      });
+    }
+    if (list.length === 0) {
+      showToast(`No customers available to export for ${targetDept.toUpperCase()} Meta Audience`, 'error');
       return;
     }
     // Meta Ads Manager Customer List format
     const headers = ['email', 'phone', 'fn', 'ln', 'ct', 'country', 'value'];
-    const rows = customers.map(c => {
+    const rows = list.map(c => {
       const email = (c.email || '').toLowerCase().trim();
       const phone = normalizePhoneForWhatsApp(c.phone || '');
       const nameParts = (c.name || '').trim().split(/\s+/);
@@ -297,11 +308,11 @@ export function CustomersManager() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `styluxe_meta_ads_audience_${new Date().toISOString().slice(0,10)}.csv`);
+    link.setAttribute('download', `styluxe_meta_ads_${targetDept}_audience_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Meta Custom Audience CSV exported successfully!', 'success');
+    showToast(`Meta Custom Audience (${targetDept.toUpperCase()}) CSV exported successfully!`, 'success');
   };
 
   const loadCustomers = () => {
@@ -318,6 +329,35 @@ export function CustomersManager() {
       (cleanPhone.length >= 6 && o.customerPhone && o.customerPhone.replace(/[^0-9]/g, '').includes(cleanPhone)) ||
       (cleanName && o.customerName && o.customerName.toLowerCase().trim() === cleanName)
     );
+  };
+
+  const getCustomerEffectiveDepartment = (cust: Customer): CustomerDepartment => {
+    if (cust.department) return cust.department;
+    const orders = getCustomerOrders(cust);
+    if (orders.length === 0) return 'both';
+    let hasMen = false;
+    let hasWomen = false;
+    orders.forEach(o => {
+      (o.items || []).forEach(item => {
+        const title = (item.productTitle || '').toLowerCase();
+        if (title.includes('women') || title.includes('bag') || title.includes('dress') || title.includes('skirt') || title.includes('heel') || title.includes('pumps') || title.includes('blouse') || title.includes('tote')) {
+          hasWomen = true;
+        } else {
+          hasMen = true;
+        }
+      });
+    });
+    if (hasMen && hasWomen) return 'both';
+    if (hasWomen) return 'women';
+    if (hasMen) return 'men';
+    return 'both';
+  };
+
+  const handleUpdateCustomerDepartment = (cust: Customer, newDept: CustomerDepartment) => {
+    const updatedCust = { ...cust, department: newDept };
+    const updatedList = DataService.saveCustomer(updatedCust);
+    setCustomers(updatedList);
+    showToast(`Updated ${cust.name} category to ${newDept.toUpperCase()}!`, 'success');
   };
 
   const handleOpenOrdersModal = (cust: Customer) => {
@@ -337,6 +377,7 @@ export function CustomersManager() {
       city: 'Beirut',
       notes: '',
       tier: 'auto',
+      department: 'both',
       totalSpentUSD: 0,
       totalOrders: 0
     });
@@ -353,6 +394,7 @@ export function CustomersManager() {
       city: cust.city || 'Beirut',
       notes: cust.notes || '',
       tier: cust.tier || 'auto',
+      department: cust.department || getCustomerEffectiveDepartment(cust) || 'both',
       totalSpentUSD: cust.totalSpentUSD || 0,
       totalOrders: cust.totalOrders || 0
     });
@@ -421,10 +463,17 @@ export function CustomersManager() {
   };
 
   const getBulkTargetCustomers = (): Customer[] => {
-    if (bulkTierFilter === 'all') return customers;
     return customers.filter(c => {
-      const tier = getCustomerTier(c.totalSpentUSD, c.totalOrders);
-      return tier.tier === bulkTierFilter;
+      if (bulkTierFilter !== 'all') {
+        const tier = getCustomerTier(c.totalSpentUSD, c.totalOrders);
+        if (tier.tier !== bulkTierFilter) return false;
+      }
+      if (bulkDepartmentFilter !== 'all') {
+        const dept = getCustomerEffectiveDepartment(c);
+        if (bulkDepartmentFilter === 'women' && dept !== 'women' && dept !== 'both') return false;
+        if (bulkDepartmentFilter === 'men' && dept !== 'men' && dept !== 'both') return false;
+      }
+      return true;
     });
   };
 
@@ -432,7 +481,7 @@ export function CustomersManager() {
     const list = getBulkTargetCustomers();
     const phones = list.map(c => normalizePhoneForWhatsApp(c.phone)).filter(Boolean).join(', ');
     if (!phones) {
-      showToast('No valid phone numbers found for this tier.', 'error');
+      showToast('No valid phone numbers found for this filter.', 'error');
       return;
     }
     navigator.clipboard.writeText(phones);
@@ -444,21 +493,23 @@ export function CustomersManager() {
   const handleDownloadVCF = () => {
     const list = getBulkTargetCustomers();
     if (list.length === 0) {
-      showToast('No customers found in this tier.', 'error');
+      showToast('No customers found in this filter.', 'error');
       return;
     }
     let vcfContent = '';
     list.forEach(c => {
       const cleanPhone = normalizePhoneForWhatsApp(c.phone || '');
       if (cleanPhone) {
-        vcfContent += `BEGIN:VCARD\nVERSION:3.0\nFN:${c.name}\nTEL;TYPE=CELL:+${cleanPhone}\nEND:VCARD\n`;
+        const dept = getCustomerEffectiveDepartment(c);
+        const prefix = dept === 'women' ? '[W] ' : dept === 'men' ? '[M] ' : '[VIP] ';
+        vcfContent += `BEGIN:VCARD\nVERSION:3.0\nFN:${prefix}${c.name}\nTEL;TYPE=CELL:+${cleanPhone}\nEND:VCARD\n`;
       }
     });
     const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `styluxe_vip_contacts_${bulkTierFilter}.vcf`;
+    link.download = `styluxe_contacts_${bulkDepartmentFilter}_${bulkTierFilter}.vcf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -529,8 +580,9 @@ export function CustomersManager() {
         phone: lead.normalizedPhone,
         address: 'Lebanon',
         city: 'Beirut',
-        notes: `Imported via ${importSource.toUpperCase()} Lead Import on ${new Date().toLocaleDateString()}`,
+        notes: `Imported via ${importSource.toUpperCase()} Lead Import (${importDepartment.toUpperCase()}) on ${new Date().toLocaleDateString()}`,
         tier: importDefaultTier,
+        department: importDepartment,
         totalSpentUSD: 0,
         totalOrders: 0,
         createdAt: new Date().toISOString(),
@@ -563,6 +615,7 @@ export function CustomersManager() {
         city: formData.city.trim() || 'Beirut',
         notes: formData.notes.trim(),
         tier: resolvedTier,
+        department: formData.department,
         totalSpentUSD: Number(formData.totalSpentUSD) || 0,
         totalOrders: Number(formData.totalOrders) || 0,
       };
@@ -577,6 +630,7 @@ export function CustomersManager() {
         city: formData.city.trim() || 'Beirut',
         notes: formData.notes.trim(),
         tier: resolvedTier,
+        department: formData.department,
         totalSpentUSD: Number(formData.totalSpentUSD) || 0,
         totalOrders: Number(formData.totalOrders) || 0,
         createdAt: new Date().toISOString(),
@@ -603,11 +657,25 @@ export function CustomersManager() {
   const silverCount = customers.filter(c => getCustomerTier(c.totalSpentUSD, c.totalOrders).tier === 'silver').length;
   const bronzeCount = customers.filter(c => getCustomerTier(c.totalSpentUSD, c.totalOrders).tier === 'bronze').length;
 
+  // Department Counts Calculation
+  const womenCount = customers.filter(c => getCustomerEffectiveDepartment(c) === 'women').length;
+  const menCount = customers.filter(c => getCustomerEffectiveDepartment(c) === 'men').length;
+  const bothCount = customers.filter(c => getCustomerEffectiveDepartment(c) === 'both').length;
+
   const filteredCustomers = customers.filter(c => {
+    // 1. Department filter
+    if (selectedDepartmentFilter !== 'all') {
+      const custDept = getCustomerEffectiveDepartment(c);
+      if (selectedDepartmentFilter === 'women' && custDept !== 'women' && custDept !== 'both') return false;
+      if (selectedDepartmentFilter === 'men' && custDept !== 'men' && custDept !== 'both') return false;
+      if (selectedDepartmentFilter === 'both' && custDept !== 'both') return false;
+    }
+    // 2. VIP Tier filter
     if (selectedTierFilter !== 'all') {
       const custTier = getCustomerTier(c.totalSpentUSD, c.totalOrders).tier;
       if (custTier !== selectedTierFilter) return false;
     }
+    // 3. Search query filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchName = c.name.toLowerCase().includes(q);
@@ -711,15 +779,33 @@ export function CustomersManager() {
 
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           
-          {/* Meta Audience Export */}
-          <button
-            onClick={handleExportMetaAudienceCSV}
-            className="px-4 py-3 bg-blue-700 hover:bg-blue-800 text-white text-xs font-black tracking-wider uppercase rounded shadow-sm flex items-center gap-2 transition-all shrink-0 cursor-pointer"
-            title="Export customer list formatted for Meta Ads (Facebook & Instagram Lookalike Audiences)"
-          >
-            <MetaIcon className="w-4 h-4 text-white" />
-            <span>META ADS AUDIENCE (CSV)</span>
-          </button>
+          {/* Meta Audience Export with Department Choice */}
+          <div className="flex items-center bg-blue-700 hover:bg-blue-800 text-white text-xs font-black tracking-wider uppercase rounded shadow-sm transition-all shrink-0">
+            <button
+              onClick={() => handleExportMetaAudienceCSV('all')}
+              className="px-3.5 py-3 flex items-center gap-2 hover:bg-blue-800 cursor-pointer rounded-l"
+              title="Export all customers formatted for Meta Ads"
+            >
+              <MetaIcon className="w-4 h-4 text-white" />
+              <span>META ADS (ALL)</span>
+            </button>
+            <span className="w-px h-6 bg-blue-500/50"></span>
+            <button
+              onClick={() => handleExportMetaAudienceCSV('women')}
+              className="px-2.5 py-3 hover:bg-pink-700 flex items-center gap-1 text-[11px] cursor-pointer"
+              title="Export Women Audience CSV for Instagram/Facebook ads"
+            >
+              <span>👠 WOMEN</span>
+            </button>
+            <span className="w-px h-6 bg-blue-500/50"></span>
+            <button
+              onClick={() => handleExportMetaAudienceCSV('men')}
+              className="px-2.5 py-3 hover:bg-indigo-900 flex items-center gap-1 text-[11px] cursor-pointer rounded-r"
+              title="Export Men Audience CSV for Instagram/Facebook ads"
+            >
+              <span>👔 MEN</span>
+            </button>
+          </div>
 
           {/* Standard CSV Export */}
           <button
@@ -774,6 +860,69 @@ export function CustomersManager() {
               className="w-full pl-10 pr-4 py-3 border-2 border-zinc-300 text-xs font-bold focus:border-zinc-950 rounded placeholder:text-zinc-400"
             />
           </div>
+        </div>
+      </div>
+
+      {/* 2.1 DEPARTMENT SEGMENTATION BAR (MEN & WOMEN SEPARATION) */}
+      <div className="bg-gradient-to-r from-zinc-900 via-zinc-950 to-black p-3.5 rounded-xl border border-zinc-800 shadow-md flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="text-xs font-black tracking-widest text-white uppercase">
+            DEPARTMENT CRM / فصل الأقسام (رجال & نساء):
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* ALL DEPARTMENTS */}
+          <button
+            onClick={() => setSelectedDepartmentFilter('all')}
+            className={`px-4 py-2 text-xs font-black tracking-wider uppercase rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+              selectedDepartmentFilter === 'all'
+                ? 'bg-white text-zinc-950 shadow-md font-black'
+                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+            }`}
+          >
+            <span>🌐 ALL ({customers.length})</span>
+          </button>
+
+          {/* WOMEN VIP */}
+          <button
+            onClick={() => setSelectedDepartmentFilter('women')}
+            className={`px-4 py-2 text-xs font-black tracking-wider uppercase rounded-lg transition-all cursor-pointer flex items-center gap-2 border ${
+              selectedDepartmentFilter === 'women'
+                ? 'bg-gradient-to-r from-pink-600 via-rose-600 to-pink-700 text-white border-pink-400 shadow-lg ring-2 ring-pink-400/30'
+                : 'bg-pink-950/60 text-pink-200 border-pink-800/60 hover:bg-pink-900/80 hover:text-white'
+            }`}
+          >
+            <span>👠 WOMEN VIP ({womenCount})</span>
+            <span className="text-[10px] font-mono opacity-80 bg-pink-900/60 px-1.5 py-0.5 rounded">قسم النساء</span>
+          </button>
+
+          {/* MEN VIP */}
+          <button
+            onClick={() => setSelectedDepartmentFilter('men')}
+            className={`px-4 py-2 text-xs font-black tracking-wider uppercase rounded-lg transition-all cursor-pointer flex items-center gap-2 border ${
+              selectedDepartmentFilter === 'men'
+                ? 'bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 text-white border-blue-400 shadow-lg ring-2 ring-indigo-400/30'
+                : 'bg-indigo-950/60 text-indigo-200 border-indigo-800/60 hover:bg-indigo-900/80 hover:text-white'
+            }`}
+          >
+            <span>👔 MEN VIP ({menCount})</span>
+            <span className="text-[10px] font-mono opacity-80 bg-indigo-900/60 px-1.5 py-0.5 rounded">قسم الرجال</span>
+          </button>
+
+          {/* BOTH / DUAL */}
+          <button
+            onClick={() => setSelectedDepartmentFilter('both')}
+            className={`px-4 py-2 text-xs font-black tracking-wider uppercase rounded-lg transition-all cursor-pointer flex items-center gap-2 border ${
+              selectedDepartmentFilter === 'both'
+                ? 'bg-gradient-to-r from-purple-600 to-violet-700 text-white border-purple-400 shadow-lg'
+                : 'bg-purple-950/60 text-purple-200 border-purple-800/60 hover:bg-purple-900/80 hover:text-white'
+            }`}
+          >
+            <span>✨ DUAL / BOTH ({bothCount})</span>
+            <span className="text-[10px] font-mono opacity-80 bg-purple-900/60 px-1.5 py-0.5 rounded">مشترك</span>
+          </button>
         </div>
       </div>
 
@@ -842,6 +991,7 @@ export function CustomersManager() {
             <tr className="border-b border-zinc-300 bg-zinc-100/70 text-[11px]">
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">NAME</th>
               <th className="py-3 px-1.5 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">TIER / المستوى</th>
+              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">DEPARTMENT / القسم</th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center">EMAIL</th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">PHONE</th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center">ADDRESS</th>
@@ -852,13 +1002,14 @@ export function CustomersManager() {
           <tbody>
             {filteredCustomers.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-16 text-center text-xs font-extrabold text-zinc-400 tracking-wider uppercase">
+                <td colSpan={8} className="py-16 text-center text-xs font-extrabold text-zinc-400 tracking-wider uppercase">
                   NO REGISTERED CUSTOMERS FOUND IN THIS CATEGORY.
                 </td>
               </tr>
             ) : (
               filteredCustomers.map((cust) => {
                 const tier = getCustomerTier(cust.totalSpentUSD, cust.totalOrders);
+                const dept = getCustomerEffectiveDepartment(cust);
                 return (
                   <tr key={cust.id} className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors text-xs">
                     
@@ -877,6 +1028,41 @@ export function CustomersManager() {
                         <span className="text-[9px] font-bold text-zinc-500 font-mono">
                           {cust.totalOrders || 0} Orders
                         </span>
+                      </div>
+                    </td>
+
+                    {/* DEPARTMENT BADGE WITH QUICK SWITCH */}
+                    <td className="py-3 px-2 text-center whitespace-nowrap">
+                      <div className="inline-flex items-center justify-center gap-1.5">
+                        {dept === 'women' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-pink-50 text-pink-700 border border-pink-300 shadow-2xs">
+                            <span>👠</span>
+                            <span>WOMEN</span>
+                          </span>
+                        )}
+                        {dept === 'men' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-300 shadow-2xs">
+                            <span>👔</span>
+                            <span>MEN</span>
+                          </span>
+                        )}
+                        {dept === 'both' && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-300 shadow-2xs">
+                            <span>✨</span>
+                            <span>BOTH</span>
+                          </span>
+                        )}
+
+                        <select
+                          value={dept}
+                          onChange={(e) => handleUpdateCustomerDepartment(cust, e.target.value as CustomerDepartment)}
+                          className="text-[10px] font-bold text-zinc-400 hover:text-zinc-950 bg-transparent border border-zinc-200 rounded px-1 py-0.5 cursor-pointer focus:outline-none"
+                          title="Click to quickly change department"
+                        >
+                          <option value="women">👠 Women</option>
+                          <option value="men">👔 Men</option>
+                          <option value="both">✨ Both</option>
+                        </select>
                       </div>
                     </td>
 
@@ -1197,6 +1383,46 @@ export function CustomersManager() {
                 </div>
               </div>
 
+              {/* Department Selection */}
+              <div className="space-y-1">
+                <label className="text-xs font-black text-zinc-950 uppercase block">Client Department / قسم العميل</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, department: 'women' })}
+                    className={`py-2.5 px-3 rounded text-xs font-black uppercase flex items-center justify-center gap-1.5 transition-all border cursor-pointer ${
+                      formData.department === 'women'
+                        ? 'bg-pink-600 text-white border-pink-700 shadow-sm'
+                        : 'bg-pink-50 text-pink-900 border-pink-200 hover:bg-pink-100'
+                    }`}
+                  >
+                    <span>👠 WOMEN (نسائي)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, department: 'men' })}
+                    className={`py-2.5 px-3 rounded text-xs font-black uppercase flex items-center justify-center gap-1.5 transition-all border cursor-pointer ${
+                      formData.department === 'men'
+                        ? 'bg-indigo-600 text-white border-indigo-700 shadow-sm'
+                        : 'bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100'
+                    }`}
+                  >
+                    <span>👔 MEN (رجالي)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, department: 'both' })}
+                    className={`py-2.5 px-3 rounded text-xs font-black uppercase flex items-center justify-center gap-1.5 transition-all border cursor-pointer ${
+                      formData.department === 'both'
+                        ? 'bg-zinc-950 text-white border-zinc-950 shadow-sm'
+                        : 'bg-zinc-100 text-zinc-800 border-zinc-300 hover:bg-zinc-200'
+                    }`}
+                  >
+                    <span>✨ BOTH (مشترك)</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black text-zinc-950 uppercase block">VIP Loyalty Tier</label>
@@ -1467,6 +1693,69 @@ export function CustomersManager() {
                 <p className="text-[11px] text-emerald-800">
                   <strong>الخيار 2 (إرسال فردي سريع من الكمبيوتر):</strong> اضغط على زر <strong>&ldquo;SEND TO ➔&rdquo;</strong> بجانب كل اسم أدناه، وسيفتح واتساب على الكمبيوتر محادثة الزبون مع الرسالة لتُرفق الصور وتضغط Enter!
                 </p>
+              </div>
+
+              {/* Target Department Filter */}
+              <div className="space-y-1.5 bg-zinc-50 p-3.5 rounded-lg border border-zinc-200">
+                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block flex items-center justify-between">
+                  <span>Target Department (فصل القسم المستهدف للرسالة):</span>
+                  <span className="text-[10px] text-zinc-500 font-bold lowercase">توجيه الرسالة حسب القسم</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBulkDepartmentFilter('all');
+                      setBulkMessage('مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com');
+                    }}
+                    className={`py-2 px-3 text-xs font-black uppercase rounded transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      bulkDepartmentFilter === 'all'
+                        ? 'bg-zinc-950 text-white shadow-xs'
+                        : 'bg-white text-zinc-700 border border-zinc-300 hover:bg-zinc-100'
+                    }`}
+                  >
+                    <span>🌐 ALL (جميع الأقسام)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBulkDepartmentFilter('women');
+                      setBulkMessage('مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة نسائية جديدة وحصرية من أرقى الماركات العالمية (Dior, Chanel, Prada, Loro Piana). تصفحي التشكيلة الفاخرة وتفضلي باختيار قطعك المفضلة:\nhttps://www.styluxelb.com/category/women');
+                    }}
+                    className={`py-2 px-3 text-xs font-black uppercase rounded transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      bulkDepartmentFilter === 'women'
+                        ? 'bg-pink-600 text-white shadow-xs'
+                        : 'bg-pink-50 text-pink-900 border border-pink-200 hover:bg-pink-100'
+                    }`}
+                  >
+                    <span>👠 WOMEN (قسم النساء فقط)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBulkDepartmentFilter('men');
+                      setBulkMessage('مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة رجالية جديدة وحصرية من أرقى الماركات العالمية (Zegna, Berluti, Loro Piana, Brunello Cucinelli). تصفح التشكيلة الفاخرة وتفضل بطلب قطعك المفضلة:\nhttps://www.styluxelb.com/category/men');
+                    }}
+                    className={`py-2 px-3 text-xs font-black uppercase rounded transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      bulkDepartmentFilter === 'men'
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'bg-indigo-50 text-indigo-900 border border-indigo-200 hover:bg-indigo-100'
+                    }`}
+                  >
+                    <span>👔 MEN (قسم الرجال فقط)</span>
+                  </button>
+                </div>
+
+                {bulkDepartmentFilter === 'women' && (
+                  <p className="text-[11px] font-bold text-pink-700 pt-1">
+                    🌸 سيتم إرسال الرسالة إلى عميلات قسم النساء فقط، مع توجيه الرابط إلى تشكيلة النساء الفاخرة!
+                  </p>
+                )}
+                {bulkDepartmentFilter === 'men' && (
+                  <p className="text-[11px] font-bold text-indigo-700 pt-1">
+                    👔 سيتم إرسال الرسالة إلى عملاء قسم الرجال فقط، مع توجيه الرابط إلى تشكيلة الرجال الفاخرة!
+                  </p>
+                )}
               </div>
 
               {/* Target Tier Filter */}
@@ -1769,11 +2058,26 @@ export function CustomersManager() {
                 />
               </div>
 
-              {/* Configuration Controls: Default Tier & Skip Duplicates */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-100/70 p-4 rounded-lg border border-zinc-200">
+              {/* Configuration Controls: Department, Default Tier & Skip Duplicates */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-zinc-100/70 p-4 rounded-lg border border-zinc-200">
                 <div>
                   <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block mb-1.5">
-                    Assign VIP Tier (تصنيف الفئة للعملاء المستوردين):
+                    Assign Department (القسم المستهدف للأرقام):
+                  </label>
+                  <select
+                    value={importDepartment}
+                    onChange={(e) => setImportDepartment(e.target.value as CustomerDepartment)}
+                    className="w-full p-2.5 border border-zinc-300 rounded bg-white text-xs font-bold text-zinc-900 focus:border-zinc-950"
+                  >
+                    <option value="both">✨ BOTH / GENERAL (مشترك)</option>
+                    <option value="women">👠 WOMEN VIP (قسم النساء)</option>
+                    <option value="men">👔 MEN VIP (قسم الرجال)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block mb-1.5">
+                    Assign VIP Tier (تصنيف الفئة):
                   </label>
                   <select
                     value={importDefaultTier}
@@ -1788,7 +2092,7 @@ export function CustomersManager() {
                 </div>
 
                 <div className="flex flex-col justify-center">
-                  <label className="flex items-center gap-2 cursor-pointer mt-2 sm:mt-4">
+                  <label className="flex items-center gap-2 cursor-pointer mt-1 sm:mt-4">
                     <input
                       type="checkbox"
                       checked={skipDuplicates}
@@ -1796,11 +2100,11 @@ export function CustomersManager() {
                       className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 border-zinc-300 cursor-pointer"
                     />
                     <span className="text-xs font-black text-zinc-900 uppercase tracking-wider">
-                      Skip Existing Duplicates (تخطي الأرقام الموجودة مسبقاً)
+                      Skip Duplicates (تخطي الأرقام المكررة)
                     </span>
                   </label>
                   <span className="text-[10px] text-zinc-500 mt-1">
-                    يحميك من تكرار العملاء ويحافظ على بياناتهم المسجلة السابقة
+                    يحميك من تكرار العملاء ويحافظ على بياناتهم المسجلة
                   </span>
                 </div>
               </div>
