@@ -371,28 +371,166 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const INITIAL_CUSTOMERS: Customer[] = [
+  // ─── WOMEN VIP CLIENTS (قسم النساء) ──────────────────────────
   {
-    "id": "cust-1",
+    "id": "cust-women-1",
+    "name": "Maya Haddad",
+    "email": "maya.haddad@gmail.com",
+    "phone": "+961 71 234 567",
+    "address": "Verdun, Dunes Center, Beirut",
+    "totalOrders": 6,
+    "totalSpentUSD": 4850,
+    "tier": "platinum",
+    "department": "women",
+    "notes": "VIP client - loves Dior Lady bags, Chanel accessories & Prada knitwear",
+    "createdAt": "2026-06-15T10:00:00Z"
+  },
+  {
+    "id": "cust-women-2",
+    "name": "Nour Mansour",
+    "email": "nour.mansour@hotmail.com",
+    "phone": "+961 70 889 900",
+    "address": "Rabieh, Street 14, Mount Lebanon",
+    "totalOrders": 3,
+    "totalSpentUSD": 2450,
+    "tier": "gold",
+    "department": "women",
+    "notes": "Prefers luxury evening dresses and Loro Piana cashmere",
+    "createdAt": "2026-07-20T11:30:00Z"
+  },
+  {
+    "id": "cust-women-3",
+    "name": "Zeina Khoury",
+    "email": "zeina.khoury@gmail.com",
+    "phone": "+961 03 445 566",
+    "address": "Achrafieh, Sassine Square, Beirut",
+    "totalOrders": 2,
+    "totalSpentUSD": 1200,
+    "tier": "silver",
+    "department": "women",
+    "notes": "Designer footwear size 38, loves Saint Laurent & Amina Muaddi",
+    "createdAt": "2026-08-10T14:15:00Z"
+  },
+  {
+    "id": "cust-women-4",
+    "name": "Celine Abi Rached",
+    "email": "celine.ar@gmail.com",
+    "phone": "+961 76 112 233",
+    "address": "Kaslik, Seaside Road, Jounieh",
+    "totalOrders": 1,
+    "totalSpentUSD": 450,
+    "tier": "bronze",
+    "department": "women",
+    "notes": "Imported via @styluxe.womenn Instagram DM lead",
+    "createdAt": "2026-09-01T09:00:00Z"
+  },
+  {
+    "id": "cust-women-5",
+    "name": "Yasmina Kassir",
+    "email": "yasmina.k@styluxe.com",
+    "phone": "+961 78 990 011",
+    "address": "Downtown Beirut, Foch Avenue",
+    "totalOrders": 4,
+    "totalSpentUSD": 3150,
+    "tier": "gold",
+    "department": "women",
+    "notes": "Frequent VIP buyer - loves exclusive luxury drops & private viewings",
+    "createdAt": "2026-09-18T16:45:00Z"
+  },
+
+  // ─── MEN VIP CLIENTS (قسم الرجال) ──────────────────────────
+  {
+    "id": "cust-men-1",
+    "name": "Hussein Massara",
+    "email": "husseinmassara@gmail.com",
+    "phone": "+96181713408",
+    "address": "Lebanon, Aramoun",
+    "totalOrders": 5,
+    "totalSpentUSD": 5680,
+    "tier": "platinum",
+    "department": "men",
+    "notes": "Store VIP Owner / Client - prefers Zegna Triple Stitch & Loro Piana jackets",
+    "createdAt": "2026-05-01T21:52:30.529Z"
+  },
+  {
+    "id": "cust-men-2",
     "name": "Sami Al-Khoury",
     "email": "sami.khoury@gmail.com",
     "phone": "+961 03 456 789",
     "address": "Achrafieh, Sursock Street, Beirut",
     "totalOrders": 3,
     "totalSpentUSD": 5440,
+    "tier": "platinum",
     "department": "men",
-    "notes": "VIP Client.",
+    "notes": "VIP Client - Berluti leather bags & handmade Italian footwear",
     "createdAt": "2026-05-10T10:00:00Z"
   },
   {
-    "id": "cust-1788472350529",
-    "name": "hussein massara",
-    "email": "husseinmassara@gmail.com",
-    "phone": "+96181713408",
-    "address": "lebanon\naramoun",
-    "totalOrders": 4,
-    "totalSpentUSD": 685,
+    "id": "cust-men-3",
+    "name": "Tarek Al-Hajj",
+    "email": "tarek.hajj@gmail.com",
+    "phone": "+961 70 123 456",
+    "address": "Verdun, Prestige Tower, Beirut",
+    "totalOrders": 3,
+    "totalSpentUSD": 2100,
+    "tier": "gold",
     "department": "men",
-    "createdAt": "2026-09-03T21:52:30.529Z"
+    "notes": "Prefers Brunello Cucinelli suits & Zegna overcoats",
+    "createdAt": "2026-06-25T13:20:00Z"
+  },
+  {
+    "id": "cust-men-4",
+    "name": "Karim Bitar",
+    "email": "karim.bitar@hotmail.com",
+    "phone": "+961 71 556 677",
+    "address": "Hazmieh, Mar Takla, Mount Lebanon",
+    "totalOrders": 2,
+    "totalSpentUSD": 1350,
+    "tier": "silver",
+    "department": "men",
+    "notes": "Loves luxury streetwear: Amiri denim & Dior B22 sneakers size 43",
+    "createdAt": "2026-07-14T17:00:00Z"
+  },
+  {
+    "id": "cust-men-5",
+    "name": "Jad Sfeir",
+    "email": "jad.sfeir@gmail.com",
+    "phone": "+961 03 778 899",
+    "address": "Dbayeh, Waterfront Marina",
+    "totalOrders": 1,
+    "totalSpentUSD": 380,
+    "tier": "bronze",
+    "department": "men",
+    "notes": "Imported via @styluxe.men_lb Instagram DM lead",
+    "createdAt": "2026-08-28T12:00:00Z"
+  },
+
+  // ─── DUAL / BOTH CLIENTS (قسم مشترك) ──────────────────────────
+  {
+    "id": "cust-both-1",
+    "name": "Rami & Lea Melki",
+    "email": "rami.lea@gmail.com",
+    "phone": "+961 70 334 455",
+    "address": "Badaro, Museum Street, Beirut",
+    "totalOrders": 5,
+    "totalSpentUSD": 3900,
+    "tier": "gold",
+    "department": "both",
+    "notes": "Buys luxury gifts for both men and women (Dior + Zegna)",
+    "createdAt": "2026-06-02T15:30:00Z"
+  },
+  {
+    "id": "cust-both-2",
+    "name": "Dr. Walid Nassar",
+    "email": "dr.nassar@gmail.com",
+    "phone": "+961 03 991 122",
+    "address": "Saifi Village, Luxury Quarter, Beirut",
+    "totalOrders": 7,
+    "totalSpentUSD": 6200,
+    "tier": "platinum",
+    "department": "both",
+    "notes": "Luxury lifestyle client - buys for himself and his spouse",
+    "createdAt": "2026-04-18T18:00:00Z"
   }
 ];
 

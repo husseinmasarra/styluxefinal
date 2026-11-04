@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { DataService, formatCurrency, getCustomerTier } from '@/lib/store';
+import { INITIAL_CUSTOMERS } from '@/lib/seed';
 import { Customer, CustomerDepartment, CustomerTier, Order } from '@/lib/types';
 import { useCart } from '@/lib/CartContext';
 import { 
@@ -274,7 +275,7 @@ export function CustomersManager() {
     if (targetDept !== 'all') {
       list = customers.filter(c => {
         const dept = getCustomerEffectiveDepartment(c);
-        return targetDept === 'women' ? (dept === 'women' || dept === 'both') : (dept === 'men' || dept === 'both');
+        return dept === targetDept;
       });
     }
     if (list.length === 0) {
@@ -316,8 +317,44 @@ export function CustomersManager() {
   };
 
   const loadCustomers = () => {
-    setCustomers(DataService.getCustomers());
+    let current = DataService.getCustomers();
+    const hasWomen = current.some(c => c.department === 'women');
+    const hasMen = current.some(c => c.department === 'men');
+
+    // Auto-seed demo clients if current list is missing women or men or has less than 5 clients
+    if (!hasWomen || !hasMen || current.length < 5) {
+      const existingIds = new Set(current.map(c => c.id));
+      const existingPhones = new Set(current.map(c => (c.phone || '').replace(/[^0-9]/g, '')));
+      const toMerge: Customer[] = [];
+      INITIAL_CUSTOMERS.forEach(seedCust => {
+        const cleanP = (seedCust.phone || '').replace(/[^0-9]/g, '');
+        if (!existingIds.has(seedCust.id) && !existingPhones.has(cleanP)) {
+          toMerge.push(seedCust);
+        }
+      });
+
+      const updatedExisting = current.map(c => {
+        if (!c.department) {
+          const lowerName = (c.name || '').toLowerCase();
+          const isWomen = ['maya', 'nour', 'zeina', 'celine', 'yasmina', 'sarah', 'layla', 'chloe', 'lea', 'lara'].some(n => lowerName.includes(n));
+          return { ...c, department: isWomen ? ('women' as CustomerDepartment) : ('men' as CustomerDepartment) };
+        }
+        return c;
+      });
+
+      const merged = [...updatedExisting, ...toMerge];
+      DataService.setAllCustomers(merged);
+      current = merged;
+    }
+
+    setCustomers(current);
     setAllOrders(DataService.getOrders());
+  };
+
+  const handleResetDemoCustomers = () => {
+    DataService.setAllCustomers(INITIAL_CUSTOMERS);
+    setCustomers(INITIAL_CUSTOMERS);
+    showToast('Loaded 12 luxury demo clients (5 Women, 5 Men, 2 Both) successfully!', 'success');
   };
 
   const getCustomerOrders = (cust: Customer): Order[] => {
@@ -333,8 +370,14 @@ export function CustomersManager() {
 
   const getCustomerEffectiveDepartment = (cust: Customer): CustomerDepartment => {
     if (cust.department) return cust.department;
+    const lowerName = (cust.name || '').toLowerCase();
+    const isWomen = ['maya', 'nour', 'zeina', 'celine', 'yasmina', 'sarah', 'layla', 'chloe', 'lea', 'lara'].some(n => lowerName.includes(n));
+    if (isWomen) return 'women';
+    const isMen = ['hussein', 'sami', 'tarek', 'karim', 'jad', 'ahmad', 'omar', 'walid', 'rami'].some(n => lowerName.includes(n));
+    if (isMen) return 'men';
+
     const orders = getCustomerOrders(cust);
-    if (orders.length === 0) return 'both';
+    if (orders.length === 0) return 'men';
     let hasMen = false;
     let hasWomen = false;
     orders.forEach(o => {
@@ -350,7 +393,7 @@ export function CustomersManager() {
     if (hasMen && hasWomen) return 'both';
     if (hasWomen) return 'women';
     if (hasMen) return 'men';
-    return 'both';
+    return 'men';
   };
 
   const handleUpdateCustomerDepartment = (cust: Customer, newDept: CustomerDepartment) => {
@@ -470,8 +513,7 @@ export function CustomersManager() {
       }
       if (bulkDepartmentFilter !== 'all') {
         const dept = getCustomerEffectiveDepartment(c);
-        if (bulkDepartmentFilter === 'women' && dept !== 'women' && dept !== 'both') return false;
-        if (bulkDepartmentFilter === 'men' && dept !== 'men' && dept !== 'both') return false;
+        if (dept !== bulkDepartmentFilter) return false;
       }
       return true;
     });
@@ -666,9 +708,7 @@ export function CustomersManager() {
     // 1. Department filter
     if (selectedDepartmentFilter !== 'all') {
       const custDept = getCustomerEffectiveDepartment(c);
-      if (selectedDepartmentFilter === 'women' && custDept !== 'women' && custDept !== 'both') return false;
-      if (selectedDepartmentFilter === 'men' && custDept !== 'men' && custDept !== 'both') return false;
-      if (selectedDepartmentFilter === 'both' && custDept !== 'both') return false;
+      if (custDept !== selectedDepartmentFilter) return false;
     }
     // 2. VIP Tier filter
     if (selectedTierFilter !== 'all') {
@@ -838,6 +878,16 @@ export function CustomersManager() {
           >
             <WhatsAppIcon className="w-4 h-4 text-white" />
             <span>BROADCAST NEW ARRIVALS (رسائل جماعية)</span>
+          </button>
+
+          {/* Reset / Add Demo VIP Clients Button */}
+          <button
+            onClick={handleResetDemoCustomers}
+            className="px-4 py-3 bg-gradient-to-r from-amber-600 via-amber-700 to-yellow-600 hover:opacity-90 text-white text-xs font-black tracking-wider uppercase rounded shadow-sm flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+            title="Generate 12 realistic luxury demo clients for Women, Men & Both"
+          >
+            <Sparkles size={16} className="text-yellow-200" />
+            <span>+ DEMO CLIENTS (توليد عملاء تجريبيين)</span>
           </button>
 
           {/* Add New VIP Client Button */}

@@ -650,6 +650,10 @@ export const DataService = {
     setStorageItem(STORAGE_KEYS.CUSTOMERS, updated);
     return updated;
   },
+  setAllCustomers(customers: Customer[]): Customer[] {
+    setStorageItem(STORAGE_KEYS.CUSTOMERS, customers);
+    return customers;
+  },
   deleteCustomer(id: string): Customer[] {
     const updated = this.getCustomers().filter(c => c.id !== id);
     setStorageItem(STORAGE_KEYS.CUSTOMERS, updated);
