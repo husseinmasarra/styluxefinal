@@ -247,7 +247,9 @@ export interface StoreSettings {
   activeSeason?: 'all' | 'summer' | 'winter';
 
   // Tracking Pixels & Marketing Analytics
-  metaPixelId?: string; // Meta (Instagram & Facebook) Pixel ID
+  metaPixelId?: string; // Master / General Meta Pixel ID (المتجر العام)
+  womenMetaPixelId?: string; // Women Meta Pixel ID (خاص بقسم النساء وإعلانات إنستغرام النسائية)
+  menMetaPixelId?: string; // Men Meta Pixel ID (خاص بقسم الرجال وإعلانات إنستغرام الرجالية)
   tiktokPixelId?: string; // TikTok Pixel ID
   googleAnalyticsId?: string; // Google Analytics / Tag ID (e.g. G-XXXXX)
   snapchatPixelId?: string; // Snapchat Pixel ID

@@ -203,6 +203,8 @@ export const DataService = {
     return {
       ...INITIAL_SETTINGS,
       ...saved,
+      womenMetaPixelId: saved.womenMetaPixelId !== undefined ? saved.womenMetaPixelId : (INITIAL_SETTINGS.womenMetaPixelId || "1128799242995614"),
+      menMetaPixelId: saved.menMetaPixelId !== undefined ? saved.menMetaPixelId : (INITIAL_SETTINGS.menMetaPixelId || "1644089083922873"),
       introVideoUrl: saved.introVideoUrl || '/logo-video.mp4',
       enableIntroVideo: saved.enableIntroVideo !== undefined ? saved.enableIntroVideo : true,
       hideIntroVideo: saved.hideIntroVideo !== undefined ? saved.hideIntroVideo : false,

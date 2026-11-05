@@ -768,7 +768,110 @@ export function SettingsManager() {
           <span className="text-xs font-black text-zinc-950 uppercase tracking-widest block mb-4 flex items-center gap-2">
             <span>🌐</span> GLOBAL SOCIAL MEDIA PAGES (FACEBOOK & TIKTOK)
           </span>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* DEDICATED META PIXEL SEPARATION (WOMEN & MEN) */}
+        <div className="border-2 border-pink-500/30 bg-gradient-to-br from-pink-50/50 via-white to-indigo-50/50 rounded-2xl p-6 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200/80 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-pink-600 via-rose-500 to-indigo-600 flex items-center justify-center text-white shadow-md shrink-0">
+                <Instagram size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base font-black text-zinc-950 uppercase tracking-wider">
+                    META PIXEL SEPARATION (فصل البيكسل بين الرجال والنساء)
+                  </h3>
+                  <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-mono uppercase">
+                    INDEPENDENT ROUTING (trackSingle)
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-600 font-medium pt-0.5">
+                  فصل تتبع الإعلانات بدقة متناهية: كل قسم وحساب انستغرام يعمل ببيكسل مخصص لتوجيه خوارزميات ميتا وميزانيات الحملات بدون تداخل
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {formData.womenMetaPixelId && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-pink-100 text-pink-800 border border-pink-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-pink-600 animate-pulse"></span>
+                  👠 WOMEN PIXEL ACTIVE
+                </span>
+              )}
+              {formData.menMetaPixelId && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black bg-indigo-100 text-indigo-800 border border-indigo-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
+                  👔 MEN PIXEL ACTIVE
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* WOMEN PIXEL */}
+            <div className="p-5 bg-white rounded-xl border-2 border-pink-200 hover:border-pink-500 transition-all space-y-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black text-pink-950 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-base">👠</span>
+                  <span>WOMEN META PIXEL (@styluxe.womenn)</span>
+                </label>
+                <span className="text-[10px] font-mono font-black px-2 py-0.5 bg-pink-100 text-pink-700 rounded">
+                  WOMEN CAMPAIGNS
+                </span>
+              </div>
+              <input 
+                type="text" 
+                value={formData.womenMetaPixelId || ''} 
+                onChange={e => handleChange('womenMetaPixelId', e.target.value.trim())} 
+                placeholder="e.g. 1128799242995614"
+                className="w-full p-3.5 border-2 border-pink-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-pink-50/20 focus:outline-none focus:border-pink-600"
+              />
+              <p className="text-[11px] text-zinc-600 leading-relaxed">
+                💡 <strong>الاستخدام:</strong> يستقبل حصراً أحداث تصفح الفساتين، الحقائب، الأحذية النسائية، إضافات السلة والطلبات النسائية لحساب <strong className="text-pink-700">@styluxe.womenn</strong> بدون خلط الجمهور.
+              </p>
+            </div>
+
+            {/* MEN PIXEL */}
+            <div className="p-5 bg-white rounded-xl border-2 border-indigo-200 hover:border-indigo-500 transition-all space-y-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-black text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="text-base">👔</span>
+                  <span>MEN META PIXEL (@styluxe.men_lb)</span>
+                </label>
+                <span className="text-[10px] font-mono font-black px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                  MEN CAMPAIGNS
+                </span>
+              </div>
+              <input 
+                type="text" 
+                value={formData.menMetaPixelId || ''} 
+                onChange={e => handleChange('menMetaPixelId', e.target.value.trim())} 
+                placeholder="e.g. 1644089083922873"
+                className="w-full p-3.5 border-2 border-indigo-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-indigo-50/20 focus:outline-none focus:border-indigo-600"
+              />
+              <p className="text-[11px] text-zinc-600 leading-relaxed">
+                💡 <strong>الاستخدام:</strong> يستقبل حصراً أحداث تصفح البدلات، الأحذية الإيطالية، الساعات، إضافات السلة والطلبات الرجالية لحساب <strong className="text-indigo-700">@styluxe.men_lb</strong> بدون خلط الجمهور.
+              </p>
+            </div>
+          </div>
+
+          {/* MASTER / UNIFIED PIXEL (OPTIONAL) */}
+          <div className="pt-3 border-t border-zinc-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs bg-white/60 p-3 rounded-lg border border-zinc-200">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <span className="font-bold text-zinc-900 whitespace-nowrap">Master Pixel ID (شامل / موحد اختياري):</span>
+              <input 
+                type="text" 
+                value={formData.metaPixelId || ''} 
+                onChange={e => handleChange('metaPixelId', e.target.value.trim())} 
+                placeholder="Optional store-wide pixel ID"
+                className="p-2.5 border-2 border-zinc-300 rounded font-mono text-xs font-bold text-zinc-950 w-full sm:w-64 bg-white focus:outline-none focus:border-zinc-950"
+              />
+            </div>
+            <span className="text-[11px] text-zinc-500">
+              بيكسل اختياري إضافي يتلقى جميع أحداث المتجر بالكامل لمن يرغب بإبقاء حساب إعلاني رئيسي جامع.
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* FACEBOOK URL */}
             <div className="border border-zinc-300 rounded-xl p-5 bg-zinc-50/70 space-y-2">
@@ -1181,11 +1284,11 @@ export function SettingsManager() {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {formData.metaPixelId ? (
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {(formData.womenMetaPixelId || formData.menMetaPixelId || formData.metaPixelId) ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-300 uppercase">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                META PIXEL ACTIVE
+                META PIXELS ACTIVE ({[formData.womenMetaPixelId && '👠 WOMEN', formData.menMetaPixelId && '👔 MEN', formData.metaPixelId && 'MASTER'].filter(Boolean).join(' + ')})
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold tracking-wider bg-zinc-100 text-zinc-600 border border-zinc-300 uppercase">
@@ -1213,28 +1316,7 @@ export function SettingsManager() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {/* META (FACEBOOK & INSTAGRAM) PIXEL */}
-          <div className="border-2 border-zinc-900/15 rounded-xl p-5 bg-white space-y-3 relative hover:border-zinc-950 transition-colors">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-black text-zinc-950 uppercase tracking-wider flex items-center gap-2">
-                <Instagram size={18} className="text-pink-600" />
-                <span>Meta Pixel ID (Instagram & Facebook)</span>
-              </label>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-amber-100 text-amber-900 rounded font-mono">
-                RECOMMENDED
-              </span>
-            </div>
-            <input 
-              type="text" 
-              value={formData.metaPixelId || ''} 
-              onChange={e => handleChange('metaPixelId', e.target.value.trim())} 
-              placeholder="e.g. 123456789012345 (15-16 digits)"
-              className="w-full p-4 border-2 border-zinc-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
-            />
-            <p className="text-[11px] text-zinc-500 leading-normal">
-              💡 <strong>Where to find:</strong> Meta Business Suite ➔ Events Manager ➔ Data Sources ➔ Copy Pixel ID.
-            </p>
-          </div>
+
 
           {/* TIKTOK PIXEL */}
           <div className="border-2 border-zinc-900/15 rounded-xl p-5 bg-white space-y-3 relative hover:border-zinc-950 transition-colors">

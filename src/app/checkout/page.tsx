@@ -61,10 +61,14 @@ export default function CheckoutPage() {
       }
     }
     if (cart.length > 0) {
+      const hasWomen = cart.some(i => i.product.department === 'women');
+      const hasMen = cart.some(i => i.product.department === 'men');
+      const cartDept = hasWomen && hasMen ? 'both' : (hasWomen ? 'women' : (hasMen ? 'men' : 'both'));
       trackPixelInitiateCheckout({
         numItems: cart.length,
         value: totalUSD,
         currency: currency || 'USD',
+        department: cartDept,
       });
     }
   }, []);

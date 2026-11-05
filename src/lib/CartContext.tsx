@@ -133,6 +133,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       price: product.salePrice || product.price,
       quantity,
       currency: currency || 'USD',
+      department: product.department,
     });
   };
 

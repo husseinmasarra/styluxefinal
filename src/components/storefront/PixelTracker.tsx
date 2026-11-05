@@ -3,7 +3,9 @@
 import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/lib/CartContext';
+import { getDepartmentFromLocation } from '@/lib/departmentContext';
 import {
+  PixelDepartment,
   TrackAddToCartPayload,
   TrackViewContentPayload,
   TrackInitiateCheckoutPayload,
@@ -25,25 +27,22 @@ export function PixelTracker() {
   const { settings } = useCart();
   const pathname = usePathname();
 
-  const metaInitializedRef = useRef<string | null>(null);
+  const initializedMetaPixelsRef = useRef<Set<string>>(new Set());
   const tiktokInitializedRef = useRef<string | null>(null);
   const gaInitializedRef = useRef<string | null>(null);
   const snapchatInitializedRef = useRef<string | null>(null);
   const isFirstMountRef = useRef(true);
 
-  // 1. Initialize Meta (Facebook & Instagram) Pixel
+  // 1. Initialize Meta (Facebook & Instagram) Pixels (Separated for Women, Men & Master)
   useEffect(() => {
-    const pixelId = settings?.metaPixelId?.trim();
-    if (!pixelId) return;
-    if (metaInitializedRef.current === pixelId) return;
+    const masterPixelId = settings?.metaPixelId?.trim();
+    const womenPixelId = settings?.womenMetaPixelId?.trim() || '1128799242995614';
+    const menPixelId = settings?.menMetaPixelId?.trim() || '1644089083922873';
+
+    const pixelsToInit = Array.from(new Set([masterPixelId, womenPixelId, menPixelId].filter(Boolean))) as string[];
+    if (pixelsToInit.length === 0) return;
 
     try {
-      if ((window as any)._fbqLoadedFromLayout && (pixelId === '1128799242995614' || pixelId === '1644089083922873')) {
-        metaInitializedRef.current = pixelId;
-        console.log(`[PixelTracker] Meta Pixel layout instance confirmed: ${pixelId}`);
-        return;
-      }
-
       if (!window.fbq) {
         const n: any = function (...args: any[]) {
           if (n.callMethod) {
@@ -65,14 +64,58 @@ export function PixelTracker() {
         document.head.appendChild(script);
       }
 
-      window.fbq?.('init', pixelId);
-      window.fbq?.('track', 'PageView');
-      metaInitializedRef.current = pixelId;
-      console.log(`[PixelTracker] Meta Pixel initialized: ${pixelId}`);
+      pixelsToInit.forEach(id => {
+        if (!initializedMetaPixelsRef.current.has(id)) {
+          window.fbq?.('init', id);
+          initializedMetaPixelsRef.current.add(id);
+          console.log(`[PixelTracker] Meta Pixel initialized: ${id}`);
+        }
+      });
     } catch (e) {
       console.error('[PixelTracker] Error initializing Meta Pixel:', e);
     }
-  }, [settings?.metaPixelId]);
+  }, [settings?.metaPixelId, settings?.womenMetaPixelId, settings?.menMetaPixelId]);
+
+  // Helper function to send Meta events with strict Department routing
+  const sendMetaEvent = (
+    eventName: string,
+    params: Record<string, any> = {},
+    targetDept?: PixelDepartment
+  ) => {
+    if (!window.fbq) return;
+
+    const masterId = settings?.metaPixelId?.trim();
+    const womenId = settings?.womenMetaPixelId?.trim() || '1128799242995614';
+    const menId = settings?.menMetaPixelId?.trim() || '1644089083922873';
+
+    const targets: string[] = [];
+
+    if (targetDept === 'women') {
+      if (womenId) targets.push(womenId);
+      else if (masterId) targets.push(masterId);
+    } else if (targetDept === 'men') {
+      if (menId) targets.push(menId);
+      else if (masterId) targets.push(masterId);
+    } else {
+      // 'both', 'all', 'kids' or unspecified: send to both dedicated pixels
+      if (womenId) targets.push(womenId);
+      if (menId && menId !== womenId) targets.push(menId);
+    }
+
+    // Also include master/general pixel if distinctly specified
+    if (masterId && !targets.includes(masterId)) {
+      targets.push(masterId);
+    }
+
+    targets.forEach(pixelId => {
+      try {
+        window.fbq?.('trackSingle', pixelId, eventName, params);
+        console.log(`[PixelTracker] Meta trackSingle: ${eventName} -> Pixel: ${pixelId} [Dept: ${targetDept || 'both'}]`);
+      } catch (err) {
+        console.error(`[PixelTracker] Error sending trackSingle (${eventName}) to ${pixelId}:`, err);
+      }
+    });
+  };
 
   // 2. Initialize TikTok Pixel
   useEffect(() => {
@@ -189,15 +232,19 @@ export function PixelTracker() {
     }
   }, [settings?.snapchatPixelId]);
 
-  // 5. Track PageView on route changes
+  // 5. Track PageView on route changes with Department routing
   useEffect(() => {
     if (isFirstMountRef.current) {
+      // First mount: check active department and track
+      const initialDept = getDepartmentFromLocation(pathname || '');
+      sendMetaEvent('PageView', {}, initialDept);
       isFirstMountRef.current = false;
       return;
     }
-    if (metaInitializedRef.current && window.fbq) {
-      window.fbq('track', 'PageView');
-    }
+
+    const currentDept = getDepartmentFromLocation(pathname || '');
+    sendMetaEvent('PageView', {}, currentDept);
+
     if (tiktokInitializedRef.current && window.ttq) {
       window.ttq.page();
     }
@@ -215,15 +262,14 @@ export function PixelTracker() {
       const d = (e as CustomEvent<TrackAddToCartPayload>).detail;
       if (!d) return;
 
-      if (window.fbq) {
-        window.fbq('track', 'AddToCart', {
-          content_name: d.title,
-          content_ids: [d.id],
-          content_type: 'product',
-          value: d.price,
-          currency: d.currency || 'USD',
-        });
-      }
+      sendMetaEvent('AddToCart', {
+        content_name: d.title,
+        content_ids: [d.id],
+        content_type: 'product',
+        value: d.price,
+        currency: d.currency || 'USD',
+      }, d.department);
+
       if (window.ttq) {
         window.ttq.track('AddToCart', {
           content_name: d.title,
@@ -253,15 +299,14 @@ export function PixelTracker() {
       const d = (e as CustomEvent<TrackViewContentPayload>).detail;
       if (!d) return;
 
-      if (window.fbq) {
-        window.fbq('track', 'ViewContent', {
-          content_name: d.title,
-          content_ids: [d.id],
-          content_type: 'product',
-          value: d.price,
-          currency: d.currency || 'USD',
-        });
-      }
+      sendMetaEvent('ViewContent', {
+        content_name: d.title,
+        content_ids: [d.id],
+        content_type: 'product',
+        value: d.price,
+        currency: d.currency || 'USD',
+      }, d.department);
+
       if (window.ttq) {
         window.ttq.track('ViewContent', {
           content_name: d.title,
@@ -284,13 +329,12 @@ export function PixelTracker() {
       const d = (e as CustomEvent<TrackInitiateCheckoutPayload>).detail;
       if (!d) return;
 
-      if (window.fbq) {
-        window.fbq('track', 'InitiateCheckout', {
-          num_items: d.numItems,
-          value: d.value,
-          currency: d.currency || 'USD',
-        });
-      }
+      sendMetaEvent('InitiateCheckout', {
+        num_items: d.numItems,
+        value: d.value,
+        currency: d.currency || 'USD',
+      }, d.department);
+
       if (window.ttq) {
         window.ttq.track('InitiateCheckout', {
           value: d.value,
@@ -315,21 +359,49 @@ export function PixelTracker() {
       const d = (e as CustomEvent<TrackPurchasePayload>).detail;
       if (!d) return;
 
-      if (window.fbq) {
-        window.fbq('track', 'Purchase', {
+      // Split order items by department for accurate separated purchase tracking
+      const womenItems = (d.items || []).filter(i => i.department === 'women');
+      const menItems = (d.items || []).filter(i => i.department === 'men');
+      const womenTotal = womenItems.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+      const menTotal = menItems.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+
+      if (womenItems.length > 0) {
+        sendMetaEvent('Purchase', {
+          value: womenTotal,
+          currency: d.currency || 'USD',
+          content_type: 'product',
+          content_ids: womenItems.map(i => i.id),
+          num_items: womenItems.length,
+        }, 'women');
+      }
+
+      if (menItems.length > 0) {
+        sendMetaEvent('Purchase', {
+          value: menTotal,
+          currency: d.currency || 'USD',
+          content_type: 'product',
+          content_ids: menItems.map(i => i.id),
+          num_items: menItems.length,
+        }, 'men');
+      }
+
+      // If items were neither or if order had dual items, also track on general / master
+      if (womenItems.length === 0 && menItems.length === 0) {
+        sendMetaEvent('Purchase', {
           value: d.value,
           currency: d.currency || 'USD',
           content_type: 'product',
-          content_ids: d.items.map((i) => i.id),
-          num_items: d.items.length,
-        });
+          content_ids: (d.items || []).map(i => i.id),
+          num_items: (d.items || []).length,
+        }, d.department || 'both');
       }
+
       if (window.ttq) {
         window.ttq.track('CompletePayment', {
           value: d.value,
           currency: d.currency || 'USD',
           content_type: 'product',
-          content_ids: d.items.map((i) => i.id),
+          content_ids: d.items.map(i => i.id),
         });
       }
       if (window.gtag) {
@@ -337,7 +409,7 @@ export function PixelTracker() {
           transaction_id: d.orderNumber,
           value: d.value,
           currency: d.currency || 'USD',
-          items: d.items.map((i) => ({
+          items: d.items.map(i => ({
             item_id: i.id,
             item_name: i.title || i.id,
             price: i.price,
@@ -350,7 +422,7 @@ export function PixelTracker() {
           transaction_id: d.orderNumber,
           price: d.value,
           currency: d.currency || 'USD',
-          item_ids: d.items.map((i) => i.id),
+          item_ids: d.items.map(i => i.id),
         });
       }
     };
@@ -366,7 +438,7 @@ export function PixelTracker() {
       window.removeEventListener('styluxe_pixel_initiate_checkout', handleInitiateCheckout);
       window.removeEventListener('styluxe_pixel_purchase', handlePurchase);
     };
-  }, []);
+  }, [settings?.metaPixelId, settings?.womenMetaPixelId, settings?.menMetaPixelId]);
 
   return null;
 }

@@ -310,6 +310,7 @@ export default function ProductDetailPage() {
         price: found.salePrice || found.price,
         category: found.category,
         currency: currency || 'USD',
+        department: found.department,
       });
       if (found.department === 'men' || found.department === 'women') {
         setActiveDepartment(found.department);
