@@ -798,7 +798,7 @@ export default function CustomerAccountPage() {
             </div>
 
             {/* ============================================================== */}
-            {/* TAB 1: PREVIOUS ORDERS (الطلبيات السابقة) */}
+            {/* TAB 1: PREVIOUS ORDERS */}
             {/* ============================================================== */}
             {activeTab === 'orders' && (
               <div className="space-y-6">
@@ -998,7 +998,7 @@ export default function CustomerAccountPage() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 2: PROFILE & ADDRESS (بيانات الحساب والعنوان) */}
+            {/* TAB 2: PROFILE & ADDRESS */}
             {/* ============================================================== */}
             {activeTab === 'profile' && (
               <div className="bg-white border border-zinc-200 p-6 sm:p-10 max-w-2xl space-y-6">
@@ -1097,7 +1097,7 @@ export default function CustomerAccountPage() {
             )}
 
             {/* ============================================================== */}
-            {/* TAB 3: TRACK ANY ORDER (تتبع سريع) */}
+            {/* TAB 3: TRACK ANY ORDER */}
             {/* ============================================================== */}
             {activeTab === 'track' && (
               <div className="border border-zinc-200 bg-zinc-50 p-6 sm:p-10 max-w-2xl space-y-6">

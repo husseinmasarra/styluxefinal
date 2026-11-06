@@ -373,7 +373,7 @@ export const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export const INITIAL_CUSTOMERS: Customer[] = [
-  // ─── WOMEN VIP CLIENTS (قسم النساء) ──────────────────────────
+  // ─── WOMEN VIP CLIENTS (Women Department) ──────────────────────────
   {
     "id": "cust-women-1",
     "name": "Maya Haddad",
@@ -440,7 +440,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     "createdAt": "2026-09-18T16:45:00Z"
   },
 
-  // ─── MEN VIP CLIENTS (قسم الرجال) ──────────────────────────
+  // ─── MEN VIP CLIENTS (Men Department) ──────────────────────────
   {
     "id": "cust-men-1",
     "name": "Hussein Massara",
@@ -507,7 +507,7 @@ export const INITIAL_CUSTOMERS: Customer[] = [
     "createdAt": "2026-08-28T12:00:00Z"
   },
 
-  // ─── DUAL / BOTH CLIENTS (قسم مشترك) ──────────────────────────
+  // ─── DUAL / BOTH CLIENTS (Dual / Both Department) ──────────────────────────
   {
     "id": "cust-both-1",
     "name": "Rami & Lea Melki",

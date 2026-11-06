@@ -311,7 +311,7 @@ export function OrdersManager() {
             className="px-5 py-3 bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white text-xs font-black tracking-[0.15em] uppercase rounded shadow-md flex items-center gap-2.5 transition-all shrink-0 border border-emerald-400/40 transform hover:scale-[1.02]"
           >
             <MessageCircle size={18} className="text-amber-300" />
-            <span>+ RECORD WHATSAPP ORDER / طلب سريع</span>
+            <span>+ RECORD WHATSAPP ORDER</span>
           </button>
 
           <button
@@ -425,12 +425,12 @@ export function OrdersManager() {
                           'bg-amber-100 text-amber-900 border-amber-300 hover:bg-amber-200'
                         }`}
                       >
-                        <option value="pending">⏳ PENDING / قيد الانتظار</option>
-                        <option value="processing">⚙️ PROCESSING / قيد التجهيز</option>
-                        <option value="shipped">🚚 SHIPPED / تم الشحن</option>
-                        <option value="delivered">✅ DELIVERED / تم التسليم</option>
-                        <option value="cancelled">❌ CANCELLED / ملغى</option>
-                        <option value="refunded">🔄 REFUNDED / مسترجع</option>
+                        <option value="pending">⏳ PENDING</option>
+                        <option value="processing">⚙️ PROCESSING</option>
+                        <option value="shipped">🚚 SHIPPED</option>
+                        <option value="delivered">✅ DELIVERED</option>
+                        <option value="cancelled">❌ CANCELLED</option>
+                        <option value="refunded">🔄 REFUNDED</option>
                       </select>
                     </div>
                   </td>
@@ -842,7 +842,7 @@ export function OrdersManager() {
                           <span className="text-2xl">{tierInfo.icon}</span>
                           <div>
                             <span className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase block">
-                              CRM CLIENT VIP STATUS / مستوى العميل
+                              CRM CLIENT VIP STATUS
                             </span>
                             <span className="text-sm font-black tracking-widest text-amber-400 uppercase">
                               {tierInfo.label} • {tierInfo.arabicLabel}
@@ -909,7 +909,7 @@ export function OrdersManager() {
                         RECORD WHATSAPP / DIRECT ORDER
                       </h2>
                       <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider pt-0.5">
-                        تسجيل طلبية واتساب سريعة مع ربطها المباشر بالـ CRM وخصم المخزون
+                        Direct WhatsApp order entry with real-time CRM sync and inventory deduction
                       </p>
                     </div>
                   </div>
@@ -940,7 +940,7 @@ export function OrdersManager() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-[11px] font-black text-zinc-700 uppercase tracking-wider block mb-1">
-                        CLIENT PHONE (رقم الهاتف) *
+                        CLIENT PHONE *
                       </label>
                       <input
                         type="text"
@@ -953,7 +953,7 @@ export function OrdersManager() {
 
                     <div>
                       <label className="text-[11px] font-black text-zinc-700 uppercase tracking-wider block mb-1">
-                        CLIENT NAME (اسم الزبون) *
+                        CLIENT NAME *
                       </label>
                       <input
                         type="text"
@@ -966,7 +966,7 @@ export function OrdersManager() {
 
                     <div>
                       <label className="text-[11px] font-black text-zinc-700 uppercase tracking-wider block mb-1">
-                        DELIVERY ADDRESS (العنوان)
+                        DELIVERY ADDRESS
                       </label>
                       <input
                         type="text"
@@ -979,7 +979,7 @@ export function OrdersManager() {
 
                     <div>
                       <label className="text-[11px] font-black text-zinc-700 uppercase tracking-wider block mb-1">
-                        CITY / REGION (المدينة / المنطقة)
+                        CITY / REGION
                       </label>
                       <input
                         type="text"
@@ -1112,7 +1112,7 @@ export function OrdersManager() {
 
                     {/* Size selector */}
                     <div>
-                      <label className="text-[10px] font-black text-zinc-500 uppercase block mb-1">Size (المقاس)</label>
+                      <label className="text-[10px] font-black text-zinc-500 uppercase block mb-1">Size</label>
                       <select
                         value={selectedSize}
                         onChange={(e) => setSelectedSize(e.target.value)}

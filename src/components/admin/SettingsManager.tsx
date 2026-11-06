@@ -289,14 +289,14 @@ export function SettingsManager() {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-black uppercase tracking-widest text-white">
-                    شاشة المقدمة والفيديو الترحيبي (INTRO SPLASH VIDEO)
+                    INTRO SPLASH VIDEO (CINEMATIC WELCOME)
                   </h3>
                   <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-amber-500 text-black rounded font-mono font-bold">
                     VIP
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400 pt-0.5">
-                  فيديو الشاشة السوداء الفاخرة التي تظهر للزبون عند فتح المتجر لأول مرة مع زر SKIP
+                  Cinematic luxury intro video displayed when visitors enter the store, with a skip option.
                 </p>
               </div>
             </div>
@@ -308,10 +308,10 @@ export function SettingsManager() {
                   window.dispatchEvent(new Event('styluxe_trigger_intro_splash'));
                 }}
                 className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
-                title="معاينة شاشة المقدمة الآن كما يراها الزبون"
+                title="Preview live intro splash video as seen by customers"
               >
                 <Eye size={15} />
-                <span>معاينة الشاشة الحية (TEST SPLASH)</span>
+                <span>TEST LIVE SPLASH</span>
               </button>
             </div>
           </div>
@@ -333,8 +333,8 @@ export function SettingsManager() {
               ) : (
                 <div className="flex flex-col items-center justify-center text-zinc-600 space-y-2 p-6 text-center">
                   <Film size={42} className="text-zinc-700" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">لا يوجد فيديو مقدمة حالياً</span>
-                  <span className="text-[11px] text-zinc-600 max-w-xs">ارفع ملف فيديو أو ضع رابط مباشر لتفعيله فوراً</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">No intro video currently configured</span>
+                  <span className="text-[11px] text-zinc-600 max-w-xs">Upload a video file or enter a direct URL to enable immediately</span>
                 </div>
               )}
             </div>
@@ -344,11 +344,11 @@ export function SettingsManager() {
               {/* Upload file button */}
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-amber-400 uppercase tracking-wider block">
-                  1. رفع ملف فيديو من جهازك (MP4 / WEBM / MOV):
+                  1. Upload Video File (MP4 / WEBM / MOV):
                 </label>
                 <label className="w-full py-3.5 bg-white hover:bg-zinc-100 text-black text-xs font-black uppercase tracking-wider rounded-lg cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-md">
                   <Upload size={16} />
-                  <span>اختر ملف فيديو لرفعه من الجهاز</span>
+                  <span>Choose video file to upload</span>
                   <input
                     type="file"
                     accept="video/mp4,video/webm,video/ogg,video/quicktime"
@@ -357,14 +357,14 @@ export function SettingsManager() {
                   />
                 </label>
                 <span className="text-[10px] text-zinc-400 block">
-                  يدعم صيغ MP4 و WebM و MOV حتى 30 ميغابايت.
+                  Supports MP4, WebM, and MOV up to 30 MB.
                 </span>
               </div>
 
               {/* Direct URL input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-zinc-300 uppercase tracking-wider block">
-                  2. أو ضع رابط فيديو مباشر (Direct URL):
+                  2. Or provide a direct video URL:
                 </label>
                 <input
                   type="text"
@@ -374,7 +374,7 @@ export function SettingsManager() {
                   className="w-full p-3.5 border-2 border-zinc-700 rounded-lg font-mono text-xs font-bold text-white bg-zinc-900 focus:outline-none focus:border-amber-500"
                 />
                 <span className="text-[10px] text-zinc-500 block">
-                  يمكنك وضع رابط سحابي مباشر (Cloudinary, Supabase, Google Drive, Streamable...)
+                  Enter a direct cloud video link (Cloudinary, Supabase, Streamable, etc.)
                 </span>
               </div>
 
@@ -384,10 +384,10 @@ export function SettingsManager() {
                   type="button"
                   onClick={() => handleChange('introVideoUrl', '/logo-video.mp4')}
                   className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 rounded-lg text-xs font-bold tracking-wider uppercase flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="استعادة الفيديو المدمج في المشروع"
+                  title="Restore default built-in video"
                 >
                   <Sparkles size={14} className="text-amber-400" />
-                  <span>الفيديو الافتراضي (/logo-video.mp4)</span>
+                  <span>DEFAULT VIDEO (/logo-video.mp4)</span>
                 </button>
 
                 {formData.introVideoUrl && (
@@ -396,7 +396,7 @@ export function SettingsManager() {
                     onClick={() => handleChange('introVideoUrl', '')}
                     className="px-3 py-2 bg-red-950/60 hover:bg-red-900 text-red-300 border border-red-800/60 rounded-lg text-xs font-bold tracking-wider uppercase transition-colors cursor-pointer"
                   >
-                    حذف فيديو المقدمة
+                    Remove Intro Video
                   </button>
                 )}
               </div>
@@ -414,7 +414,7 @@ export function SettingsManager() {
                     className="w-5 h-5 rounded border-zinc-700 text-amber-500 focus:ring-amber-500 bg-zinc-900 cursor-pointer"
                   />
                   <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider">
-                    تفعيل ظهور فيديو المقدمة الفاخر للزوار قبل فتح الصفحة الرئيسية
+                    Enable cinematic intro video for visitors before entering the storefront
                   </span>
                 </label>
 
@@ -433,8 +433,8 @@ export function SettingsManager() {
                       className="text-amber-500 focus:ring-amber-500 cursor-pointer"
                     />
                     <div className="text-[11px]">
-                      <span className="font-black uppercase block">في كل مرة تفتح الصفحة الرئيسية (دائم)</span>
-                      <span className="text-[10px] text-zinc-400">يظهر فيديو المقدمة في كل مرة يفتح الزائر الموقع</span>
+                      <span className="font-black uppercase block">Every time homepage is loaded (Always)</span>
+                      <span className="text-[10px] text-zinc-400">Intro video plays every time visitor opens the site</span>
                     </div>
                   </label>
 
@@ -452,8 +452,8 @@ export function SettingsManager() {
                       className="text-amber-500 focus:ring-amber-500 cursor-pointer"
                     />
                     <div className="text-[11px]">
-                      <span className="font-black uppercase block">مرة واحدة لكل جلسة تصفح</span>
-                      <span className="text-[10px] text-zinc-400">يظهر لمرة واحدة فقط عند أول فتح للتبويب</span>
+                      <span className="font-black uppercase block">Once per browsing session</span>
+                      <span className="text-[10px] text-zinc-400">Plays only once per browser tab session</span>
                     </div>
                   </label>
                 </div>
@@ -612,9 +612,9 @@ export function SettingsManager() {
                     handleChange('logoVideoUrl', '');
                   }}
                   className="px-4 py-3.5 bg-white hover:bg-zinc-100 text-zinc-950 border-2 border-zinc-300 rounded-lg text-xs font-black tracking-wider uppercase transition-colors cursor-pointer shadow-xs"
-                  title="الاعتماد على اللوغو النصي STYLUXE"
+                  title="Use textual STYLUXE typography logo"
                 >
-                  <span>استعادة اللوغو النصي (STYLUXE)</span>
+                  <span>RESTORE TEXT LOGO (STYLUXE)</span>
                 </button>
               </div>
 
@@ -778,14 +778,14 @@ export function SettingsManager() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-base font-black text-zinc-950 uppercase tracking-wider">
-                    META PIXEL SEPARATION (فصل البيكسل بين الرجال والنساء)
+                    META PIXEL SEPARATION (WOMEN & MEN DEPARTMENTS)
                   </h3>
                   <span className="text-[10px] font-black px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-mono uppercase">
                     INDEPENDENT ROUTING (trackSingle)
                   </span>
                 </div>
                 <p className="text-xs text-zinc-600 font-medium pt-0.5">
-                  فصل تتبع الإعلانات بدقة متناهية: كل قسم وحساب انستغرام يعمل ببيكسل مخصص لتوجيه خوارزميات ميتا وميزانيات الحملات بدون تداخل
+                  Dedicated advertising attribution: Each department and Instagram handle tracks independently to optimize Meta algorithm delivery without signal crossover.
                 </p>
               </div>
             </div>
@@ -825,7 +825,7 @@ export function SettingsManager() {
                 className="w-full p-3.5 border-2 border-pink-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-pink-50/20 focus:outline-none focus:border-pink-600"
               />
               <p className="text-[11px] text-zinc-600 leading-relaxed">
-                💡 <strong>الاستخدام:</strong> يستقبل حصراً أحداث تصفح الفساتين، الحقائب، الأحذية النسائية، إضافات السلة والطلبات النسائية لحساب <strong className="text-pink-700">@styluxe.womenn</strong> بدون خلط الجمهور.
+                💡 <strong>Usage:</strong> Exclusively receives product views, cart additions, and purchases for dresses, bags, heels, and women's collections for <strong className="text-pink-700">@styluxe.womenn</strong>.
               </p>
             </div>
 
@@ -848,7 +848,7 @@ export function SettingsManager() {
                 className="w-full p-3.5 border-2 border-indigo-300 rounded-lg font-mono text-sm font-bold text-zinc-950 bg-indigo-50/20 focus:outline-none focus:border-indigo-600"
               />
               <p className="text-[11px] text-zinc-600 leading-relaxed">
-                💡 <strong>الاستخدام:</strong> يستقبل حصراً أحداث تصفح البدلات، الأحذية الإيطالية، الساعات، إضافات السلة والطلبات الرجالية لحساب <strong className="text-indigo-700">@styluxe.men_lb</strong> بدون خلط الجمهور.
+                💡 <strong>Usage:</strong> Exclusively receives product views, cart additions, and purchases for tailoring, Italian footwear, leather goods, and men's collections for <strong className="text-indigo-700">@styluxe.men_lb</strong>.
               </p>
             </div>
           </div>
@@ -856,7 +856,7 @@ export function SettingsManager() {
           {/* MASTER / UNIFIED PIXEL (OPTIONAL) */}
           <div className="pt-3 border-t border-zinc-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs bg-white/60 p-3 rounded-lg border border-zinc-200">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <span className="font-bold text-zinc-900 whitespace-nowrap">Master Pixel ID (شامل / موحد اختياري):</span>
+              <span className="font-bold text-zinc-900 whitespace-nowrap">Master Pixel ID (Optional Store-Wide):</span>
               <input 
                 type="text" 
                 value={formData.metaPixelId || ''} 
@@ -866,7 +866,7 @@ export function SettingsManager() {
               />
             </div>
             <span className="text-[11px] text-zinc-500">
-              بيكسل اختياري إضافي يتلقى جميع أحداث المتجر بالكامل لمن يرغب بإبقاء حساب إعلاني رئيسي جامع.
+              Optional unified pixel receiving all store events across both departments for consolidated master ad accounts.
             </span>
           </div>
         </div>

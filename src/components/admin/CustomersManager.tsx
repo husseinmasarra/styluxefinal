@@ -465,24 +465,24 @@ export function CustomersManager() {
   };
 
   const getTemplateText = (templateKey: string, cust: Customer): string => {
-    const name = cust.name || 'عميلنا العزيز';
+    const name = cust.name || 'Valued Client';
     switch (templateKey) {
       case 'vip_platinum_perks':
-        return `مرحباً ${name} 👑، يسعدنا في STYLUXE إعلامك بحصولك على تصنيف النخبة البلاتينية VIP Platinum.\n\nبصفتك من عملائنا الأكثر تميزاً، نسعد بتقديم خدمة المساعد الشخصي والتوصيل السريع المجاني لأي طلب خاص من أحدث التشكيلات العالمية.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
+        return `Dear ${name} 👑, STYLUXE is honored to welcome you to our VIP Platinum tier.\n\nAs one of our most distinguished clientele, you enjoy complimentary white-glove express delivery and bespoke concierge styling across all premier luxury archives.\n\nDiscover your privileges: https://www.styluxelb.com`;
       case 'vip_gold_perks':
-        return `مرحباً ${name} ⭐، نشكر ثقتك المستمرة بـ STYLUXE. يسعدنا تصنيفك ضمن عملاء VIP Gold مع أولوية التجهيز وتتبع الشحن المباشر عبر الواتساب لكافة طلبياتك.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
+        return `Dear ${name} ⭐, thank you for your patronage at STYLUXE. We are pleased to designate you as a VIP Gold client with expedited fulfillment and dedicated order concierge support.\n\nExplore our latest drop: https://www.styluxelb.com`;
       case 'vip_silver_perks':
-        return `مرحباً ${name} 💎، تقديراً لولائك لـ STYLUXE في تصنيف VIP Silver، نود إطلاعك على أحدث التصاميم الحصرية في متجرنا مع حفظ عنوانك وخياراتك المفضلة.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
+        return `Dear ${name} 💎, in appreciation of your loyalty as a VIP Silver member, we are pleased to share early access to our seasonal designer arrivals.\n\nExplore the collection: https://www.styluxelb.com`;
       case 'vip_welcome_ar':
-        return `مرحباً ${name}، يسعدنا انضمامك إلى نخبة عملاء STYLUXE. نحن دائماً في خدمتكم لأي استفسار أو طلب خاص لأحدث الأزياء العالمية الفاخرة.\n\nتفضل بزيارة متجرنا: https://www.styluxelb.com`;
+        return `Dear ${name}, welcome to STYLUXE. Our concierge team is at your complete disposal for bespoke styling, sizing advice, and luxury acquisitions.\n\nVisit our store: https://www.styluxelb.com`;
       case 'vip_welcome_en':
         return `Dear ${name}, thank you for choosing STYLUXE. We are at your service for any exclusive inquiries or personal styling assistance across our luxury designer collections.\n\nExplore our archives: https://www.styluxelb.com`;
       case 'order_followup_ar':
-        return `مرحباً ${name}، بخصوص طلبك من STYLUXE، نود إعلامك بأن فريقنا يتابع تجهيز طلبك لخدمة التوصيل السريع. هل تود تأكيد عنوان التوصيل أو إضافة أي طلب آخر؟`;
+        return `Dear ${name}, regarding your recent order with STYLUXE, our atelier team is preparing your parcel for prompt delivery. Please let us know if you have any scheduling requests or additional items to include.`;
       case 'order_followup_en':
         return `Dear ${name}, regarding your order with STYLUXE, our concierge team is currently preparing your parcel for express delivery. Please let us know if you require any specific scheduling or delivery details.`;
       case 'new_arrivals_ar':
-        return `مرحباً ${name}، وصلتنا للتو تشكيلة جديدة حصرية من تصاميم الماركات العالمية (ZEGNA, BERLUTI, DIOR, LORO PIANA) على موقعنا.\n\nتصفح المجموعة الجديدة حصرياً: https://www.styluxelb.com`;
+        return `Dear ${name}, exclusive new seasonal arrivals from our premier houses (ZEGNA, BERLUTI, DIOR, LORO PIANA) have just dropped at STYLUXE.\n\nExplore the drop: https://www.styluxelb.com`;
       case 'new_arrivals_en':
         return `Dear ${name}, exclusive new seasonal arrivals from our premier fashion houses (ZEGNA, BERLUTI, DIOR, LORO PIANA) have just dropped at STYLUXE.\n\nDiscover the curated drop: https://www.styluxelb.com`;
       default:
@@ -511,7 +511,7 @@ export function CustomersManager() {
     setIsWhatsAppModalOpen(false);
   };
 
-  // Selection Handlers (إدارة التحديد المتعدد وإرسال الواتساب)
+  // Selection Handlers (Multi-Select & WhatsApp Messaging)
   const handleToggleSelectCustomer = (id: string) => {
     setSelectedCustomerIds(prev => {
       const next = new Set(prev);
@@ -542,7 +542,7 @@ export function CustomersManager() {
 
   const handleOpenBulkForSelected = () => {
     if (selectedCustomerIds.size === 0) {
-      showToast('يرجى تحديد عميل واحد على الأقل من الجدول أولاً', 'error');
+      showToast('Please select at least one customer first.', 'error');
       return;
     }
     setBulkTargetMode('selected');
@@ -553,17 +553,17 @@ export function CustomersManager() {
     const selected = getSelectedCustomers();
     const phones = selected.map(c => normalizePhoneForWhatsApp(c.phone)).filter(Boolean).join(', ');
     if (!phones) {
-      showToast('لم يتم العثور على أرقام هواتف صالحة للعملاء المحددين.', 'error');
+      showToast('No valid phone numbers found for selected customers.', 'error');
       return;
     }
     navigator.clipboard.writeText(phones);
-    showToast(`تم نسخ أرقام ${selected.length} عميل محدد بنجاح!`, 'success');
+    showToast(`Copied ${selected.length} customer phone numbers successfully!`, 'success');
   };
 
   const handleDownloadSelectedVCF = () => {
     const selected = getSelectedCustomers();
     if (selected.length === 0) {
-      showToast('يرجى تحديد عملاء أولاً لتحميل جهات اتصالهم.', 'error');
+      showToast('Please select customers first to download contacts.', 'error');
       return;
     }
     let vcfContent = '';
@@ -583,13 +583,13 @@ export function CustomersManager() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast(`تم تحميل ملف جهات الاتصال VCF لـ ${selected.length} عميل محدد!`, 'success');
+    showToast(`Downloaded VCF contacts file for ${selected.length} selected clients!`, 'success');
   };
 
   const handleExportSelectedCSV = () => {
     const selected = getSelectedCustomers();
     if (selected.length === 0) {
-      showToast('يرجى تحديد عملاء أولاً لتصديرهم.', 'error');
+      showToast('Please select customers first to export CSV.', 'error');
       return;
     }
     const headers = ['Customer ID', 'Name', 'Department', 'Email', 'Phone', 'Address', 'Total Orders', 'Total Spent USD', 'Created Date'];
@@ -613,7 +613,7 @@ export function CustomersManager() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast(`تم تصدير ملف CSV لـ ${selected.length} عميل محدد!`, 'success');
+    showToast(`Exported CSV file for ${selected.length} selected clients!`, 'success');
   };
 
   const getBulkTargetCustomers = (): Customer[] => {
@@ -689,8 +689,8 @@ export function CustomersManager() {
       personalized = personalized.replace(/^hello/i, `Hello ${cust.name}`);
     } else if (personalized.toLowerCase().startsWith('dear')) {
       personalized = personalized.replace(/^dear/i, `Dear ${cust.name}`);
-    } else if (personalized.includes('مرحباً')) {
-      personalized = personalized.replace(/مرحباً/g, `مرحباً ${cust.name}`);
+    } else if (personalized.toLowerCase().includes('dear')) {
+      personalized = personalized.replace(/dear/i, `Dear ${cust.name}`);
     } else {
       personalized = `Hello ${cust.name},\n\n` + personalized;
     }
@@ -730,7 +730,7 @@ export function CustomersManager() {
     if (importSource === 'instagram') {
       sample = `Ahmad Al-Hajj: 03 123456\nNour Mansour - 71 556677\n76 889900 (asked about Dior sneakers)\nZeina K.: 03 998877\n+961 70 445566`;
     } else if (importSource === 'whatsapp') {
-      sample = `[12/10/24, 14:22] +961 70 123 456: مرحباً بدي اطلب تيشيرت\n[12/10/24, 15:40] Karim: 03 445566\n+961 71 998877: السلام عليكم\n03 223344`;
+      sample = `[12/10/24, 14:22] +961 70 123 456: Hello I would like to order\n[12/10/24, 15:40] Karim: 03 445566\n+961 71 998877: Inquired about Dior sneakers\n03 223344`;
     } else {
       sample = `Full Name, Phone Number, City\nOmar Haddad, 03 112233, Beirut\nLara Khoury, +961 70 334455, Jounieh\nSami Azar, 71 889900, Tripoli`;
     }
@@ -998,7 +998,7 @@ export function CustomersManager() {
               <Instagram className="w-4 h-4 text-pink-200" />
               <WhatsAppIcon className="w-4 h-4 text-emerald-300 ml-1" />
             </div>
-            <span>IMPORT LEADS (استيراد أرقام)</span>
+            <span>IMPORT LEADS</span>
           </button>
 
           {/* Bulk Broadcast New Arrivals Button */}
@@ -1008,7 +1008,7 @@ export function CustomersManager() {
             title="Send bulk WhatsApp message to customers about new arrivals"
           >
             <WhatsAppIcon className="w-4 h-4 text-white" />
-            <span>BROADCAST NEW ARRIVALS (رسائل جماعية)</span>
+            <span>BROADCAST NEW ARRIVALS</span>
           </button>
 
           {/* Reset / Add Demo VIP Clients Button */}
@@ -1018,7 +1018,7 @@ export function CustomersManager() {
             title="Generate 12 realistic luxury demo clients for Women, Men & Both"
           >
             <Sparkles size={16} className="text-yellow-200" />
-            <span>+ DEMO CLIENTS (توليد عملاء تجريبيين)</span>
+            <span>+ DEMO VIP CLIENTS</span>
           </button>
 
           {/* Add New VIP Client Button */}
@@ -1049,7 +1049,7 @@ export function CustomersManager() {
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
           <span className="text-xs font-black tracking-widest text-white uppercase">
-            DEPARTMENT CRM / فصل الأقسام (رجال & نساء):
+            DEPARTMENT CRM SEGREGATION (MEN & WOMEN):
           </span>
         </div>
 
@@ -1076,7 +1076,7 @@ export function CustomersManager() {
             }`}
           >
             <span>👠 WOMEN VIP ({womenCount})</span>
-            <span className="text-[10px] font-mono opacity-80 bg-pink-900/60 px-1.5 py-0.5 rounded">قسم النساء</span>
+            <span className="text-[10px] font-mono opacity-80 bg-pink-900/60 px-1.5 py-0.5 rounded">WOMEN</span>
           </button>
 
           {/* MEN VIP */}
@@ -1089,7 +1089,7 @@ export function CustomersManager() {
             }`}
           >
             <span>👔 MEN VIP ({menCount})</span>
-            <span className="text-[10px] font-mono opacity-80 bg-indigo-900/60 px-1.5 py-0.5 rounded">قسم الرجال</span>
+            <span className="text-[10px] font-mono opacity-80 bg-indigo-900/60 px-1.5 py-0.5 rounded">MEN</span>
           </button>
 
           {/* BOTH / DUAL */}
@@ -1102,7 +1102,7 @@ export function CustomersManager() {
             }`}
           >
             <span>✨ DUAL / BOTH ({bothCount})</span>
-            <span className="text-[10px] font-mono opacity-80 bg-purple-900/60 px-1.5 py-0.5 rounded">مشترك</span>
+            <span className="text-[10px] font-mono opacity-80 bg-purple-900/60 px-1.5 py-0.5 rounded">DUAL / BOTH</span>
           </button>
         </div>
       </div>
@@ -1165,7 +1165,7 @@ export function CustomersManager() {
         </button>
       </div>
 
-      {/* SELECTION ACTIONS TOOLBAR (شريط التحكم بالعملاء المحددين) */}
+      {/* SELECTION ACTIONS TOOLBAR */}
       {selectedCustomerIds.size > 0 && (
         <div className="bg-gradient-to-r from-emerald-950 via-zinc-950 to-emerald-950 text-white p-4 sm:p-5 rounded-xl border-2 border-emerald-500/50 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fadeIn">
           <div className="flex items-center gap-3.5">
@@ -1178,11 +1178,11 @@ export function CustomersManager() {
                   {selectedCustomerIds.size} {selectedCustomerIds.size === 1 ? 'CLIENT SELECTED' : 'CLIENTS SELECTED'}
                 </span>
                 <span className="text-xs text-white font-bold bg-emerald-900/80 px-2 py-0.5 rounded-full border border-emerald-700">
-                  تم تحديد {selectedCustomerIds.size} عميل
+                  {selectedCustomerIds.size} Selected
                 </span>
               </div>
               <p className="text-[11px] text-zinc-300 pt-0.5">
-                يمكنك إرسال رسائل واتساب جماعية أو فردية للمحددين فقط، أو نسخ أرقامهم، أو تحميل جهات اتصالهم
+                Send targeted WhatsApp broadcasts, copy numbers, or download contacts for selected clients.
               </p>
             </div>
           </div>
@@ -1196,7 +1196,7 @@ export function CustomersManager() {
               title="Open WhatsApp sender for selected clients"
             >
               <WhatsAppIcon className="w-4 h-4 text-white" />
-              <span>إرسال واتساب للمحددين ({selectedCustomerIds.size})</span>
+              <span>MESSAGE SELECTED ON WHATSAPP ({selectedCustomerIds.size})</span>
             </button>
 
             {/* Copy Numbers */}
@@ -1207,7 +1207,7 @@ export function CustomersManager() {
               title="Copy phone numbers of selected clients"
             >
               <Copy size={14} />
-              <span>نسخ الأرقام</span>
+              <span>COPY NUMBERS</span>
             </button>
 
             {/* Download Selected VCF */}
@@ -1218,7 +1218,7 @@ export function CustomersManager() {
               title="Download VCF for selected clients"
             >
               <Download size={14} />
-              <span>تحميل VCF</span>
+              <span>DOWNLOAD VCF</span>
             </button>
 
             {/* Export Selected CSV */}
@@ -1229,7 +1229,7 @@ export function CustomersManager() {
               title="Export selected clients to CSV"
             >
               <FileText size={14} />
-              <span>تصدير CSV</span>
+              <span>EXPORT CSV</span>
             </button>
 
             {/* Clear Selection */}
@@ -1239,7 +1239,7 @@ export function CustomersManager() {
               className="px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase rounded-lg transition-all cursor-pointer border border-zinc-700"
               title="Clear all selections"
             >
-              <span>إلغاء التحديد ✕</span>
+              <span>CLEAR SELECTION ✕</span>
             </button>
           </div>
         </div>
@@ -1257,12 +1257,12 @@ export function CustomersManager() {
                   checked={filteredCustomers.length > 0 && filteredCustomers.every(c => selectedCustomerIds.has(c.id))}
                   onChange={handleToggleSelectAll}
                   className="w-4 h-4 accent-[#25D366] rounded cursor-pointer"
-                  title="تحديد أو إلغاء تحديد الكل في هذه الصفحة"
+                  title="Select or deselect all visible customers on this page"
                 />
               </th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">NAME</th>
-              <th className="py-3 px-1.5 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">TIER / المستوى</th>
-              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">DEPARTMENT / القسم</th>
+              <th className="py-3 px-1.5 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">TIER & LOYALTY</th>
+              <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">DEPARTMENT</th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center">EMAIL</th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">PHONE</th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center">ADDRESS</th>
@@ -1291,7 +1291,7 @@ export function CustomersManager() {
                         checked={selectedCustomerIds.has(cust.id)}
                         onChange={() => handleToggleSelectCustomer(cust.id)}
                         className="w-4 h-4 accent-[#25D366] rounded cursor-pointer"
-                        title={`تحديد ${cust.name}`}
+                        title={`Select ${cust.name}`}
                       />
                     </td>
 
@@ -1497,7 +1497,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <span className="block text-amber-600 font-black uppercase text-[10px]">👑 VIP Platinum (AR)</span>
-                  <span className="text-xs truncate block">رسالة النخبة البلاتينية</span>
+                  <span className="text-xs truncate block">Platinum Elite VIP Perk</span>
                 </button>
 
                 <button
@@ -1510,7 +1510,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <span className="block text-amber-600 font-black uppercase text-[10px]">⭐ VIP Gold (AR)</span>
-                  <span className="text-xs truncate block">رسالة العميل الذهبي</span>
+                  <span className="text-xs truncate block">Gold VIP Welcome</span>
                 </button>
 
                 <button
@@ -1523,7 +1523,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <span className="block text-slate-700 font-black uppercase text-[10px]">💎 VIP Silver (AR)</span>
-                  <span className="text-xs truncate block">رسالة العميل الفضي</span>
+                  <span className="text-xs truncate block">Silver VIP Welcome</span>
                 </button>
 
                 <button
@@ -1536,7 +1536,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <span className="block text-emerald-700 font-black uppercase text-[10px]">✨ Welcome (AR)</span>
-                  <span className="text-xs truncate block">ترحيب بالعميل الجديد</span>
+                  <span className="text-xs truncate block">New VIP Concierge Welcome</span>
                 </button>
 
                 <button
@@ -1549,7 +1549,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <span className="block text-blue-700 font-black uppercase text-[10px]">📦 Order Status (AR)</span>
-                  <span className="text-xs truncate block">متابعة وتأكيد الطلب</span>
+                  <span className="text-xs truncate block">Order Status & Dispatch Follow-up</span>
                 </button>
 
                 <button
@@ -1562,7 +1562,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <span className="block text-purple-700 font-black uppercase text-[10px]">👔 New Drop (AR)</span>
-                  <span className="text-xs truncate block">تشكيلة جديدة حصرية</span>
+                  <span className="text-xs truncate block">New Seasonal Drop Announcement</span>
                 </button>
 
               </div>
@@ -1667,7 +1667,7 @@ export function CustomersManager() {
 
               {/* Department Selection */}
               <div className="space-y-1">
-                <label className="text-xs font-black text-zinc-950 uppercase block">Client Department / قسم العميل</label>
+                <label className="text-xs font-black text-zinc-950 uppercase block">Client Department</label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
@@ -1678,7 +1678,7 @@ export function CustomersManager() {
                         : 'bg-pink-50 text-pink-900 border-pink-200 hover:bg-pink-100'
                     }`}
                   >
-                    <span>👠 WOMEN (نسائي)</span>
+                    <span>👠 WOMEN</span>
                   </button>
                   <button
                     type="button"
@@ -1689,7 +1689,7 @@ export function CustomersManager() {
                         : 'bg-indigo-50 text-indigo-900 border-indigo-200 hover:bg-indigo-100'
                     }`}
                   >
-                    <span>👔 MEN (رجالي)</span>
+                    <span>👔 MEN</span>
                   </button>
                   <button
                     type="button"
@@ -1700,7 +1700,7 @@ export function CustomersManager() {
                         : 'bg-zinc-100 text-zinc-800 border-zinc-300 hover:bg-zinc-200'
                     }`}
                   >
-                    <span>✨ BOTH (مشترك)</span>
+                    <span>✨ BOTH / DUAL</span>
                   </button>
                 </div>
               </div>
@@ -1947,7 +1947,7 @@ export function CustomersManager() {
                     VIP WHATSAPP MESSAGING
                   </h2>
                   <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider block">
-                    إرسال رسائل واتساب مخصصة للعملاء مع روابط وتفاصيل المنتجات
+                    Send personalized luxury WhatsApp announcements with direct links and concierge styling
                   </span>
                 </div>
               </div>
@@ -1964,7 +1964,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <CheckSquare size={13} />
-                  <span>المحددون بالـ Select ({selectedCustomerIds.size})</span>
+                  <span>SELECTED CLIENTS ({selectedCustomerIds.size})</span>
                 </button>
                 <button
                   type="button"
@@ -1975,7 +1975,7 @@ export function CustomersManager() {
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  <span>فلترة جماعية ({customers.length})</span>
+                  <span>FILTER ALL ({customers.length})</span>
                 </button>
               </div>
             </div>
@@ -1986,31 +1986,31 @@ export function CustomersManager() {
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs leading-relaxed text-emerald-950 space-y-2.5">
                 <p className="font-bold flex items-center gap-1.5 text-emerald-900">
                   <span>📸</span>
-                  <span>طريقتان سهلتان لإرسال الصور والرسالة للزبائن:</span>
+                  <span>Two seamless methods to deliver broadcasts & photos to clientele:</span>
                 </p>
                 
                 <div className="p-2.5 bg-amber-50 border border-amber-300 rounded text-amber-900 text-[11px] font-medium flex items-start gap-2">
                   <span className="text-sm">⚠️</span>
                   <div>
-                    <strong>ملاحظة لتطبيق واتساب على الكمبيوتر (WhatsApp Desktop):</strong>
+                    <strong>Note for WhatsApp Desktop / Web:</strong>
                     <br />
-                    شريط البحث في واتساب الكمبيوتر لا يقبل عدة أرقام معاً. <strong>للإرسال من الكمبيوتر:</strong> استخدم الأزرار الخضراء <strong>(SEND TO ➔)</strong> في الجدول أدناه، حيث يفتح كل محادثة جاهزة بنقرة واحدة لترفق الصور وترسلها فوراً!
+                    WhatsApp Desktop searches one number at a time. <strong>For Desktop:</strong> Click <strong>(SEND TO ➔)</strong> or <strong>(SEND NEXT)</strong> to open each contact conversation pre-filled in 1 click.
                   </div>
                 </div>
 
                 <p className="text-[11px] text-emerald-800">
-                  <strong>الخيار 1 (إرسال جماعي بالصور من الهاتف - Broadcast List):</strong> اضغط على زر <strong>&ldquo;تحميل جهات الاتصال (VCF)&rdquo;</strong> أدناه لحفظ الأرقام في هاتفك بضغطة واحدة، ثم افتح واتساب من هاتفك ➔ النقاط الثلاث ➔ <strong>رسالة جماعية جديدة (New Broadcast)</strong> وحدد الأرقام وأرسل الصور لتصل للجميع بضغطة واحدة!
+                  <strong>Method 1 (1-Click Phone Broadcast):</strong> Click <strong>&ldquo;DOWNLOAD CONTACTS (.VCF)&rdquo;</strong> to save numbers to your phone in 1 click, then open WhatsApp ➔ <strong>New Broadcast</strong> ➔ select group and send with 1 click!
                 </p>
                 <p className="text-[11px] text-emerald-800">
-                  <strong>الخيار 2 (إرسال فردي سريع من الكمبيوتر):</strong> اضغط على زر <strong>&ldquo;SEND TO ➔&rdquo;</strong> بجانب كل اسم أدناه، وسيفتح واتساب على الكمبيوتر محادثة الزبون مع الرسالة لتُرفق الصور وتضغط Enter!
+                  <strong>Method 2 (Sequential Desktop Sender):</strong> Click <strong>&ldquo;SEND TO NEXT ➔&rdquo;</strong> to sequentially open client chats with the pre-filled English message ready to send.
                 </p>
               </div>
 
               {/* Target Department Filter */}
               <div className="space-y-1.5 bg-zinc-50 p-3.5 rounded-lg border border-zinc-200">
                 <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block flex items-center justify-between">
-                  <span>Target Department (فصل القسم المستهدف للرسالة):</span>
-                  <span className="text-[10px] text-zinc-500 font-bold lowercase">توجيه الرسالة حسب القسم</span>
+                  <span>Target Department Filter:</span>
+                  <span className="text-[10px] text-zinc-500 font-bold lowercase">Segment by department</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <button
@@ -2025,7 +2025,7 @@ export function CustomersManager() {
                         : 'bg-white text-zinc-700 border border-zinc-300 hover:bg-zinc-100'
                     }`}
                   >
-                    <span>🌐 ALL (جميع الأقسام)</span>
+                    <span>🌐 ALL DEPARTMENTS</span>
                   </button>
                   <button
                     type="button"
@@ -2039,7 +2039,7 @@ export function CustomersManager() {
                         : 'bg-pink-50 text-pink-900 border border-pink-200 hover:bg-pink-100'
                     }`}
                   >
-                    <span>👠 WOMEN (قسم النساء فقط)</span>
+                    <span>👠 WOMEN ONLY</span>
                   </button>
                   <button
                     type="button"
@@ -2053,18 +2053,18 @@ export function CustomersManager() {
                         : 'bg-indigo-50 text-indigo-900 border border-indigo-200 hover:bg-indigo-100'
                     }`}
                   >
-                    <span>👔 MEN (قسم الرجال فقط)</span>
+                    <span>👔 MEN ONLY</span>
                   </button>
                 </div>
 
                 {bulkDepartmentFilter === 'women' && (
                   <p className="text-[11px] font-bold text-pink-700 pt-1">
-                    🌸 سيتم إرسال الرسالة إلى عميلات قسم النساء فقط، مع توجيه الرابط إلى تشكيلة النساء الفاخرة!
+                    🌸 Message will be directed exclusively to Women's department clientele with women's catalog link.
                   </p>
                 )}
                 {bulkDepartmentFilter === 'men' && (
                   <p className="text-[11px] font-bold text-indigo-700 pt-1">
-                    👔 سيتم إرسال الرسالة إلى عملاء قسم الرجال فقط، مع توجيه الرابط إلى تشكيلة الرجال الفاخرة!
+                    👔 Message will be directed exclusively to Men's department clientele with men's catalog link.
                   </p>
                 )}
               </div>
@@ -2072,7 +2072,7 @@ export function CustomersManager() {
               {/* Target Tier Filter */}
               <div className="space-y-1.5">
                 <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
-                  Target Customer Tier (الفئة المستهدفة):
+                  Target Customer Tier:
                 </label>
                 <div className="flex flex-wrap gap-2">
                   <button
@@ -2126,7 +2126,7 @@ export function CustomersManager() {
               <div className="space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
-                    Message Text in English (نص الرسالة):
+                    Message Text in English:
                   </label>
                   <div className="flex items-center gap-1.5">
                     <button
@@ -2149,17 +2149,17 @@ export function CustomersManager() {
                       type="button"
                       onClick={() => {
                         if (bulkDepartmentFilter === 'women') {
-                          setBulkMessage('مرحباً {name}، يسعدنا في STYLUXE إعلامك بوصول تشكيلة نسائية جديدة وحصرية من أرقى الماركات العالمية (Dior, Chanel, Prada, Loro Piana). تصفحي التشكيلة الفاخرة وتفضلي باختيار قطعك المفضلة:\nhttps://www.styluxelb.com/category/women');
+                          setBulkMessage('Dear {name}, we are delighted to present the new STYLUXE Women\'s luxury collection (Dior, Chanel, Prada, Loro Piana). Discover curated haute couture gowns, designer bags and footwear:\nhttps://www.styluxelb.com/category/women');
                         } else if (bulkDepartmentFilter === 'men') {
-                          setBulkMessage('مرحباً {name}، يسعدنا في STYLUXE إعلامك بوصول تشكيلة رجالية جديدة وحصرية من أرقى الماركات العالمية (Zegna, Berluti, Loro Piana, Brunello Cucinelli). تصفح التشكيلة الفاخرة وتفضل بطلب قطعك المفضلة:\nhttps://www.styluxelb.com/category/men');
+                          setBulkMessage('Dear {name}, we are pleased to introduce the new STYLUXE Men\'s seasonal drop (Zegna, Berluti, Loro Piana, Brunello Cucinelli). Explore bespoke tailoring, Italian footwear and leather accessories:\nhttps://www.styluxelb.com/category/men');
                         } else {
-                          setBulkMessage('مرحباً {name}، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com');
+                          setBulkMessage('Dear {name}, STYLUXE has just released an exclusive new luxury arrivals drop (Dior, Zegna, Loro Piana). Discover the curated collection with complimentary express delivery across Lebanon:\nhttps://www.styluxelb.com');
                         }
                       }}
                       className="px-2.5 py-1 text-[11px] font-black bg-zinc-100 text-zinc-700 rounded hover:bg-zinc-200 border border-zinc-300 flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
-                      title="تحميل الرسالة باللغة العربية"
+                      title="Load English Luxury Template"
                     >
-                      <span>🇱🇧 Arabic</span>
+                      <span>✨ Concierge</span>
                     </button>
                   </div>
                 </div>
@@ -2184,17 +2184,17 @@ export function CustomersManager() {
                   className="px-4 py-2.5 bg-zinc-900 hover:bg-black text-white text-xs font-black tracking-wider uppercase rounded flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
                 >
                   {copiedNumbers ? <CheckCheck size={16} className="text-emerald-400" /> : <Copy size={16} />}
-                  <span>{copiedNumbers ? 'COPIED (تم النسخ)!' : 'COPY NUMBERS (نسخ الأرقام)'}</span>
+                  <span>{copiedNumbers ? 'COPIED TO CLIPBOARD!' : 'COPY NUMBERS'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleDownloadVCF}
                   className="px-4 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-black tracking-wider uppercase rounded flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
-                  title="تحميل ملف جهات اتصال VCF لحفظ الأرقام في الهاتف دفعة واحدة"
+                  title="Download VCF contacts file to save numbers to your phone in 1 click"
                 >
                   <Download size={16} />
-                  <span>DOWNLOAD CONTACTS (.VCF) / حفظ في الهاتف</span>
+                  <span>DOWNLOAD CONTACTS (.VCF)</span>
                 </button>
 
                 <span className="text-[11px] font-bold text-zinc-500 font-mono">
@@ -2214,20 +2214,20 @@ export function CustomersManager() {
                     <div className="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-300 rounded-xl text-xs space-y-2">
                       <div className="flex items-center gap-2 text-emerald-950 font-black">
                         <span className="text-base">💡</span>
-                        <span>كيف ترسل للـ {targetList.length} عميل بضغطة زر واحدة بدون حظر من واتساب؟</span>
+                        <span>How to broadcast to all {targetList.length} clients in 1 click safely?</span>
                       </div>
                       <p className="text-[11px] text-emerald-900 leading-relaxed">
-                        بسبب سياسة واتساب لمنع الرسائل العشوائية (Anti-Spam) وحماية متصفحك للنوافذ المنبثقة، لا يمكن لأي موقع ويب إرسال 12 رسالة في الخلفية معاً بدون خدمة Meta API المدفوعة. 
-                        <strong>ولكن الحل الأسرع والمجاني بزر واحد هو:</strong>
+                        Due to WhatsApp anti-spam policies and browser popup blocking, sending simultaneous bulk background messages requires official paid APIs. 
+                        <strong>Two fast, compliant, and complimentary methods are provided below:</strong>
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                         <div className="p-2.5 bg-white/90 border border-emerald-200 rounded-lg">
-                          <strong className="text-emerald-950 block pb-0.5">📱 الطريقة 1 (بزر واحد حقيقي من الهاتف):</strong>
-                          اضغط على زر <strong>&ldquo;DOWNLOAD CONTACTS (.VCF)&rdquo;</strong> الأزرق لحفظ أرقام المحددين في هاتفك ➔ افتح واتساب بالهاتف ➔ <strong>رسالة جماعية جديدة (New Broadcast)</strong> ➔ أرسل الرسالة لتصل فوراً للجميع دفعة واحدة وبضغطة زر!
+                          <strong className="text-emerald-950 block pb-0.5">📱 Method 1 (1-Click Phone Broadcast List):</strong>
+                          Click the blue <strong>&ldquo;DOWNLOAD CONTACTS (.VCF)&rdquo;</strong> button to save selected numbers to your phone ➔ Open WhatsApp ➔ <strong>New Broadcast</strong> ➔ Blast message to all selected clients in a single tap!
                         </div>
                         <div className="p-2.5 bg-white/90 border border-emerald-200 rounded-lg">
-                          <strong className="text-emerald-950 block pb-0.5">💻 الطريقة 2 (متتابع سريع من الكمبيوتر):</strong>
-                          اضغط على الزر الأخضر بالأسفل <strong>&ldquo;SEND TO NEXT ➔&rdquo;</strong>؛ يفتح لك كل عميل تباعاً لتضغط Enter فقط، ويحدد النظام تلقائياً من تم إرساله!
+                          <strong className="text-emerald-950 block pb-0.5">💻 Method 2 (Quick Next Sender on Desktop):</strong>
+                          Click the green <strong>&ldquo;SEND TO NEXT ➔&rdquo;</strong> button below; it sequentially opens each customer conversation pre-filled, tracking who has been sent.
                         </div>
                       </div>
                     </div>
@@ -2238,14 +2238,14 @@ export function CustomersManager() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-black text-emerald-950 uppercase">
-                              🚀 إرسال سريع للعميل التالي (Quick Next Sender)
+                              🚀 QUICK NEXT SENDER
                             </span>
                             <span className="text-[10px] font-mono font-bold bg-[#25D366] text-white px-2 py-0.5 rounded-full">
-                              {unsent.length} / {targetList.length} متبقي
+                              {unsent.length} / {targetList.length} REMAINING
                             </span>
                           </div>
                           <p className="text-[11px] text-emerald-800 pt-0.5">
-                            اضغط هنا ليفتح محادثة <strong>{unsent[0].name}</strong> فوراً مع الرسالة الإنجليزية المجهزة:
+                            Click here to launch conversation with <strong>{unsent[0].name}</strong> pre-filled:
                           </p>
                         </div>
                         <button
@@ -2260,7 +2260,7 @@ export function CustomersManager() {
                     ) : (
                       <div className="p-3.5 bg-emerald-100 border-2 border-emerald-400 text-emerald-900 rounded-xl text-xs font-black text-center flex items-center justify-center gap-2 shadow-xs">
                         <CheckCheck size={18} className="text-emerald-700" />
-                        <span>🎉 ممتاز! تم إرسال الرسائل بنجاح لجميع العملاء ({targetList.length} عملاء) في هذه القائمة!</span>
+                        <span>🎉 All {targetList.length} clients in this list have been messaged successfully!</span>
                       </div>
                     )}
                   </div>
@@ -2279,7 +2279,7 @@ export function CustomersManager() {
                       onClick={() => setSentCustomerIds(new Set())}
                       className="text-[10px] text-zinc-500 hover:text-zinc-800 underline font-bold cursor-pointer"
                     >
-                      إعادة ضبط حالة الإرسال (Reset Sent Status)
+                      Reset Sent Status
                     </button>
                   )}
                 </div>
@@ -2299,7 +2299,7 @@ export function CustomersManager() {
                               checked={selectedCustomerIds.has(c.id)}
                               onChange={() => handleToggleSelectCustomer(c.id)}
                               className="w-4 h-4 accent-[#25D366] rounded cursor-pointer"
-                              title="تحديد / إلغاء تحديد"
+                              title="Toggle Selection"
                             />
                             <span className="text-sm">{tier.icon}</span>
                             <div>
@@ -2378,7 +2378,7 @@ export function CustomersManager() {
                   </span>
                 </h2>
                 <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider block">
-                  استيراد أرقام الهواتف مباشرة من محادثات انستغرام، واتساب، أو ملفات جهات الاتصال إلى قاعدة بيانات العملاء
+                  Import phone numbers directly from Instagram DMs, WhatsApp chats, or contacts files into your VIP client database.
                 </span>
               </div>
             </div>
@@ -2397,7 +2397,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <Instagram size={16} />
-                  <span>Instagram DMs / Leads (إنستغرام)</span>
+                  <span>Instagram DMs & Comments</span>
                 </button>
 
                 <button
@@ -2410,7 +2410,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <WhatsAppIcon className="w-4 h-4" />
-                  <span>WhatsApp Chats / Groups (واتساب)</span>
+                  <span>WhatsApp Chats & Groups</span>
                 </button>
 
                 <button
@@ -2423,7 +2423,7 @@ export function CustomersManager() {
                   }`}
                 >
                   <Upload size={16} />
-                  <span>Upload File (.csv, .txt, .vcf) (رفع ملف)</span>
+                  <span>Upload File (.csv, .txt, .vcf)</span>
                 </button>
               </div>
 
@@ -2432,15 +2432,15 @@ export function CustomersManager() {
                 <div className="font-bold text-zinc-900 flex items-center gap-2">
                   <Sparkles size={16} className="text-amber-500" />
                   <span>
-                    {importSource === 'instagram' && 'كيفية استيراد الأرقام من إنستغرام (Instagram DMs & Comments):'}
-                    {importSource === 'whatsapp' && 'كيفية استيراد الأرقام من واتساب (WhatsApp Chats & Contacts):'}
-                    {importSource === 'file' && 'رفع ملف جهات الاتصال (Contacts / Excel CSV / vCard):'}
+                    {importSource === 'instagram' && 'How to import leads from Instagram DMs & comments:'}
+                    {importSource === 'whatsapp' && 'How to import leads from WhatsApp chats & groups:'}
+                    {importSource === 'file' && 'Upload contacts spreadsheet or vCard file:'}
                   </span>
                 </div>
                 <p className="text-zinc-600 text-[11px]">
-                  {importSource === 'instagram' && 'انسخ رسائل الزبائن أو استفسارات الطلبات من الـ Direct أو التعليقات في إنستغرام والصقها هنا في المربع أدناه. سيتعرف النظام التلقائي على الأرقام اللبنانية والدولية (03, 70, 71, 76, 81...) ويستخرج أسماء العملاء تلقائياً لتكون جاهزة للمراسلة وحملات Meta Ads!'}
-                  {importSource === 'whatsapp' && 'انسخ أي محادثة، أو قائمة أرقام من دردشة أو مجموعة واتساب والصقها هنا. النظام يستخرج الأرقام حتى لو كانت تحتوي على تواريخ أو أوقات مثل [12/10/24, 15:30] وينظفها بدقة.'}
-                  {importSource === 'file' && 'اختر ملف CSV، أو ملف نصي TXT، أو ملف جهات اتصال vCard (.vcf) من جهازك أو هاتفك. سيتم تحليل الملف فوراً واستخراج جميع الأرقام.'}
+                  {importSource === 'instagram' && 'Paste customer inquiries or order requests from Instagram Direct or comments into the box below. The smart parser automatically detects phone numbers and client names ready for CRM attribution!'}
+                  {importSource === 'whatsapp' && 'Copy and paste any WhatsApp conversation or group chat export. The parser extracts and normalizes numbers even when mixed with timestamps [12/10/24, 15:30].'}
+                  {importSource === 'file' && 'Select a CSV spreadsheet, plain text TXT file, or vCard (.vcf) contacts file. The system will parse all contacts instantly.'}
                 </p>
               </div>
 
@@ -2455,7 +2455,7 @@ export function CustomersManager() {
                       Click to choose file or drag & drop (.csv, .txt, .vcf)
                     </span>
                     <span className="text-[11px] text-zinc-500">
-                      يدعم ملفات إكسل CSV، ملفات النصوص TXT، وملفات جهات اتصال الهاتف VCF
+                      Supports Excel CSV, plain text TXT, and phone vCard VCF files.
                     </span>
                     <input
                       type="file"
@@ -2471,7 +2471,7 @@ export function CustomersManager() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
-                    Paste Raw Text / Numbers (الصق النصوص أو الأرقام هنا):
+                    Paste Raw Text / Phone Numbers:
                   </label>
                   <div className="flex items-center gap-2">
                     <button
@@ -2479,7 +2479,7 @@ export function CustomersManager() {
                       onClick={handlePasteSampleData}
                       className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline cursor-pointer"
                     >
-                      📋 تجربة عينة أرقام (Sample)
+                      📋 Try Sample Data
                     </button>
                     {importRawText && (
                       <button
@@ -2487,7 +2487,7 @@ export function CustomersManager() {
                         onClick={() => setImportRawText('')}
                         className="text-[11px] font-bold text-red-600 hover:text-red-800 underline cursor-pointer"
                       >
-                        مسح النص (Clear)
+                        Clear Text
                       </button>
                     )}
                   </div>
@@ -2497,7 +2497,7 @@ export function CustomersManager() {
                   rows={5}
                   value={importRawText}
                   onChange={(e) => setImportRawText(e.target.value)}
-                  placeholder={`الصق هنا أي قائمة أرقام، مثلاً:\nAhmad Al-Hajj: 03123456\n+961 70 889900\nNour - 71 556677\n03 998877\n76123456`}
+                  placeholder={`Paste customer numbers or text here, for example:\nAhmad Al-Hajj: 03123456\n+961 70 889900\nNour - 71 556677\n03 998877\n76123456`}
                   className="w-full p-3.5 border-2 border-zinc-300 rounded-lg text-xs font-mono text-zinc-950 focus:border-zinc-950 focus:outline-none bg-zinc-50/30"
                 />
               </div>
@@ -2506,32 +2506,32 @@ export function CustomersManager() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-zinc-100/70 p-4 rounded-lg border border-zinc-200">
                 <div>
                   <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block mb-1.5">
-                    Assign Department (القسم المستهدف للأرقام):
+                    Assign Department:
                   </label>
                   <select
                     value={importDepartment}
                     onChange={(e) => setImportDepartment(e.target.value as CustomerDepartment)}
                     className="w-full p-2.5 border border-zinc-300 rounded bg-white text-xs font-bold text-zinc-900 focus:border-zinc-950"
                   >
-                    <option value="both">✨ BOTH / GENERAL (مشترك)</option>
-                    <option value="women">👠 WOMEN VIP (قسم النساء)</option>
-                    <option value="men">👔 MEN VIP (قسم الرجال)</option>
+                    <option value="both">✨ BOTH / GENERAL</option>
+                    <option value="women">👠 WOMEN VIP</option>
+                    <option value="men">👔 MEN VIP</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block mb-1.5">
-                    Assign VIP Tier (تصنيف الفئة):
+                    Assign VIP Tier:
                   </label>
                   <select
                     value={importDefaultTier}
                     onChange={(e) => setImportDefaultTier(e.target.value as CustomerTier)}
                     className="w-full p-2.5 border border-zinc-300 rounded bg-white text-xs font-bold text-zinc-900 focus:border-zinc-950"
                   >
-                    <option value="bronze">🥉 BRONZE (New Client / زبون جديد)</option>
-                    <option value="silver">💎 SILVER VIP (عميل فضي)</option>
-                    <option value="gold">⭐ GOLD VIP (عميل ذهبي)</option>
-                    <option value="platinum">👑 PLATINUM VIP (عميل بلاتيني)</option>
+                    <option value="bronze">🥉 BRONZE (New Client)</option>
+                    <option value="silver">💎 SILVER VIP</option>
+                    <option value="gold">⭐ GOLD VIP</option>
+                    <option value="platinum">👑 PLATINUM VIP</option>
                   </select>
                 </div>
 
@@ -2544,11 +2544,11 @@ export function CustomersManager() {
                       className="w-4 h-4 rounded text-zinc-950 focus:ring-zinc-950 border-zinc-300 cursor-pointer"
                     />
                     <span className="text-xs font-black text-zinc-900 uppercase tracking-wider">
-                      Skip Duplicates (تخطي الأرقام المكررة)
+                      Skip Duplicates
                     </span>
                   </label>
                   <span className="text-[10px] text-zinc-500 mt-1">
-                    يحميك من تكرار العملاء ويحافظ على بياناتهم المسجلة
+                    Prevents duplicate customer entries and protects existing profiles.
                   </span>
                 </div>
               </div>
@@ -2581,7 +2581,7 @@ export function CustomersManager() {
                       Live Preview & Edit ({importParsedList.length} Records):
                     </label>
                     <span className="text-[11px] text-zinc-500 font-medium">
-                      يمكنك تعديل اسم العميل مباشرة قبل الحفظ، أو حذف أي رقم غير مرغوب فيه
+                      You can edit customer names directly before importing, or remove any unneeded entries.
                     </span>
                   </div>
 
@@ -2659,10 +2659,10 @@ export function CustomersManager() {
               <span className="text-xs font-bold text-zinc-600">
                 {importParsedList.length > 0 ? (
                   <>
-                    جاهز للاستيراد: <strong className="text-emerald-700">{importParsedList.filter(l => !skipDuplicates || !l.isDuplicate).length}</strong> رقم عميل جديد
+                    Ready to import: <strong className="text-emerald-700">{importParsedList.filter(l => !skipDuplicates || !l.isDuplicate).length}</strong> new customer profiles
                   </>
                 ) : (
-                  'الصق الأرقام أعلاه لبدء التحليل والاستيراد'
+                  'Paste numbers above to parse and preview leads'
                 )}
               </span>
 
@@ -2672,7 +2672,7 @@ export function CustomersManager() {
                   onClick={() => setIsImportModalOpen(false)}
                   className="w-full sm:w-auto px-5 py-2.5 border-2 border-zinc-300 text-zinc-700 hover:text-zinc-950 text-xs font-black tracking-widest uppercase rounded cursor-pointer"
                 >
-                  CANCEL (إلغاء)
+                  CANCEL
                 </button>
 
                 <button
@@ -2683,7 +2683,7 @@ export function CustomersManager() {
                 >
                   <CheckCircle2 size={16} />
                   <span>
-                    CONFIRM & IMPORT ({importParsedList.filter(l => !skipDuplicates || !l.isDuplicate).length}) LEADS / تأكيد الاستيراد
+                    CONFIRM & IMPORT ({importParsedList.filter(l => !skipDuplicates || !l.isDuplicate).length}) LEADS
                   </span>
                 </button>
               </div>

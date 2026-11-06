@@ -1000,7 +1000,7 @@ export function getCustomerTier(totalSpentUSD: number = 0, totalOrders: number =
     return {
       tier: 'platinum',
       label: 'VIP PLATINUM',
-      arabicLabel: 'النخبة البلاتينية',
+      arabicLabel: 'Platinum Elite VIP',
       icon: '👑',
       minSpendUSD: 1000,
       minOrders: 5,
@@ -1018,7 +1018,7 @@ export function getCustomerTier(totalSpentUSD: number = 0, totalOrders: number =
     return {
       tier: 'gold',
       label: 'VIP GOLD',
-      arabicLabel: 'العميل الذهبي',
+      arabicLabel: 'Gold VIP Client',
       icon: '⭐',
       minSpendUSD: 500,
       minOrders: 3,
@@ -1035,7 +1035,7 @@ export function getCustomerTier(totalSpentUSD: number = 0, totalOrders: number =
     return {
       tier: 'silver',
       label: 'VIP SILVER',
-      arabicLabel: 'العميل الفضي',
+      arabicLabel: 'Silver VIP Client',
       icon: '💎',
       minSpendUSD: 200,
       minOrders: 2,
@@ -1051,7 +1051,7 @@ export function getCustomerTier(totalSpentUSD: number = 0, totalOrders: number =
   return {
     tier: 'bronze',
     label: 'NEW CLIENT',
-    arabicLabel: 'عميل جديد',
+    arabicLabel: 'New Client',
     icon: '✨',
     minSpendUSD: 0,
     minOrders: 0,

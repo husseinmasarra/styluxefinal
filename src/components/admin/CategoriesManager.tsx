@@ -167,7 +167,7 @@ export function CategoriesManager() {
     // Add subcategories if provided
     let subsToAdd: Category[] = [...(parentCat.subCategories || [])];
     if (quickSubs.trim()) {
-      const subNames = quickSubs.split(/[,،]+/).map(s => s.trim()).filter(Boolean);
+      const subNames = quickSubs.split(/[,]+/).map(s => s.trim()).filter(Boolean);
       subNames.forEach((sName, idx) => {
         const alreadySub = subsToAdd.some(sub => sub.name.toLowerCase() === sName.toLowerCase());
         if (!alreadySub) {
@@ -247,7 +247,7 @@ export function CategoriesManager() {
     const parent = categories.find(c => c.id === parentCatId);
     if (!parent) return;
 
-    const subNames = rawVal.split(/[,،]+/).map(s => s.trim()).filter(Boolean);
+    const subNames = rawVal.split(/[,]+/).map(s => s.trim()).filter(Boolean);
     const existingSubs = parent.subCategories || [];
     const updatedSubs = [...existingSubs];
 

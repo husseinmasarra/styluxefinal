@@ -294,7 +294,7 @@ export default function CheckoutPage() {
                     <span className="text-xl">{tierInfo.icon}</span>
                     <div>
                       <span className="text-[10px] font-black tracking-[0.2em] text-zinc-400 uppercase block">
-                        BOUTIQUE CRM LOYALTY STATUS / مستوى العميل
+                        BOUTIQUE CRM LOYALTY STATUS
                       </span>
                       <span className="text-sm font-black tracking-widest text-amber-400 uppercase">
                         {tierInfo.label} • {tierInfo.arabicLabel}
@@ -358,7 +358,7 @@ export default function CheckoutPage() {
 
             const itemsList = completedOrder.items.map(i => `• ${i.productTitle} (Size: ${i.size}, Qty: ${i.quantity}) - $${i.priceUSD}`).join('\n');
             const waText = encodeURIComponent(
-              `👑 *STYLUXE CRM - NEW ORDER RECEIVED* 👑\n━━━━━━━━━━━━━━━━━━━━\n🎖️ *CLIENT TIER (مستوى العميل):* ${tierInfo.icon} *${tierInfo.label}* (${tierInfo.arabicLabel})\n📊 *CLIENT HISTORY:* Order #${totalOrders} | Lifetime Value: $${totalSpent} USD\n━━━━━━━━━━━━━━━━━━━━\n🧾 *Order Number:* #${completedOrder.orderNumber}\n👤 *Client Name:* ${completedOrder.customerName}\n📞 *Client Phone:* ${completedOrder.customerPhone}\n📍 *Shipping Address:* ${completedOrder.shippingAddress}, ${completedOrder.city}\n💰 *Order Amount:* $${completedOrder.totalUSD} USD\n💳 *Payment Method:* Cash On Delivery (COD)\n\n📦 *Order Items:*\n${itemsList}\n━━━━━━━━━━━━━━━━━━━━\n⚡ *Concierge Note:* Client categorized into ${tierInfo.label} VIP tier. Please confirm dispatch with client. Thank you!`
+              `👑 *STYLUXE CRM - NEW ORDER RECEIVED* 👑\n━━━━━━━━━━━━━━━━━━━━\n🎖️ *CLIENT TIER:* ${tierInfo.icon} *${tierInfo.label}*\n📊 *CLIENT HISTORY:* Order #${totalOrders} | Lifetime Value: $${totalSpent} USD\n━━━━━━━━━━━━━━━━━━━━\n🧾 *Order Number:* #${completedOrder.orderNumber}\n👤 *Client Name:* ${completedOrder.customerName}\n📞 *Client Phone:* ${completedOrder.customerPhone}\n📍 *Shipping Address:* ${completedOrder.shippingAddress}, ${completedOrder.city}\n💰 *Order Amount:* $${completedOrder.totalUSD} USD\n💳 *Payment Method:* Cash On Delivery (COD)\n\n📦 *Order Items:*\n${itemsList}\n━━━━━━━━━━━━━━━━━━━━\n⚡ *Concierge Note:* Client categorized into ${tierInfo.label} VIP tier. Please confirm dispatch with client. Thank you!`
             );
             return (
               <div className="space-y-3 pt-2">
