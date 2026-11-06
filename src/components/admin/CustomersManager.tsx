@@ -8,7 +8,7 @@ import { useCart } from '@/lib/CartContext';
 import { 
   Search, Mail, Phone, MapPin, Calendar, DollarSign, Trash2, Edit2, X, 
   User, Download, Send, MessageSquare, Share2, Sparkles, ExternalLink, Check, ShieldCheck, Award,
-  Plus, ShoppingBag, Eye, Package, Copy, CheckCheck, Users, Upload, Instagram, FileText, CheckCircle2, AlertCircle
+  Plus, ShoppingBag, Eye, Package, Copy, CheckCheck, Users, Upload, Instagram, FileText, CheckCircle2, AlertCircle, CheckSquare, Square
 } from 'lucide-react';
 
 function WhatsAppIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -178,6 +178,12 @@ export function CustomersManager() {
   const [whatsAppCustomer, setWhatsAppCustomer] = useState<Customer | null>(null);
   const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>('vip_welcome_ar');
   const [customMessage, setCustomMessage] = useState<string>('');
+
+  // Bulk WhatsApp Broadcast modal state
+  // Selected customers state for multi-select actions & WhatsApp sending
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<Set<string>>(new Set());
+  const [bulkTargetMode, setBulkTargetMode] = useState<'selected' | 'filter'>('filter');
+  const [sentCustomerIds, setSentCustomerIds] = useState<Set<string>>(new Set());
 
   // Bulk WhatsApp Broadcast modal state
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -505,7 +511,115 @@ export function CustomersManager() {
     setIsWhatsAppModalOpen(false);
   };
 
+  // Selection Handlers (إدارة التحديد المتعدد وإرسال الواتساب)
+  const handleToggleSelectCustomer = (id: string) => {
+    setSelectedCustomerIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = () => {
+    const allFilteredIds = filteredCustomers.map(c => c.id);
+    const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedCustomerIds.has(id));
+    
+    setSelectedCustomerIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        allFilteredIds.forEach(id => next.delete(id));
+      } else {
+        allFilteredIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const getSelectedCustomers = (): Customer[] => {
+    return customers.filter(c => selectedCustomerIds.has(c.id));
+  };
+
+  const handleOpenBulkForSelected = () => {
+    if (selectedCustomerIds.size === 0) {
+      showToast('يرجى تحديد عميل واحد على الأقل من الجدول أولاً', 'error');
+      return;
+    }
+    setBulkTargetMode('selected');
+    setIsBulkModalOpen(true);
+  };
+
+  const handleCopySelectedNumbers = () => {
+    const selected = getSelectedCustomers();
+    const phones = selected.map(c => normalizePhoneForWhatsApp(c.phone)).filter(Boolean).join(', ');
+    if (!phones) {
+      showToast('لم يتم العثور على أرقام هواتف صالحة للعملاء المحددين.', 'error');
+      return;
+    }
+    navigator.clipboard.writeText(phones);
+    showToast(`تم نسخ أرقام ${selected.length} عميل محدد بنجاح!`, 'success');
+  };
+
+  const handleDownloadSelectedVCF = () => {
+    const selected = getSelectedCustomers();
+    if (selected.length === 0) {
+      showToast('يرجى تحديد عملاء أولاً لتحميل جهات اتصالهم.', 'error');
+      return;
+    }
+    let vcfContent = '';
+    selected.forEach(c => {
+      const cleanPhone = normalizePhoneForWhatsApp(c.phone || '');
+      if (cleanPhone) {
+        const dept = getCustomerEffectiveDepartment(c);
+        const prefix = dept === 'women' ? '[W] ' : dept === 'men' ? '[M] ' : '[VIP] ';
+        vcfContent += `BEGIN:VCARD\nVERSION:3.0\nFN:${prefix}${c.name}\nTEL;TYPE=CELL:+${cleanPhone}\nEND:VCARD\n`;
+      }
+    });
+    const blob = new Blob([vcfContent], { type: 'text/vcard;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `styluxe_selected_clients_${selected.length}.vcf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`تم تحميل ملف جهات الاتصال VCF لـ ${selected.length} عميل محدد!`, 'success');
+  };
+
+  const handleExportSelectedCSV = () => {
+    const selected = getSelectedCustomers();
+    if (selected.length === 0) {
+      showToast('يرجى تحديد عملاء أولاً لتصديرهم.', 'error');
+      return;
+    }
+    const headers = ['Customer ID', 'Name', 'Department', 'Email', 'Phone', 'Address', 'Total Orders', 'Total Spent USD', 'Created Date'];
+    const rows = selected.map(c => [
+      `"${c.id}"`,
+      `"${c.name.replace(/"/g, '""')}"`,
+      `"${getCustomerEffectiveDepartment(c).toUpperCase()}"`,
+      `"${c.email || ''}"`,
+      `"${c.phone || ''}"`,
+      `"${(c.address || '').replace(/"/g, '""')}"`,
+      c.totalOrders || 0,
+      c.totalSpentUSD || 0,
+      `"${c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''}"`
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `styluxe_selected_clients_${selected.length}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`تم تصدير ملف CSV لـ ${selected.length} عميل محدد!`, 'success');
+  };
+
   const getBulkTargetCustomers = (): Customer[] => {
+    if (bulkTargetMode === 'selected') {
+      return customers.filter(c => selectedCustomerIds.has(c.id));
+    }
     return customers.filter(c => {
       if (bulkTierFilter !== 'all') {
         const tier = getCustomerTier(c.totalSpentUSD, c.totalOrders);
@@ -567,6 +681,7 @@ export function CustomersManager() {
     const personalized = bulkMessage.replace(/مرحباً/g, `مرحباً ${cust.name}`);
     const encoded = encodeURIComponent(personalized.trim());
     const waUrl = `https://wa.me/${cleanPhone}?text=${encoded}`;
+    setSentCustomerIds(prev => new Set(prev).add(cust.id));
     window.open(waUrl, '_blank');
   };
 
@@ -1034,11 +1149,101 @@ export function CustomersManager() {
         </button>
       </div>
 
+      {/* SELECTION ACTIONS TOOLBAR (شريط التحكم بالعملاء المحددين) */}
+      {selectedCustomerIds.size > 0 && (
+        <div className="bg-gradient-to-r from-emerald-950 via-zinc-950 to-emerald-950 text-white p-4 sm:p-5 rounded-xl border-2 border-emerald-500/50 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-fadeIn">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-[#25D366] text-white flex items-center justify-center font-bold shadow-md shrink-0">
+              <CheckSquare size={22} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-black tracking-wider uppercase text-emerald-300">
+                  {selectedCustomerIds.size} {selectedCustomerIds.size === 1 ? 'CLIENT SELECTED' : 'CLIENTS SELECTED'}
+                </span>
+                <span className="text-xs text-white font-bold bg-emerald-900/80 px-2 py-0.5 rounded-full border border-emerald-700">
+                  تم تحديد {selectedCustomerIds.size} عميل
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-300 pt-0.5">
+                يمكنك إرسال رسائل واتساب جماعية أو فردية للمحددين فقط، أو نسخ أرقامهم، أو تحميل جهات اتصالهم
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {/* WhatsApp to Selected */}
+            <button
+              type="button"
+              onClick={handleOpenBulkForSelected}
+              className="px-4 py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-black tracking-wider uppercase rounded-lg shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+              title="Open WhatsApp sender for selected clients"
+            >
+              <WhatsAppIcon className="w-4 h-4 text-white" />
+              <span>إرسال واتساب للمحددين ({selectedCustomerIds.size})</span>
+            </button>
+
+            {/* Copy Numbers */}
+            <button
+              type="button"
+              onClick={handleCopySelectedNumbers}
+              className="px-3.5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-black tracking-wider uppercase rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Copy phone numbers of selected clients"
+            >
+              <Copy size={14} />
+              <span>نسخ الأرقام</span>
+            </button>
+
+            {/* Download Selected VCF */}
+            <button
+              type="button"
+              onClick={handleDownloadSelectedVCF}
+              className="px-3.5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-black tracking-wider uppercase rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Download VCF for selected clients"
+            >
+              <Download size={14} />
+              <span>تحميل VCF</span>
+            </button>
+
+            {/* Export Selected CSV */}
+            <button
+              type="button"
+              onClick={handleExportSelectedCSV}
+              className="px-3.5 py-2.5 bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-black tracking-wider uppercase rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Export selected clients to CSV"
+            >
+              <FileText size={14} />
+              <span>تصدير CSV</span>
+            </button>
+
+            {/* Clear Selection */}
+            <button
+              type="button"
+              onClick={() => setSelectedCustomerIds(new Set())}
+              className="px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase rounded-lg transition-all cursor-pointer border border-zinc-700"
+              title="Clear all selections"
+            >
+              <span>إلغاء التحديد ✕</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 3. CUSTOMERS DATA TABLE */}
       <div className="border border-zinc-300 rounded overflow-x-auto shadow-sm bg-white">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-zinc-300 bg-zinc-100/70 text-[11px]">
+              {/* SELECT ALL CHECKBOX */}
+              <th className="py-3 px-3 text-center w-12 bg-zinc-200/60">
+                <input
+                  type="checkbox"
+                  checked={filteredCustomers.length > 0 && filteredCustomers.every(c => selectedCustomerIds.has(c.id))}
+                  onChange={handleToggleSelectAll}
+                  className="w-4 h-4 accent-[#25D366] rounded cursor-pointer"
+                  title="تحديد أو إلغاء تحديد الكل في هذه الصفحة"
+                />
+              </th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">NAME</th>
               <th className="py-3 px-1.5 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">TIER / المستوى</th>
               <th className="py-3 px-2 font-black tracking-wider text-zinc-950 uppercase text-center whitespace-nowrap">DEPARTMENT / القسم</th>
@@ -1052,7 +1257,7 @@ export function CustomersManager() {
           <tbody>
             {filteredCustomers.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-16 text-center text-xs font-extrabold text-zinc-400 tracking-wider uppercase">
+                <td colSpan={9} className="py-16 text-center text-xs font-extrabold text-zinc-400 tracking-wider uppercase">
                   NO REGISTERED CUSTOMERS FOUND IN THIS CATEGORY.
                 </td>
               </tr>
@@ -1061,8 +1266,19 @@ export function CustomersManager() {
                 const tier = getCustomerTier(cust.totalSpentUSD, cust.totalOrders);
                 const dept = getCustomerEffectiveDepartment(cust);
                 return (
-                  <tr key={cust.id} className="border-b border-zinc-100 hover:bg-zinc-50 transition-colors text-xs">
+                  <tr key={cust.id} className={`border-b border-zinc-100 hover:bg-zinc-50 transition-colors text-xs ${selectedCustomerIds.has(cust.id) ? 'bg-emerald-50/70 font-semibold' : ''}`}>
                     
+                    {/* ROW SELECT CHECKBOX */}
+                    <td className="py-3 px-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedCustomerIds.has(cust.id)}
+                        onChange={() => handleToggleSelectCustomer(cust.id)}
+                        className="w-4 h-4 accent-[#25D366] rounded cursor-pointer"
+                        title={`تحديد ${cust.name}`}
+                      />
+                    </td>
+
                     {/* NAME */}
                     <td className="py-3 px-2 font-bold text-zinc-950 text-center uppercase tracking-wider whitespace-nowrap text-xs">
                       {cust.name}
@@ -1705,17 +1921,46 @@ export function CustomersManager() {
             </button>
 
             {/* Modal Header */}
-            <div className="border-b border-zinc-200 pb-3 flex items-center gap-2.5">
-              <div className="p-2 bg-[#25D366]/20 text-[#25D366] rounded-lg">
-                <WhatsAppIcon className="w-6 h-6" />
+            <div className="border-b border-zinc-200 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-[#25D366]/20 text-[#25D366] rounded-lg">
+                  <WhatsAppIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="font-serif text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
+                    VIP WHATSAPP MESSAGING
+                  </h2>
+                  <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider block">
+                    إرسال رسائل واتساب مخصصة للعملاء مع روابط وتفاصيل المنتجات
+                  </span>
+                </div>
               </div>
-              <div>
-                <h2 className="font-serif text-2xl font-bold tracking-[0.2em] text-zinc-950 uppercase">
-                  VIP WHATSAPP BROADCAST
-                </h2>
-                <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider block">
-                  إرسال رسائل جماعية للعملاء مع صور وروابط التشكيلة الجديدة
-                </span>
+
+              {/* MODE SWITCHER: SELECTED vs FILTER */}
+              <div className="flex items-center gap-1.5 p-1 bg-zinc-100 rounded-lg border border-zinc-200">
+                <button
+                  type="button"
+                  onClick={() => setBulkTargetMode('selected')}
+                  className={`py-1.5 px-3 text-xs font-black uppercase rounded transition-all flex items-center gap-1.5 cursor-pointer ${
+                    bulkTargetMode === 'selected'
+                      ? 'bg-[#25D366] text-white shadow-xs'
+                      : 'text-zinc-600 hover:text-zinc-950'
+                  }`}
+                >
+                  <CheckSquare size={13} />
+                  <span>المحددون بالـ Select ({selectedCustomerIds.size})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkTargetMode('filter')}
+                  className={`py-1.5 px-3 text-xs font-black uppercase rounded transition-all flex items-center gap-1.5 cursor-pointer ${
+                    bulkTargetMode === 'filter'
+                      ? 'bg-zinc-950 text-white shadow-xs'
+                      : 'text-zinc-600 hover:text-zinc-950'
+                  }`}
+                >
+                  <span>فلترة جماعية ({customers.length})</span>
+                </button>
               </div>
             </div>
 
@@ -1915,21 +2160,38 @@ export function CustomersManager() {
                     getBulkTargetCustomers().map(c => {
                       const tier = getCustomerTier(c.totalSpentUSD, c.totalOrders);
                       return (
-                        <div key={c.id} className="p-3 flex items-center justify-between gap-3 hover:bg-white transition-colors">
+                        <div key={c.id} className={`p-3 flex items-center justify-between gap-3 transition-colors ${selectedCustomerIds.has(c.id) ? 'bg-emerald-50/40' : 'hover:bg-white'}`}>
                           <div className="flex items-center gap-2.5">
+                            <input
+                              type="checkbox"
+                              checked={selectedCustomerIds.has(c.id)}
+                              onChange={() => handleToggleSelectCustomer(c.id)}
+                              className="w-4 h-4 accent-[#25D366] rounded cursor-pointer"
+                              title="تحديد / إلغاء تحديد"
+                            />
                             <span className="text-sm">{tier.icon}</span>
                             <div>
-                              <span className="text-xs font-bold text-zinc-950 uppercase block">{c.name}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-zinc-950 uppercase block">{c.name}</span>
+                                {sentCustomerIds.has(c.id) && (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    <CheckCheck size={10} className="text-emerald-600" />
+                                    <span>SENT ✓</span>
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-zinc-500 font-mono">{c.phone || 'No phone'}</span>
                             </div>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleSendSingleBulk(c)}
-                            className="px-3 py-1.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-[10px] font-black uppercase rounded flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+                            className={`px-3 py-1.5 text-white text-[10px] font-black uppercase rounded flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer ${
+                              sentCustomerIds.has(c.id) ? 'bg-zinc-800 hover:bg-zinc-900' : 'bg-[#25D366] hover:bg-[#20ba59]'
+                            }`}
                           >
                             <WhatsAppIcon className="w-3.5 h-3.5" />
-                            <span>SEND TO {c.name.split(' ')[0]} ➔</span>
+                            <span>{sentCustomerIds.has(c.id) ? `RESEND TO ${c.name.split(' ')[0]} ➔` : `SEND TO ${c.name.split(' ')[0]} ➔`}</span>
                           </button>
                         </div>
                       );
