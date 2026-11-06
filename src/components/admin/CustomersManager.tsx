@@ -190,7 +190,7 @@ export function CustomersManager() {
   const [bulkTierFilter, setBulkTierFilter] = useState<'all' | 'platinum' | 'gold' | 'silver'>('all');
   const [bulkDepartmentFilter, setBulkDepartmentFilter] = useState<'all' | 'women' | 'men'>('all');
   const [bulkMessage, setBulkMessage] = useState<string>(
-    'مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com'
+    'Hello {name}, we are delighted to inform you that STYLUXE has just released an exclusive new luxury arrivals drop (Dior, Zegna, Loro Piana). Discover the curated collection with complimentary express delivery across Lebanon:\nhttps://www.styluxelb.com'
   );
   const [copiedNumbers, setCopiedNumbers] = useState(false);
 
@@ -678,7 +678,23 @@ export function CustomersManager() {
       showToast(`${cust.name} does not have a valid phone number.`, 'error');
       return;
     }
-    const personalized = bulkMessage.replace(/مرحباً/g, `مرحباً ${cust.name}`);
+    let personalized = bulkMessage;
+    if (personalized.includes('{name}')) {
+      personalized = personalized.replace(/{name}/g, cust.name);
+    } else if (personalized.toLowerCase().includes('dear client')) {
+      personalized = personalized.replace(/dear client/gi, `Dear ${cust.name}`);
+    } else if (personalized.toLowerCase().startsWith('hello,')) {
+      personalized = personalized.replace(/^hello,/i, `Hello ${cust.name},`);
+    } else if (personalized.toLowerCase().startsWith('hello')) {
+      personalized = personalized.replace(/^hello/i, `Hello ${cust.name}`);
+    } else if (personalized.toLowerCase().startsWith('dear')) {
+      personalized = personalized.replace(/^dear/i, `Dear ${cust.name}`);
+    } else if (personalized.includes('مرحباً')) {
+      personalized = personalized.replace(/مرحباً/g, `مرحباً ${cust.name}`);
+    } else {
+      personalized = `Hello ${cust.name},\n\n` + personalized;
+    }
+
     const encoded = encodeURIComponent(personalized.trim());
     const waUrl = `https://wa.me/${cleanPhone}?text=${encoded}`;
     setSentCustomerIds(prev => new Set(prev).add(cust.id));
@@ -2001,7 +2017,7 @@ export function CustomersManager() {
                     type="button"
                     onClick={() => {
                       setBulkDepartmentFilter('all');
-                      setBulkMessage('مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com');
+                      setBulkMessage('Hello {name}, we are delighted to inform you that STYLUXE has just released an exclusive new luxury arrivals drop (Dior, Zegna, Loro Piana). Discover the curated collection with complimentary express delivery across Lebanon:\nhttps://www.styluxelb.com');
                     }}
                     className={`py-2 px-3 text-xs font-black uppercase rounded transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       bulkDepartmentFilter === 'all'
@@ -2015,7 +2031,7 @@ export function CustomersManager() {
                     type="button"
                     onClick={() => {
                       setBulkDepartmentFilter('women');
-                      setBulkMessage('مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة نسائية جديدة وحصرية من أرقى الماركات العالمية (Dior, Chanel, Prada, Loro Piana). تصفحي التشكيلة الفاخرة وتفضلي باختيار قطعك المفضلة:\nhttps://www.styluxelb.com/category/women');
+                      setBulkMessage('Hello {name}, we are thrilled to present the new STYLUXE Women\'s luxury collection (Dior, Chanel, Prada, Loro Piana). Discover curated haute couture gowns, designer bags and footwear:\nhttps://www.styluxelb.com/category/women');
                     }}
                     className={`py-2 px-3 text-xs font-black uppercase rounded transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       bulkDepartmentFilter === 'women'
@@ -2029,7 +2045,7 @@ export function CustomersManager() {
                     type="button"
                     onClick={() => {
                       setBulkDepartmentFilter('men');
-                      setBulkMessage('مرحباً، يسعدنا في STYLUXE إعلامك بوصول تشكيلة رجالية جديدة وحصرية من أرقى الماركات العالمية (Zegna, Berluti, Loro Piana, Brunello Cucinelli). تصفح التشكيلة الفاخرة وتفضل بطلب قطعك المفضلة:\nhttps://www.styluxelb.com/category/men');
+                      setBulkMessage('Hello {name}, we are pleased to present the new STYLUXE Men\'s seasonal drop (Zegna, Berluti, Loro Piana, Brunello Cucinelli). Explore bespoke tailoring, Italian footwear and leather accessories:\nhttps://www.styluxelb.com/category/men');
                     }}
                     className={`py-2 px-3 text-xs font-black uppercase rounded transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       bulkDepartmentFilter === 'men'
@@ -2107,17 +2123,57 @@ export function CustomersManager() {
               </div>
 
               {/* Broadcast Message Content */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
-                  Broadcast Message Text (نص الرسالة):
-                </label>
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                    Message Text in English (نص الرسالة):
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (bulkDepartmentFilter === 'women') {
+                          setBulkMessage('Hello {name}, we are thrilled to present the new STYLUXE Women\'s luxury collection (Dior, Chanel, Prada, Loro Piana). Discover curated haute couture gowns, designer bags and footwear:\nhttps://www.styluxelb.com/category/women');
+                        } else if (bulkDepartmentFilter === 'men') {
+                          setBulkMessage('Hello {name}, we are pleased to present the new STYLUXE Men\'s seasonal drop (Zegna, Berluti, Loro Piana, Brunello Cucinelli). Explore bespoke tailoring, Italian footwear and leather accessories:\nhttps://www.styluxelb.com/category/men');
+                        } else {
+                          setBulkMessage('Hello {name}, we are delighted to inform you that STYLUXE has just released an exclusive new luxury arrivals drop (Dior, Zegna, Loro Piana). Discover the curated collection with complimentary express delivery across Lebanon:\nhttps://www.styluxelb.com');
+                        }
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-black bg-zinc-900 text-white rounded hover:bg-black flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                      title="Load English message template"
+                    >
+                      <span>🇬🇧 English</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (bulkDepartmentFilter === 'women') {
+                          setBulkMessage('مرحباً {name}، يسعدنا في STYLUXE إعلامك بوصول تشكيلة نسائية جديدة وحصرية من أرقى الماركات العالمية (Dior, Chanel, Prada, Loro Piana). تصفحي التشكيلة الفاخرة وتفضلي باختيار قطعك المفضلة:\nhttps://www.styluxelb.com/category/women');
+                        } else if (bulkDepartmentFilter === 'men') {
+                          setBulkMessage('مرحباً {name}، يسعدنا في STYLUXE إعلامك بوصول تشكيلة رجالية جديدة وحصرية من أرقى الماركات العالمية (Zegna, Berluti, Loro Piana, Brunello Cucinelli). تصفح التشكيلة الفاخرة وتفضل بطلب قطعك المفضلة:\nhttps://www.styluxelb.com/category/men');
+                        } else {
+                          setBulkMessage('مرحباً {name}، يسعدنا في STYLUXE إعلامك بوصول تشكيلة جديدة وحصرية من أرقى الماركات العالمية (Dior, Zegna, Loro Piana). تصفح المجموعة وتفضل بطلب قطعك المفضلة مع توصيل سريع في لبنان والدفع عند الاستلام:\nhttps://www.styluxelb.com');
+                        }
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-black bg-zinc-100 text-zinc-700 rounded hover:bg-zinc-200 border border-zinc-300 flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                      title="تحميل الرسالة باللغة العربية"
+                    >
+                      <span>🇱🇧 Arabic</span>
+                    </button>
+                  </div>
+                </div>
                 <textarea
                   rows={4}
                   value={bulkMessage}
                   onChange={(e) => setBulkMessage(e.target.value)}
                   className="w-full p-3.5 border-2 border-zinc-300 rounded-lg text-xs text-zinc-950 font-medium leading-relaxed focus:outline-none focus:border-[#25D366] bg-zinc-50/50"
-                  placeholder="Type broadcast message..."
+                  placeholder="Type broadcast message in English..."
                 />
+                <p className="text-[11px] text-zinc-500 font-medium flex items-center gap-1">
+                  <span>💡</span>
+                  <span>Use <strong>{'{name}'}</strong> to automatically insert each customer's personal name into the WhatsApp message.</span>
+                </p>
               </div>
 
               {/* Action Buttons: Copy Numbers & Download VCF */}
