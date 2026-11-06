@@ -253,6 +253,13 @@ export interface StoreSettings {
   tiktokPixelId?: string; // TikTok Pixel ID
   googleAnalyticsId?: string; // Google Analytics / Tag ID (e.g. G-XXXXX)
   snapchatPixelId?: string; // Snapchat Pixel ID
+
+  // Meta Conversions API (CAPI) Server-Side Settings
+  metaCapiEnabled?: boolean; // Enable/Disable server-side CAPI
+  metaCapiAccessToken?: string; // Meta System User Access Token for Conversions API
+  womenMetaCapiAccessToken?: string; // Optional dedicated token for Women pixel
+  menMetaCapiAccessToken?: string; // Optional dedicated token for Men pixel
+  metaCapiTestEventCode?: string; // Optional Meta Test Events code (e.g. TEST12345)
 }
 
 export interface StaffMember {

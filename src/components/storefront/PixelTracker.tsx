@@ -23,6 +23,16 @@ declare global {
   }
 }
 
+function getCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+  return match ? decodeURIComponent(match[3]) : undefined;
+}
+
+function generateEventId(prefix: string = 'evt'): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
 export function PixelTracker() {
   const { settings } = useCart();
   const pathname = usePathname();
@@ -76,13 +86,15 @@ export function PixelTracker() {
     }
   }, [settings?.metaPixelId, settings?.womenMetaPixelId, settings?.menMetaPixelId]);
 
-  // Helper function to send Meta events with strict Department routing
+  // Helper function to send Meta events with strict Department routing, Deduplication & Conversions API (CAPI)
   const sendMetaEvent = (
     eventName: string,
     params: Record<string, any> = {},
-    targetDept?: PixelDepartment
+    targetDept?: PixelDepartment,
+    eventId?: string,
+    userData?: Record<string, any>
   ) => {
-    if (!window.fbq) return;
+    const resolvedEventId = eventId || generateEventId(eventName.toLowerCase());
 
     const masterId = settings?.metaPixelId?.trim();
     const womenId = settings?.womenMetaPixelId?.trim() || '1128799242995614';
@@ -107,14 +119,49 @@ export function PixelTracker() {
       targets.push(masterId);
     }
 
-    targets.forEach(pixelId => {
-      try {
-        window.fbq?.('trackSingle', pixelId, eventName, params);
-        console.log(`[PixelTracker] Meta trackSingle: ${eventName} -> Pixel: ${pixelId} [Dept: ${targetDept || 'both'}]`);
-      } catch (err) {
-        console.error(`[PixelTracker] Error sending trackSingle (${eventName}) to ${pixelId}:`, err);
-      }
-    });
+    // 1. Browser Meta Pixel Dispatch (with eventID for Meta deduplication)
+    if (window.fbq) {
+      targets.forEach(pixelId => {
+        try {
+          window.fbq?.('trackSingle', pixelId, eventName, params, { eventID: resolvedEventId });
+          console.log(`[PixelTracker] Meta trackSingle: ${eventName} (${resolvedEventId}) -> Pixel: ${pixelId} [Dept: ${targetDept || 'both'}]`);
+        } catch (err) {
+          console.error(`[PixelTracker] Error sending trackSingle (${eventName}) to ${pixelId}:`, err);
+        }
+      });
+    }
+
+    // 2. Server-Side Conversions API (CAPI) Dispatch
+    if (settings?.metaCapiEnabled !== false) {
+      const fbp = getCookie('_fbp');
+      const fbc = getCookie('_fbc');
+
+      fetch('/api/meta-capi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName,
+          eventId: resolvedEventId,
+          department: targetDept,
+          userData: {
+            ...userData,
+            fbp,
+            fbc,
+          },
+          customData: params,
+          eventSourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          metaCapiAccessToken: settings?.metaCapiAccessToken,
+          womenMetaCapiAccessToken: settings?.womenMetaCapiAccessToken,
+          menMetaCapiAccessToken: settings?.menMetaCapiAccessToken,
+          metaCapiTestEventCode: settings?.metaCapiTestEventCode,
+          womenMetaPixelId: settings?.womenMetaPixelId,
+          menMetaPixelId: settings?.menMetaPixelId,
+          masterMetaPixelId: settings?.metaPixelId,
+        }),
+      }).catch(err => {
+        console.debug('[PixelTracker] CAPI dispatch notification:', err);
+      });
+    }
   };
 
   // 2. Initialize TikTok Pixel
@@ -268,7 +315,7 @@ export function PixelTracker() {
         content_type: 'product',
         value: d.price,
         currency: d.currency || 'USD',
-      }, d.department);
+      }, d.department, d.eventId, d.userData);
 
       if (window.ttq) {
         window.ttq.track('AddToCart', {
@@ -305,7 +352,7 @@ export function PixelTracker() {
         content_type: 'product',
         value: d.price,
         currency: d.currency || 'USD',
-      }, d.department);
+      }, d.department, d.eventId, d.userData);
 
       if (window.ttq) {
         window.ttq.track('ViewContent', {
@@ -333,7 +380,7 @@ export function PixelTracker() {
         num_items: d.numItems,
         value: d.value,
         currency: d.currency || 'USD',
-      }, d.department);
+      }, d.department, d.eventId, d.userData);
 
       if (window.ttq) {
         window.ttq.track('InitiateCheckout', {
@@ -359,6 +406,17 @@ export function PixelTracker() {
       const d = (e as CustomEvent<TrackPurchasePayload>).detail;
       if (!d) return;
 
+      const purchaseUserData = {
+        email: d.customerEmail,
+        phone: d.customerPhone,
+        firstName: d.customerName ? d.customerName.split(' ')[0] : undefined,
+        lastName: d.customerName && d.customerName.includes(' ') ? d.customerName.split(' ').slice(1).join(' ') : undefined,
+        city: d.city,
+        country: d.country || 'lb',
+        ...d.userData,
+      };
+      const purchaseEventId = d.eventId || d.orderNumber;
+
       // Split order items by department for accurate separated purchase tracking
       const womenItems = (d.items || []).filter(i => i.department === 'women');
       const menItems = (d.items || []).filter(i => i.department === 'men');
@@ -372,7 +430,8 @@ export function PixelTracker() {
           content_type: 'product',
           content_ids: womenItems.map(i => i.id),
           num_items: womenItems.length,
-        }, 'women');
+          order_id: d.orderNumber,
+        }, 'women', `${purchaseEventId}_women`, purchaseUserData);
       }
 
       if (menItems.length > 0) {
@@ -382,7 +441,8 @@ export function PixelTracker() {
           content_type: 'product',
           content_ids: menItems.map(i => i.id),
           num_items: menItems.length,
-        }, 'men');
+          order_id: d.orderNumber,
+        }, 'men', `${purchaseEventId}_men`, purchaseUserData);
       }
 
       // If items were neither or if order had dual items, also track on general / master
@@ -393,7 +453,8 @@ export function PixelTracker() {
           content_type: 'product',
           content_ids: (d.items || []).map(i => i.id),
           num_items: (d.items || []).length,
-        }, d.department || 'both');
+          order_id: d.orderNumber,
+        }, d.department || 'both', purchaseEventId, purchaseUserData);
       }
 
       if (window.ttq) {

@@ -12,6 +12,17 @@ import { Department } from './types';
 
 export type PixelDepartment = Department | 'both';
 
+export interface PixelUserData {
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  city?: string;
+  country?: string;
+  fbp?: string;
+  fbc?: string;
+}
+
 export interface TrackAddToCartPayload {
   id: string;
   title: string;
@@ -19,6 +30,8 @@ export interface TrackAddToCartPayload {
   quantity?: number;
   currency?: string;
   department?: PixelDepartment;
+  eventId?: string;
+  userData?: PixelUserData;
 }
 
 export interface TrackViewContentPayload {
@@ -28,6 +41,8 @@ export interface TrackViewContentPayload {
   category?: string;
   currency?: string;
   department?: PixelDepartment;
+  eventId?: string;
+  userData?: PixelUserData;
 }
 
 export interface TrackInitiateCheckoutPayload {
@@ -35,6 +50,8 @@ export interface TrackInitiateCheckoutPayload {
   value: number;
   currency?: string;
   department?: PixelDepartment;
+  eventId?: string;
+  userData?: PixelUserData;
 }
 
 export interface TrackPurchaseItem {
@@ -51,6 +68,13 @@ export interface TrackPurchasePayload {
   currency?: string;
   department?: PixelDepartment;
   items: TrackPurchaseItem[];
+  eventId?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  customerName?: string;
+  city?: string;
+  country?: string;
+  userData?: PixelUserData;
 }
 
 export function trackPixelPageView(path?: string, department?: PixelDepartment) {

@@ -241,6 +241,11 @@ export default function CheckoutPage() {
       orderNumber: newOrder.orderNumber,
       value: newOrder.totalUSD,
       currency: newOrder.currency || 'USD',
+      customerPhone: newOrder.customerPhone,
+      customerEmail: newOrder.customerEmail,
+      customerName: newOrder.customerName,
+      city: newOrder.city,
+      country: 'lb',
       items: newOrder.items.map(i => ({
         id: i.productId,
         title: i.productTitle,

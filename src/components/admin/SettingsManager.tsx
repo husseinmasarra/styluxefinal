@@ -5,7 +5,7 @@ import { useCart } from '@/lib/CartContext';
 import { DataService } from '@/lib/store';
 import { StoreSettings } from '@/lib/types';
 import { compressImageFile } from '@/lib/imageCompressor';
-import { Save, Check, Plus, Trash2, Globe, Shield, Truck, DollarSign, Image as ImageIcon, Send, Percent, Upload, Phone, Instagram, Database, Download, Cloud, RefreshCw, Target, BarChart3, Radio, Video, Film, Sparkles, Eye } from 'lucide-react';
+import { Save, Check, Plus, Trash2, Globe, Shield, Truck, DollarSign, Image as ImageIcon, Send, Percent, Upload, Phone, Instagram, Database, Download, Cloud, RefreshCw, Target, BarChart3, Radio, Video, Film, Sparkles, Eye, EyeOff, Zap, Server, Key } from 'lucide-react';
 import { testSupabaseConnection, syncLocalDataToSupabase, getSupabaseClient, SUPABASE_CONFIG } from '@/lib/supabase';
 
 export function SettingsManager() {
@@ -21,6 +21,56 @@ export function SettingsManager() {
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showCapiToken, setShowCapiToken] = useState(false);
+  const [capiTestStatus, setCapiTestStatus] = useState<{ loading: boolean; message: string | null; success?: boolean }>({
+    loading: false,
+    message: null,
+  });
+
+  const handleTestCapiConnection = async () => {
+    const token = formData.metaCapiAccessToken?.trim();
+    if (!token) {
+      setCapiTestStatus({
+        loading: false,
+        message: 'Please enter your Meta Conversions API Access Token first.',
+        success: false,
+      });
+      return;
+    }
+
+    setCapiTestStatus({ loading: true, message: 'Contacting Meta Graph API...' });
+    try {
+      const pixelId = formData.womenMetaPixelId || formData.menMetaPixelId || formData.metaPixelId || '1128799242995614';
+      const testCode = formData.metaCapiTestEventCode?.trim() || '';
+      const res = await fetch(`/api/meta-capi?token=${encodeURIComponent(token)}&pixelId=${encodeURIComponent(pixelId)}${testCode ? `&testCode=${encodeURIComponent(testCode)}` : ''}`);
+      const data = await res.json();
+      if (data.success && data.metaResponse?.events_received) {
+        setCapiTestStatus({
+          loading: false,
+          message: `Success! Meta received test event (FB Trace ID: ${data.metaResponse.fbtrace_id || 'OK'})`,
+          success: true,
+        });
+      } else if (data.metaResponse?.error) {
+        setCapiTestStatus({
+          loading: false,
+          message: `Meta Error: ${data.metaResponse.error.message || 'Authentication failed'}`,
+          success: false,
+        });
+      } else {
+        setCapiTestStatus({
+          loading: false,
+          message: data.message || 'Connected to Meta Conversions API!',
+          success: data.success ?? true,
+        });
+      }
+    } catch (err: any) {
+      setCapiTestStatus({
+        loading: false,
+        message: `Connection failed: ${err.message}`,
+        success: false,
+      });
+    }
+  };
 
   useEffect(() => {
     setFormData({ ...settings });
@@ -868,6 +918,164 @@ export function SettingsManager() {
             <span className="text-[11px] text-zinc-500">
               Optional unified pixel receiving all store events across both departments for consolidated master ad accounts.
             </span>
+          </div>
+
+          {/* META CONVERSIONS API (CAPI) SERVER-SIDE ENGINE */}
+          <div className="mt-4 pt-5 border-t-2 border-zinc-200 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 p-4 rounded-xl border border-emerald-200">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="p-1.5 bg-emerald-600 text-white rounded-md shadow-sm">
+                    <Server size={18} />
+                  </span>
+                  <span className="text-xs font-black text-emerald-950 uppercase tracking-widest">
+                    Meta Conversions API (CAPI) • Server-Side Engine
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase">
+                    Graph API v19.0
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-900/80 font-medium">
+                  Direct server-to-server tracking bypassing browser ad-blockers, iOS 14+ restrictions, and maximizing Event Match Quality (EMQ) via SHA-256 hashed customer phones (+961) and emails.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <label className="flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-lg border border-emerald-300 shadow-sm">
+                  <input
+                    type="checkbox"
+                    checked={formData.metaCapiEnabled !== false}
+                    onChange={e => handleChange('metaCapiEnabled', e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-zinc-300 cursor-pointer"
+                  />
+                  <span className="text-xs font-bold text-zinc-900">
+                    Enable CAPI
+                  </span>
+                </label>
+
+                {formData.metaCapiAccessToken?.trim() ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black bg-emerald-600 text-white shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                    CAPI ACTIVE
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                    TOKEN REQUIRED
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* CAPI ACCESS TOKEN */}
+              <div className="lg:col-span-2 p-4 bg-white rounded-xl border border-zinc-300 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <Key size={14} className="text-emerald-600" />
+                    <span>Conversions API Access Token (System User Token)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowCapiToken(!showCapiToken)}
+                    className="text-xs font-bold text-zinc-500 hover:text-zinc-950 flex items-center gap-1 cursor-pointer"
+                  >
+                    {showCapiToken ? <EyeOff size={14} /> : <Eye size={14} />}
+                    <span>{showCapiToken ? 'Hide' : 'Show Token'}</span>
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showCapiToken ? 'text' : 'password'}
+                    value={formData.metaCapiAccessToken || ''}
+                    onChange={e => handleChange('metaCapiAccessToken', e.target.value.trim())}
+                    placeholder="EAAG... (Paste your Meta System User Access Token here)"
+                    className="w-full p-3 border-2 border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-zinc-50/40 focus:outline-none focus:border-emerald-600 focus:bg-white"
+                  />
+                </div>
+
+                <p className="text-[11px] text-zinc-600 leading-relaxed">
+                  💡 <strong>How to get:</strong> Open <strong>Meta Events Manager</strong> ➔ Select your Pixel ➔ <strong>Settings</strong> tab ➔ Scroll down to <strong>Conversions API</strong> ➔ Click <strong>&quot;Generate access token&quot;</strong> and paste here.
+                </p>
+              </div>
+
+              {/* TEST EVENT CODE & VERIFICATION */}
+              <div className="p-4 bg-white rounded-xl border border-zinc-300 space-y-2 shadow-sm flex flex-col justify-between">
+                <div>
+                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                    <Zap size={14} className="text-amber-500" />
+                    <span>Test Event Code (Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.metaCapiTestEventCode || ''}
+                    onChange={e => handleChange('metaCapiTestEventCode', e.target.value.trim())}
+                    placeholder="e.g. TEST12345"
+                    className="w-full p-3 border-2 border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-zinc-50/40 focus:outline-none focus:border-amber-500 focus:bg-white"
+                  />
+                  <p className="text-[10px] text-zinc-500 mt-1">
+                    Found in Meta Events Manager ➔ Test Events tab. Leave blank for live production ads.
+                  </p>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleTestCapiConnection}
+                    disabled={capiTestStatus.loading}
+                    className="w-full py-2.5 px-3 bg-zinc-900 hover:bg-zinc-950 text-white text-xs font-black uppercase tracking-wider rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    {capiTestStatus.loading ? (
+                      <RefreshCw size={14} className="animate-spin" />
+                    ) : (
+                      <Radio size={14} className="text-emerald-400" />
+                    )}
+                    <span>{capiTestStatus.loading ? 'Testing Connection...' : 'Test CAPI Connection'}</span>
+                  </button>
+
+                  {capiTestStatus.message && (
+                    <div className={`mt-2 p-2 rounded text-[11px] font-bold ${
+                      capiTestStatus.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+                    }`}>
+                      {capiTestStatus.message}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ADVANCED DEDICATED CAPI TOKEN OVERRIDES */}
+            <details className="text-xs text-zinc-600 bg-zinc-50/80 p-3 rounded-lg border border-zinc-200">
+              <summary className="font-bold text-zinc-800 cursor-pointer hover:text-zinc-950">
+                ✦ Advanced: Department-Specific CAPI Token Overrides (Optional)
+              </summary>
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-zinc-200">
+                <div>
+                  <label className="text-[11px] font-bold text-pink-950 block mb-1">
+                    👠 Women CAPI Access Token (Optional):
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.womenMetaCapiAccessToken || ''}
+                    onChange={e => handleChange('womenMetaCapiAccessToken', e.target.value.trim())}
+                    placeholder="Leave blank to use master token above"
+                    className="w-full p-2.5 border border-pink-300 rounded font-mono text-xs font-bold text-zinc-950 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-indigo-950 block mb-1">
+                    👔 Men CAPI Access Token (Optional):
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.menMetaCapiAccessToken || ''}
+                    onChange={e => handleChange('menMetaCapiAccessToken', e.target.value.trim())}
+                    placeholder="Leave blank to use master token above"
+                    className="w-full p-2.5 border border-indigo-300 rounded font-mono text-xs font-bold text-zinc-950 bg-white"
+                  />
+                </div>
+              </div>
+            </details>
           </div>
         </div>
 
