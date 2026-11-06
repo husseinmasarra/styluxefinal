@@ -21,50 +21,66 @@ export function SettingsManager() {
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [showCapiToken, setShowCapiToken] = useState(false);
-  const [capiTestStatus, setCapiTestStatus] = useState<{ loading: boolean; message: string | null; success?: boolean }>({
+  const [showWomenCapiToken, setShowWomenCapiToken] = useState(false);
+  const [showMenCapiToken, setShowMenCapiToken] = useState(false);
+  const [showMasterCapiToken, setShowMasterCapiToken] = useState(false);
+  const [womenCapiTestStatus, setWomenCapiTestStatus] = useState<{ loading: boolean; message: string | null; success?: boolean }>({
+    loading: false,
+    message: null,
+  });
+  const [menCapiTestStatus, setMenCapiTestStatus] = useState<{ loading: boolean; message: string | null; success?: boolean }>({
     loading: false,
     message: null,
   });
 
-  const handleTestCapiConnection = async () => {
-    const token = formData.metaCapiAccessToken?.trim();
+  const handleTestSpecificCapi = async (target: 'women' | 'men') => {
+    const isWomen = target === 'women';
+    const token = isWomen 
+      ? (formData.womenMetaCapiAccessToken?.trim() || formData.metaCapiAccessToken?.trim())
+      : (formData.menMetaCapiAccessToken?.trim() || formData.metaCapiAccessToken?.trim());
+
+    const pixelId = isWomen
+      ? (formData.womenMetaPixelId?.trim() || '1128799242995614')
+      : (formData.menMetaPixelId?.trim() || '1644089083922873');
+
+    const setStatus = isWomen ? setWomenCapiTestStatus : setMenCapiTestStatus;
+
     if (!token) {
-      setCapiTestStatus({
+      setStatus({
         loading: false,
-        message: 'Please enter your Meta Conversions API Access Token first.',
+        message: `Please paste the ${isWomen ? 'Women' : 'Men'} CAPI Access Token first.`,
         success: false,
       });
       return;
     }
 
-    setCapiTestStatus({ loading: true, message: 'Contacting Meta Graph API...' });
+    setStatus({ loading: true, message: `Connecting to Meta for ${isWomen ? 'Women' : 'Men'} Pixel (${pixelId})...` });
+
     try {
-      const pixelId = formData.womenMetaPixelId || formData.menMetaPixelId || formData.metaPixelId || '1128799242995614';
       const testCode = formData.metaCapiTestEventCode?.trim() || '';
       const res = await fetch(`/api/meta-capi?token=${encodeURIComponent(token)}&pixelId=${encodeURIComponent(pixelId)}${testCode ? `&testCode=${encodeURIComponent(testCode)}` : ''}`);
       const data = await res.json();
       if (data.success && data.metaResponse?.events_received) {
-        setCapiTestStatus({
+        setStatus({
           loading: false,
-          message: `Success! Meta received test event (FB Trace ID: ${data.metaResponse.fbtrace_id || 'OK'})`,
+          message: `✅ Connected! Meta confirmed receiving event for Pixel ${pixelId} (FB Trace: ${data.metaResponse.fbtrace_id?.substring(0, 10)}...)`,
           success: true,
         });
       } else if (data.metaResponse?.error) {
-        setCapiTestStatus({
+        setStatus({
           loading: false,
-          message: `Meta Error: ${data.metaResponse.error.message || 'Authentication failed'}`,
+          message: `❌ Meta Error: ${data.metaResponse.error.message || 'Invalid Token or Pixel mismatch'}`,
           success: false,
         });
       } else {
-        setCapiTestStatus({
+        setStatus({
           loading: false,
-          message: data.message || 'Connected to Meta Conversions API!',
+          message: data.message || 'Connected to Meta CAPI!',
           success: data.success ?? true,
         });
       }
     } catch (err: any) {
-      setCapiTestStatus({
+      setStatus({
         loading: false,
         message: `Connection failed: ${err.message}`,
         success: false,
@@ -966,116 +982,171 @@ export function SettingsManager() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* CAPI ACCESS TOKEN */}
-              <div className="lg:col-span-2 p-4 bg-white rounded-xl border border-zinc-300 space-y-2 shadow-sm">
+            {/* DEDICATED SEPARATED CAPI TOKENS: WOMEN & MEN */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* WOMEN CAPI TOKEN */}
+              <div className="p-5 bg-white rounded-xl border-2 border-pink-200 hover:border-pink-500 transition-all space-y-3 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider flex items-center gap-1.5">
-                    <Key size={14} className="text-emerald-600" />
-                    <span>Conversions API Access Token (System User Token)</span>
+                  <label className="text-xs font-black text-pink-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-base">👠</span>
+                    <span>WOMEN CAPI TOKEN (@styluxe.womenn)</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowCapiToken(!showCapiToken)}
-                    className="text-xs font-bold text-zinc-500 hover:text-zinc-950 flex items-center gap-1 cursor-pointer"
-                  >
-                    {showCapiToken ? <EyeOff size={14} /> : <Eye size={14} />}
-                    <span>{showCapiToken ? 'Hide' : 'Show Token'}</span>
-                  </button>
+                  <span className="text-[10px] font-mono font-black px-2 py-0.5 bg-pink-100 text-pink-700 rounded">
+                    PIXEL: {formData.womenMetaPixelId || '1128799242995614'}
+                  </span>
                 </div>
 
                 <div className="relative">
                   <input
-                    type={showCapiToken ? 'text' : 'password'}
-                    value={formData.metaCapiAccessToken || ''}
-                    onChange={e => handleChange('metaCapiAccessToken', e.target.value.trim())}
-                    placeholder="EAAG... (Paste your Meta System User Access Token here)"
-                    className="w-full p-3 border-2 border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-zinc-50/40 focus:outline-none focus:border-emerald-600 focus:bg-white"
+                    type={showWomenCapiToken ? 'text' : 'password'}
+                    value={formData.womenMetaCapiAccessToken || ''}
+                    onChange={e => handleChange('womenMetaCapiAccessToken', e.target.value.trim())}
+                    placeholder="EAAG... (Paste Women CAPI Token here)"
+                    className="w-full p-3.5 pr-20 border-2 border-pink-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-pink-50/20 focus:outline-none focus:border-pink-600 focus:bg-white"
                   />
-                </div>
-
-                <p className="text-[11px] text-zinc-600 leading-relaxed">
-                  💡 <strong>How to get:</strong> Open <strong>Meta Events Manager</strong> ➔ Select your Pixel ➔ <strong>Settings</strong> tab ➔ Scroll down to <strong>Conversions API</strong> ➔ Click <strong>&quot;Generate access token&quot;</strong> and paste here.
-                </p>
-              </div>
-
-              {/* TEST EVENT CODE & VERIFICATION */}
-              <div className="p-4 bg-white rounded-xl border border-zinc-300 space-y-2 shadow-sm flex flex-col justify-between">
-                <div>
-                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
-                    <Zap size={14} className="text-amber-500" />
-                    <span>Test Event Code (Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.metaCapiTestEventCode || ''}
-                    onChange={e => handleChange('metaCapiTestEventCode', e.target.value.trim())}
-                    placeholder="e.g. TEST12345"
-                    className="w-full p-3 border-2 border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-zinc-50/40 focus:outline-none focus:border-amber-500 focus:bg-white"
-                  />
-                  <p className="text-[10px] text-zinc-500 mt-1">
-                    Found in Meta Events Manager ➔ Test Events tab. Leave blank for live production ads.
-                  </p>
-                </div>
-
-                <div className="pt-2">
                   <button
                     type="button"
-                    onClick={handleTestCapiConnection}
-                    disabled={capiTestStatus.loading}
-                    className="w-full py-2.5 px-3 bg-zinc-900 hover:bg-zinc-950 text-white text-xs font-black uppercase tracking-wider rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                    onClick={() => setShowWomenCapiToken(!showWomenCapiToken)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-pink-700 hover:text-pink-950 flex items-center gap-1 cursor-pointer bg-pink-100/80 px-2 py-1 rounded"
                   >
-                    {capiTestStatus.loading ? (
-                      <RefreshCw size={14} className="animate-spin" />
-                    ) : (
-                      <Radio size={14} className="text-emerald-400" />
-                    )}
-                    <span>{capiTestStatus.loading ? 'Testing Connection...' : 'Test CAPI Connection'}</span>
+                    {showWomenCapiToken ? <EyeOff size={13} /> : <Eye size={13} />}
+                    <span>{showWomenCapiToken ? 'Hide' : 'Show'}</span>
                   </button>
-
-                  {capiTestStatus.message && (
-                    <div className={`mt-2 p-2 rounded text-[11px] font-bold ${
-                      capiTestStatus.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
-                    }`}>
-                      {capiTestStatus.message}
-                    </div>
-                  )}
                 </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+                  <p className="text-[11px] text-zinc-600">
+                    💡 Dedicated token from Events Manager for Women ads &amp; purchases.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleTestSpecificCapi('women')}
+                    disabled={womenCapiTestStatus.loading}
+                    className="shrink-0 py-2 px-3 bg-pink-700 hover:bg-pink-800 text-white text-[11px] font-black uppercase tracking-wider rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    {womenCapiTestStatus.loading ? (
+                      <RefreshCw size={13} className="animate-spin" />
+                    ) : (
+                      <Radio size={13} className="text-pink-300" />
+                    )}
+                    <span>{womenCapiTestStatus.loading ? 'Testing...' : 'Test Women CAPI'}</span>
+                  </button>
+                </div>
+
+                {womenCapiTestStatus.message && (
+                  <div className={`p-2.5 rounded-lg text-xs font-bold leading-relaxed ${
+                    womenCapiTestStatus.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+                  }`}>
+                    {womenCapiTestStatus.message}
+                  </div>
+                )}
+              </div>
+
+              {/* MEN CAPI TOKEN */}
+              <div className="p-5 bg-white rounded-xl border-2 border-indigo-200 hover:border-indigo-500 transition-all space-y-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-base">👔</span>
+                    <span>MEN CAPI TOKEN (@styluxe.men_lb)</span>
+                  </label>
+                  <span className="text-[10px] font-mono font-black px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">
+                    PIXEL: {formData.menMetaPixelId || '1644089083922873'}
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showMenCapiToken ? 'text' : 'password'}
+                    value={formData.menMetaCapiAccessToken || ''}
+                    onChange={e => handleChange('menMetaCapiAccessToken', e.target.value.trim())}
+                    placeholder="EAAG... (Paste Men CAPI Token here)"
+                    className="w-full p-3.5 pr-20 border-2 border-indigo-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-indigo-50/20 focus:outline-none focus:border-indigo-600 focus:bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowMenCapiToken(!showMenCapiToken)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-indigo-700 hover:text-indigo-950 flex items-center gap-1 cursor-pointer bg-indigo-100/80 px-2 py-1 rounded"
+                  >
+                    {showMenCapiToken ? <EyeOff size={13} /> : <Eye size={13} />}
+                    <span>{showMenCapiToken ? 'Hide' : 'Show'}</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+                  <p className="text-[11px] text-zinc-600">
+                    💡 Dedicated token from Events Manager for Men ads &amp; purchases.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleTestSpecificCapi('men')}
+                    disabled={menCapiTestStatus.loading}
+                    className="shrink-0 py-2 px-3 bg-indigo-700 hover:bg-indigo-800 text-white text-[11px] font-black uppercase tracking-wider rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  >
+                    {menCapiTestStatus.loading ? (
+                      <RefreshCw size={13} className="animate-spin" />
+                    ) : (
+                      <Radio size={13} className="text-indigo-300" />
+                    )}
+                    <span>{menCapiTestStatus.loading ? 'Testing...' : 'Test Men CAPI'}</span>
+                  </button>
+                </div>
+
+                {menCapiTestStatus.message && (
+                  <div className={`p-2.5 rounded-lg text-xs font-bold leading-relaxed ${
+                    menCapiTestStatus.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'
+                  }`}>
+                    {menCapiTestStatus.message}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* ADVANCED DEDICATED CAPI TOKEN OVERRIDES */}
-            <details className="text-xs text-zinc-600 bg-zinc-50/80 p-3 rounded-lg border border-zinc-200">
-              <summary className="font-bold text-zinc-800 cursor-pointer hover:text-zinc-950">
-                ✦ Advanced: Department-Specific CAPI Token Overrides (Optional)
-              </summary>
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-zinc-200">
-                <div>
-                  <label className="text-[11px] font-bold text-pink-950 block mb-1">
-                    👠 Women CAPI Access Token (Optional):
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.womenMetaCapiAccessToken || ''}
-                    onChange={e => handleChange('womenMetaCapiAccessToken', e.target.value.trim())}
-                    placeholder="Leave blank to use master token above"
-                    className="w-full p-2.5 border border-pink-300 rounded font-mono text-xs font-bold text-zinc-950 bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-indigo-950 block mb-1">
-                    👔 Men CAPI Access Token (Optional):
-                  </label>
-                  <input
-                    type="password"
-                    value={formData.menMetaCapiAccessToken || ''}
-                    onChange={e => handleChange('menMetaCapiAccessToken', e.target.value.trim())}
-                    placeholder="Leave blank to use master token above"
-                    className="w-full p-2.5 border border-indigo-300 rounded font-mono text-xs font-bold text-zinc-950 bg-white"
-                  />
-                </div>
+            {/* UNIFIED / TEST SETTINGS */}
+            <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block mb-1 flex items-center gap-1.5">
+                  <Zap size={14} className="text-amber-500" />
+                  <span>Test Event Code (Optional for Live Testing)</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.metaCapiTestEventCode || ''}
+                  onChange={e => handleChange('metaCapiTestEventCode', e.target.value.trim())}
+                  placeholder="e.g. TEST12345"
+                  className="w-full p-2.5 border-2 border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-white focus:outline-none focus:border-amber-500"
+                />
+                <span className="text-[10px] text-zinc-500 mt-1 block">
+                  Copy from Meta Events Manager ➔ Test Events tab. Leave empty in production.
+                </span>
               </div>
-            </details>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <Key size={14} className="text-zinc-600" />
+                    <span>Master / Store-Wide Token (Optional Fallback)</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowMasterCapiToken(!showMasterCapiToken)}
+                    className="text-[11px] font-bold text-zinc-500 hover:text-zinc-950 flex items-center gap-1 cursor-pointer"
+                  >
+                    {showMasterCapiToken ? <EyeOff size={12} /> : <Eye size={12} />}
+                    <span>{showMasterCapiToken ? 'Hide' : 'Show'}</span>
+                  </button>
+                </div>
+                <input
+                  type={showMasterCapiToken ? 'text' : 'password'}
+                  value={formData.metaCapiAccessToken || ''}
+                  onChange={e => handleChange('metaCapiAccessToken', e.target.value.trim())}
+                  placeholder="Optional unified fallback token"
+                  className="w-full p-2.5 border-2 border-zinc-300 rounded-lg font-mono text-xs font-bold text-zinc-950 bg-white focus:outline-none focus:border-zinc-950"
+                />
+                <span className="text-[10px] text-zinc-500 mt-1 block">
+                  Used as fallback if any department-specific token above is left blank.
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

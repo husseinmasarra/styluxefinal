@@ -85,19 +85,25 @@ export async function POST(req: NextRequest) {
     }
 
     // Access Token resolution
-    const token =
+    const defaultToken =
       customToken ||
       body.metaCapiAccessToken ||
-      (department === 'women' ? (body.womenMetaCapiAccessToken || process.env.WOMEN_META_CAPI_TOKEN) : undefined) ||
-      (department === 'men' ? (body.menMetaCapiAccessToken || process.env.MEN_META_CAPI_TOKEN) : undefined) ||
       process.env.META_CAPI_ACCESS_TOKEN ||
       process.env.FACEBOOK_CONVERSIONS_API_TOKEN;
 
-    if (!token) {
+    const hasAnyToken = !!(
+      defaultToken ||
+      body.womenMetaCapiAccessToken ||
+      body.menMetaCapiAccessToken ||
+      process.env.WOMEN_META_CAPI_TOKEN ||
+      process.env.MEN_META_CAPI_TOKEN
+    );
+
+    if (!hasAnyToken) {
       console.warn('[Meta CAPI] No Access Token configured. Event queued but skipped dispatch.');
       return NextResponse.json({
         success: false,
-        warning: 'Meta CAPI Access Token is not set. Please configure it in Admin Settings > Tracking Pixels.',
+        warning: 'Meta CAPI Access Token is not set. Please configure Women or Men tokens in Admin Settings > Tracking Pixels.',
         eventName,
         eventId,
       }, { status: 200 });
@@ -157,13 +163,35 @@ export async function POST(req: NextRequest) {
 
     const results = [];
 
-    // Dispatch to each target pixel
+    // Dispatch to each target pixel with its own dedicated token
     for (const pixelId of targetPixelIds) {
       try {
+        // Resolve dedicated token for each pixel
+        let pixelToken = customToken;
+        if (!pixelToken) {
+          if (pixelId === womenPixelId && (body.womenMetaCapiAccessToken || process.env.WOMEN_META_CAPI_TOKEN)) {
+            pixelToken = body.womenMetaCapiAccessToken || process.env.WOMEN_META_CAPI_TOKEN;
+          } else if (pixelId === menPixelId && (body.menMetaCapiAccessToken || process.env.MEN_META_CAPI_TOKEN)) {
+            pixelToken = body.menMetaCapiAccessToken || process.env.MEN_META_CAPI_TOKEN;
+          } else {
+            pixelToken = defaultToken;
+          }
+        }
+
+        if (!pixelToken) {
+          console.warn(`[Meta CAPI] No Access Token found for Pixel ${pixelId}. Skipping.`);
+          results.push({
+            pixelId,
+            success: false,
+            warning: 'No token configured for this pixel',
+          });
+          continue;
+        }
+
         const metaApiUrl = `https://graph.facebook.com/v19.0/${pixelId}/events`;
         const postData: Record<string, any> = {
           data: [eventPayload],
-          access_token: token,
+          access_token: pixelToken,
         };
 
         if (effectiveTestCode) {
