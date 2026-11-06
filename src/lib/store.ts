@@ -1063,3 +1063,55 @@ export function getCustomerTier(totalSpentUSD: number = 0, totalOrders: number =
     ]
   };
 }
+
+
+/**
+ * Automatically normalizes and formats any phone number with Lebanon country code (+961)
+ * Even if user enters 8 digits, 7 digits, or without country code, it always guarantees +961.
+ */
+export function formatLebanonPhone(phoneStr: string): string {
+  if (!phoneStr) return '';
+  const trimmed = String(phoneStr).trim();
+  const hasPlus = trimmed.startsWith('+');
+  let digits = trimmed.replace(/[^0-9]/g, '');
+  if (!digits) return '';
+
+  if (digits.startsWith('00')) {
+    digits = digits.substring(2);
+  }
+
+  // If already starts with 961
+  if (digits.startsWith('961')) {
+    const local = digits.substring(3);
+    if ((local.startsWith('3') || local.startsWith('03')) && (local.length === 7 || local.length === 8)) {
+      const clean3 = local.startsWith('0') ? local.substring(1) : local;
+      return `+961 3 ${clean3.substring(1, 4)} ${clean3.substring(4)}`;
+    } else if (local.length === 8) {
+      return `+961 ${local.substring(0, 2)} ${local.substring(2, 5)} ${local.substring(5)}`;
+    }
+    return `+961 ${local}`;
+  }
+
+  // If local Lebanese mobile/landline with leading 0 (e.g. 03, 01, 04, 05, 06, 07, 08, 09, 070...)
+  if (digits.startsWith('0') && (digits.length === 8 || digits.length === 7)) {
+    digits = digits.substring(1);
+  }
+
+  // 7-digit mobile starting with 3 (e.g. 3 998877)
+  if (digits.length === 7 && digits.startsWith('3')) {
+    return `+961 3 ${digits.substring(1, 4)} ${digits.substring(4)}`;
+  }
+
+  // Standard 8-digit mobile (e.g. 70, 71, 76, 78, 79, 81, etc.)
+  if (digits.length === 8) {
+    return `+961 ${digits.substring(0, 2)} ${digits.substring(2, 5)} ${digits.substring(5)}`;
+  }
+
+  // If it's an international number with another country code that was explicitly entered with +
+  if (hasPlus && digits.length >= 9 && !digits.startsWith('961')) {
+    return `+${digits}`;
+  }
+
+  // Default fallback: ALWAYS prepend +961!
+  return `+961 ${digits}`;
+}

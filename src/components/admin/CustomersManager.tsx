@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DataService, formatCurrency, getCustomerTier } from '@/lib/store';
+import { DataService, formatCurrency, getCustomerTier, formatLebanonPhone } from '@/lib/store';
 import { INITIAL_CUSTOMERS } from '@/lib/seed';
 import { Customer, CustomerDepartment, CustomerTier, Order } from '@/lib/types';
 import { useCart } from '@/lib/CartContext';
@@ -34,13 +34,21 @@ function normalizePhoneForWhatsApp(phoneStr: string): string {
   if (cleaned.startsWith('00')) {
     cleaned = cleaned.substring(2);
   }
-  // Lebanese 8-digit mobile (e.g. 03XXXXXX, 70XXXXXX, 71XXXXXX, 76XXXXXX, 78XXXXXX, 79XXXXXX, 81XXXXXX)
-  if (cleaned.length === 8 && cleaned.startsWith('0')) {
-    cleaned = '961' + cleaned.substring(1);
-  } else if (cleaned.length === 8 && (cleaned.startsWith('70') || cleaned.startsWith('71') || cleaned.startsWith('76') || cleaned.startsWith('78') || cleaned.startsWith('79') || cleaned.startsWith('81') || cleaned.startsWith('03'))) {
-    cleaned = '961' + cleaned;
-  } else if (cleaned.length === 7 && cleaned.startsWith('3')) {
-    cleaned = '961' + cleaned;
+  // Guarantee 961 for any Lebanese phone entered without country code
+  if (cleaned.startsWith('961')) {
+    return cleaned;
+  }
+  if (cleaned.startsWith('0') && (cleaned.length === 8 || cleaned.length === 7)) {
+    return '961' + cleaned.substring(1);
+  }
+  if (cleaned.length === 7 && cleaned.startsWith('3')) {
+    return '961' + cleaned;
+  }
+  if (cleaned.length === 8) {
+    return '961' + cleaned;
+  }
+  if (cleaned.length > 0 && !cleaned.startsWith('961') && cleaned.length <= 8) {
+    return '961' + cleaned;
   }
   return cleaned;
 }
@@ -750,7 +758,7 @@ export function CustomersManager() {
         id: `cust-lead-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
         name: lead.name.trim(),
         email: `${cleanDigits}@styluxelead.com`,
-        phone: lead.normalizedPhone,
+        phone: formatLebanonPhone(lead.normalizedPhone || lead.phone),
         address: 'Lebanon',
         city: 'Beirut',
         notes: `Imported via ${importSource.toUpperCase()} Lead Import (${importDepartment.toUpperCase()}) on ${new Date().toLocaleDateString()}`,
@@ -778,12 +786,13 @@ export function CustomersManager() {
       formData.tier === 'auto' ? undefined : (formData.tier as CustomerTier);
 
     let updatedCust: Customer;
+    const finalPhone = formatLebanonPhone(formData.phone.trim());
     if (editingCustomer) {
       updatedCust = {
         ...editingCustomer,
         name: formData.name.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim(),
+        phone: finalPhone,
         address: formData.address.trim(),
         city: formData.city.trim() || 'Beirut',
         notes: formData.notes.trim(),
@@ -1647,10 +1656,14 @@ export function CustomersManager() {
                     type="text" 
                     value={formData.phone} 
                     onChange={e => setFormData({ ...formData, phone: e.target.value })} 
+                    onBlur={() => setFormData(prev => ({ ...prev, phone: formatLebanonPhone(prev.phone) }))}
                     required 
-                    placeholder="e.g. +961 70 123 456"
+                    placeholder="e.g. 70 123 456 or +961 70 123 456"
                     className="w-full p-3.5 border-2 border-zinc-300 rounded text-sm font-bold text-zinc-950 focus:outline-none focus:border-zinc-950"
                   />
+                  <span className="text-[10px] text-zinc-500 font-bold block pt-0.5">
+                    🇱🇧 Always automatically formatted with Lebanon code (+961)
+                  </span>
                 </div>
 
                 <div className="space-y-1">
@@ -2628,8 +2641,8 @@ export function CustomersManager() {
                                 placeholder="Client name..."
                               />
                             </td>
-                            <td className="p-2.5 font-mono font-bold text-zinc-950 whitespace-nowrap">
-                              {lead.normalizedPhone}
+                            <td className="p-2.5 font-mono font-bold text-emerald-700 whitespace-nowrap" title="Automatically formatted with Lebanon code (+961)">
+                              {formatLebanonPhone(lead.normalizedPhone || lead.phone)}
                             </td>
                             <td className="p-2.5 hidden md:table-cell text-zinc-400 text-[11px] truncate max-w-[200px] font-mono">
                               {lead.raw}

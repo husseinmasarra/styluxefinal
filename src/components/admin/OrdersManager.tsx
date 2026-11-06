@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { DataService, formatCurrency, getCustomerTier } from '@/lib/store';
+import { DataService, formatCurrency, getCustomerTier, formatLebanonPhone } from '@/lib/store';
 import { Order, OrderItem, Product, Customer } from '@/lib/types';
 import { useCart } from '@/lib/CartContext';
 import { Search, Printer, Eye, Trash2, CheckCircle2, Clock, Truck, RefreshCw, X, ShieldCheck, Download, MessageCircle, Volume2, Plus, Sparkles, Send, UserCheck, PackagePlus } from 'lucide-react';
@@ -205,7 +205,7 @@ export function OrdersManager() {
       orderNumber,
       customerName: waCustomerName.trim(),
       customerEmail: matchedCustomer?.email || `${cleanPhoneInput}@styluxecustomer.com`,
-      customerPhone: waCustomerPhone.trim(),
+      customerPhone: formatLebanonPhone(waCustomerPhone.trim()),
       shippingAddress: waCustomerAddress.trim() || 'Direct WhatsApp Dispatch',
       city: waCustomerCity.trim() || 'Beirut',
       country: 'Lebanon',
@@ -946,6 +946,7 @@ export function OrdersManager() {
                         type="text"
                         value={waCustomerPhone}
                         onChange={(e) => setWaCustomerPhone(e.target.value)}
+                        onBlur={() => setWaCustomerPhone(prev => formatLebanonPhone(prev))}
                         placeholder="e.g. 70 123 456 or 81713408"
                         className="w-full px-4 py-2.5 border-2 border-zinc-300 font-bold text-zinc-950 rounded text-sm focus:border-zinc-950 focus:outline-none"
                       />

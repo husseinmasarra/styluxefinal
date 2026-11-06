@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, ShieldCheck, Truck, Banknote, ArrowLeft, Printer, Trash2, Plus, Minus, ShoppingBag, MessageCircle } from 'lucide-react';
 import { useCart } from '@/lib/CartContext';
-import { DataService, formatCurrency, getProductDisplayPrices, getCustomerTier } from '@/lib/store';
+import { DataService, formatCurrency, getProductDisplayPrices, getCustomerTier, formatLebanonPhone } from '@/lib/store';
 import { Order, OrderItem } from '@/lib/types';
 import { trackPixelInitiateCheckout, trackPixelPurchase } from '@/lib/pixelEvents';
 
@@ -486,6 +486,7 @@ export default function CheckoutPage() {
                   required
                   value={customerPhone}
                   onChange={e => setCustomerPhone(e.target.value)}
+                  onBlur={() => setCustomerPhone(prev => formatLebanonPhone(prev))}
                   placeholder="+961 70 123 456"
                   className="w-full p-2.5 border border-zinc-200 text-xs focus:outline-none focus:border-zinc-950"
                 />
