@@ -54,6 +54,16 @@ export function SettingsManager() {
       return;
     }
 
+    // Friendly validation: Detect if user entered a Pixel ID instead of an Access Token
+    if (/^\d+$/.test(token) || token.length < 30) {
+      setStatus({
+        loading: false,
+        message: `❌ Notice: "${token}" is a numeric Pixel ID. The CAPI Access Token is a long secret key (starting with "EAAG..." and ~180 characters long) generated in Meta Events Manager ➔ Settings ➔ Conversions API ➔ "Generate access token".`,
+        success: false,
+      });
+      return;
+    }
+
     setStatus({ loading: true, message: `Connecting to Meta for ${isWomen ? 'Women' : 'Men'} Pixel (${pixelId})...` });
 
     try {
@@ -1014,6 +1024,12 @@ export function SettingsManager() {
                   </button>
                 </div>
 
+                {formData.womenMetaCapiAccessToken && /^\d+$/.test(formData.womenMetaCapiAccessToken) && (
+                  <p className="text-[11px] font-bold text-amber-800 bg-amber-50 p-2 rounded border border-amber-300 leading-tight">
+                    ⚠️ Note: You entered the Pixel ID ({formData.womenMetaCapiAccessToken}). The CAPI Access Token is a long key starting with &quot;EAAG...&quot; generated from Meta Events Manager ➔ Settings ➔ &quot;Generate access token&quot;.
+                  </p>
+                )}
+
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
                   <p className="text-[11px] text-zinc-600">
                     💡 Dedicated token from Events Manager for Women ads &amp; purchases.
@@ -1071,6 +1087,12 @@ export function SettingsManager() {
                     <span>{showMenCapiToken ? 'Hide' : 'Show'}</span>
                   </button>
                 </div>
+
+                {formData.menMetaCapiAccessToken && /^\d+$/.test(formData.menMetaCapiAccessToken) && (
+                  <p className="text-[11px] font-bold text-amber-800 bg-amber-50 p-2 rounded border border-amber-300 leading-tight">
+                    ⚠️ Note: You entered the Pixel ID ({formData.menMetaCapiAccessToken}). The CAPI Access Token is a long key starting with &quot;EAAG...&quot; generated from Meta Events Manager ➔ Settings ➔ &quot;Generate access token&quot;.
+                  </p>
+                )}
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
                   <p className="text-[11px] text-zinc-600">
