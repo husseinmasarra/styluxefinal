@@ -2202,11 +2202,87 @@ export function CustomersManager() {
                 </span>
               </div>
 
+              {/* Quick Next Sender & 1-Click Explanation Banner */}
+              {(() => {
+                const targetList = getBulkTargetCustomers();
+                const unsent = targetList.filter(c => !sentCustomerIds.has(c.id));
+                if (targetList.length === 0) return null;
+                
+                return (
+                  <div className="space-y-3 pt-1">
+                    {/* Broadcast Guidance Box */}
+                    <div className="p-3.5 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-300 rounded-xl text-xs space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-950 font-black">
+                        <span className="text-base">💡</span>
+                        <span>كيف ترسل للـ {targetList.length} عميل بضغطة زر واحدة بدون حظر من واتساب؟</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-900 leading-relaxed">
+                        بسبب سياسة واتساب لمنع الرسائل العشوائية (Anti-Spam) وحماية متصفحك للنوافذ المنبثقة، لا يمكن لأي موقع ويب إرسال 12 رسالة في الخلفية معاً بدون خدمة Meta API المدفوعة. 
+                        <strong>ولكن الحل الأسرع والمجاني بزر واحد هو:</strong>
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                        <div className="p-2.5 bg-white/90 border border-emerald-200 rounded-lg">
+                          <strong className="text-emerald-950 block pb-0.5">📱 الطريقة 1 (بزر واحد حقيقي من الهاتف):</strong>
+                          اضغط على زر <strong>&ldquo;DOWNLOAD CONTACTS (.VCF)&rdquo;</strong> الأزرق لحفظ أرقام المحددين في هاتفك ➔ افتح واتساب بالهاتف ➔ <strong>رسالة جماعية جديدة (New Broadcast)</strong> ➔ أرسل الرسالة لتصل فوراً للجميع دفعة واحدة وبضغطة زر!
+                        </div>
+                        <div className="p-2.5 bg-white/90 border border-emerald-200 rounded-lg">
+                          <strong className="text-emerald-950 block pb-0.5">💻 الطريقة 2 (متتابع سريع من الكمبيوتر):</strong>
+                          اضغط على الزر الأخضر بالأسفل <strong>&ldquo;SEND TO NEXT ➔&rdquo;</strong>؛ يفتح لك كل عميل تباعاً لتضغط Enter فقط، ويحدد النظام تلقائياً من تم إرساله!
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick Next Sender Button */}
+                    {unsent.length > 0 ? (
+                      <div className="p-3 bg-emerald-50 border-2 border-[#25D366] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-emerald-950 uppercase">
+                              🚀 إرسال سريع للعميل التالي (Quick Next Sender)
+                            </span>
+                            <span className="text-[10px] font-mono font-bold bg-[#25D366] text-white px-2 py-0.5 rounded-full">
+                              {unsent.length} / {targetList.length} متبقي
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-emerald-800 pt-0.5">
+                            اضغط هنا ليفتح محادثة <strong>{unsent[0].name}</strong> فوراً مع الرسالة الإنجليزية المجهزة:
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSendSingleBulk(unsent[0])}
+                          className="px-5 py-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-black uppercase tracking-wider rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
+                        >
+                          <WhatsAppIcon className="w-4 h-4 text-white" />
+                          <span>SEND TO {unsent[0].name.split(' ')[0]} ➔</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-3.5 bg-emerald-100 border-2 border-emerald-400 text-emerald-900 rounded-xl text-xs font-black text-center flex items-center justify-center gap-2 shadow-xs">
+                        <CheckCheck size={18} className="text-emerald-700" />
+                        <span>🎉 ممتاز! تم إرسال الرسائل بنجاح لجميع العملاء ({targetList.length} عملاء) في هذه القائمة!</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Customer Direct Send List */}
               <div className="space-y-2 pt-2">
-                <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
-                  1-Click Direct WhatsApp Messaging:
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-black text-zinc-950 uppercase tracking-wider block">
+                    Individual Customer WhatsApp Direct Links:
+                  </label>
+                  {sentCustomerIds.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSentCustomerIds(new Set())}
+                      className="text-[10px] text-zinc-500 hover:text-zinc-800 underline font-bold cursor-pointer"
+                    >
+                      إعادة ضبط حالة الإرسال (Reset Sent Status)
+                    </button>
+                  )}
+                </div>
                 <div className="border border-zinc-200 rounded-lg divide-y divide-zinc-100 max-h-56 overflow-y-auto bg-zinc-50/50">
                   {getBulkTargetCustomers().length === 0 ? (
                     <div className="p-6 text-center text-xs font-bold text-zinc-400 uppercase">
